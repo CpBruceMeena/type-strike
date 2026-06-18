@@ -78,6 +78,19 @@ class LevelFailedViewModel @Inject constructor(
             // Compute partial XP (consolation for at least trying)
             val partialXp = computePartialXp(wpm, accuracy, passWpm, passAccuracy, levelId)
 
+            // Persist failed attempt to backend (fire-and-forget)
+            levelRepository.completeLevel(
+                playerId = PLAYER_ID,
+                levelId = levelId,
+                wpm = wpm,
+                accuracy = accuracy.toFloat() / 100f,
+                stars = 0,
+                completed = false
+            )
+
+            // Award partial XP for the attempt
+            playerRepository.addXp(PLAYER_ID, partialXp)
+
             _uiState.value = LevelFailedUiState(
                 isLoading = false,
                 playerLevel = summary?.player?.level ?: 1,

@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.typestrike.data.model.LevelDetail
 import com.typestrike.data.repository.LevelRepository
 import com.typestrike.data.repository.PlayerRepository
+import com.typestrike.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,13 +22,24 @@ import javax.inject.Inject
 
 enum class GameState {
     LOADING,
-    READY,
+    COUNTDOWN,
     TYPING,
     STALLED,
     MISTAKE,
     COMPLETE,
     FAILED
 }
+
+// ── Per-Word Result ──────────────────────────────────────
+
+data class WordResult(
+    val wordIndex: Int,
+    val word: String,
+    val typedText: String = "",
+    val isComplete: Boolean = false,
+    val hadMistake: Boolean = false,
+    val correctChars: Int = 0
+)
 
 // ── Combo Tiers ──────────────────────────────────────────
 
@@ -55,7 +69,7 @@ data class GameplayUiState(
     val words: List<String> = emptyList(),
     val currentWordIndex: Int = 0,
     val typedText: String = "",
-    val wordProgress: List<Boolean> = emptyList(),  // true=correct, false=incorrect
+    val wordResults: List<WordResult> = emptyList(),
     val totalKeystrokes: Int = 0,
     val correctKeystrokes: Int = 0,
     val combo: Int = 0,
@@ -65,11 +79,15 @@ data class GameplayUiState(
     val liveWpm: Int = 0,
     val accuracy: Float = 1f,
     val elapsedMs: Long = 0L,
-    val isReady: Boolean = false,
     val hasError: Boolean = false,
     val errorMessage: String? = null,
     val showKineticText: String? = null,
     val starProgress: Int = 0,
+    // Countdown
+    val countdownValue: Int = 3,
+    val showGo: Boolean = false,
+    // Keyboard type
+    val useNativeKeyboard: Boolean = false,
     // Result data
     val finalWpm: Int = 0,
     val finalAccuracy: Float = 0f,
@@ -78,12 +96,13 @@ data class GameplayUiState(
 
 /**
  * ViewModel for the Gameplay Arena.
- * Manages the full game loop: word queue, typing, combo, scoring, state transitions.
+ * Manages the full game loop: countdown → typing → combo → scoring → result.
  */
 @HiltViewModel
 class GameplayViewModel @Inject constructor(
     private val levelRepository: LevelRepository,
-    private val playerRepository: PlayerRepository
+    private val playerRepository: PlayerRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     companion object {
@@ -102,38 +121,53 @@ class GameplayViewModel @Inject constructor(
     private var mistakeJob: Job? = null
     private var kineticTextJob: Job? = null
     private var timerJob: Job? = null
-    private var levelErrorCount = 0  // for star calculation: 3 stars requires 0 mistakes + combo break
+    private var levelErrorCount = 0  // for star calculation: 3 stars requires 0 mistakes
 
     fun loadLevel(levelId: Int) {
         viewModelScope.launch {
             _uiState.value = GameplayUiState(gameState = GameState.LOADING, levelId = levelId)
 
-            val result = levelRepository.getLevelDetail(levelId, PLAYER_ID)
-            result.fold(
+            val (detailResult, settingsResult) = coroutineScope {
+                val d = async { levelRepository.getLevelDetail(levelId, PLAYER_ID) }
+                val s = async { settingsRepository.getAll(PLAYER_ID) }
+                Pair(d.await(), s.await())
+            }
+
+            // Determine keyboard type from settings
+            val keyboardType = settingsResult.getOrNull()?.get("keyboard_type") ?: "CUSTOM"
+
+            detailResult.fold(
                 onSuccess = { detail ->
                     val words = WordBank.generateWords(
                         count = detail.wordCount,
                         minLen = detail.wordMinLength,
                         maxLen = detail.wordMaxLength
                     )
+
+                    val initialResults = words.mapIndexed { index, word ->
+                        WordResult(
+                            wordIndex = index,
+                            word = word
+                        )
+                    }
+
                     _uiState.value = GameplayUiState(
-                        gameState = GameState.READY,
+                        gameState = GameState.COUNTDOWN,
                         levelId = detail.id,
                         levelName = detail.name,
                         tier = detail.tier,
                         words = words,
-                        wordProgress = List(detail.wordCount) { true },
-                        gaugeProgress = 0f,
+                        wordResults = initialResults,
                         combo = 0,
-                        isReady = true
+                        countdownValue = 3,
+                        useNativeKeyboard = keyboardType == "NATIVE"
                     )
-                    startTimeMs = System.currentTimeMillis()
-                    lastInputTimeMs = startTimeMs
                 },
                 onFailure = { error ->
                     _uiState.value = GameplayUiState(
-                        gameState = GameState.READY,
+                        gameState = GameState.COUNTDOWN,
                         hasError = true,
+                        useNativeKeyboard = keyboardType == "NATIVE",
                         errorMessage = error.message ?: "Failed to load level"
                     )
                 }
@@ -141,11 +175,36 @@ class GameplayViewModel @Inject constructor(
         }
     }
 
+    // ── Countdown ─────────────────────────────────────────
+
+    fun startCountdown() {
+        viewModelScope.launch {
+            // 3... 2... 1... GO!
+            _uiState.value = _uiState.value.copy(countdownValue = 3)
+            delay(700)
+            _uiState.value = _uiState.value.copy(countdownValue = 2)
+            delay(700)
+            _uiState.value = _uiState.value.copy(countdownValue = 1)
+            delay(700)
+            _uiState.value = _uiState.value.copy(showGo = true)
+            delay(500)
+
+            // Start typing
+            _uiState.value = _uiState.value.copy(
+                gameState = GameState.TYPING,
+                showGo = false
+            )
+            startTimeMs = System.currentTimeMillis()
+            lastInputTimeMs = startTimeMs
+            startTimer()
+        }
+    }
+
     // ── Typing Input ─────────────────────────────────────
 
     fun onKeyPress(char: Char) {
         val state = _uiState.value
-        if (state.gameState !in listOf(GameState.READY, GameState.TYPING, GameState.STALLED)) return
+        if (state.gameState != GameState.TYPING) return
         if (mistakeJob?.isActive == true) return
         if (state.currentWordIndex >= state.words.size) return
 
@@ -154,10 +213,8 @@ class GameplayViewModel @Inject constructor(
         val expectedChar = currentWord.getOrNull(state.typedText.length)
 
         if (char == expectedChar) {
-            // Correct keystroke
             handleCorrectKeystroke(state, newTyped)
         } else {
-            // Incorrect keystroke
             handleMistake(state)
         }
     }
@@ -168,12 +225,23 @@ class GameplayViewModel @Inject constructor(
 
         if (wordCompleted) {
             // Word completed successfully
+            val correctedChars = newTyped.length
             val newIndex = state.currentWordIndex + 1
             val newCombo = state.combo + 1
             val newMaxCombo = maxOf(newCombo, state.maxCombo)
             val newGauge = computeGauge(newCombo)
             val tier = getActiveTier(newCombo)
-            val newProgress = state.wordProgress.toMutableList().apply { this[state.currentWordIndex] = true }
+
+            // Update word result
+            val updatedResults = state.wordResults.toMutableList()
+            updatedResults[state.currentWordIndex] = WordResult(
+                wordIndex = state.currentWordIndex,
+                word = currentWord,
+                typedText = newTyped,
+                isComplete = true,
+                hadMistake = false,
+                correctChars = correctedChars
+            )
 
             // Show kinetic text if combo milestone reached
             val kineticText = if (tier != state.activeComboTier && tier.title.isNotEmpty()) tier.title else null
@@ -182,13 +250,13 @@ class GameplayViewModel @Inject constructor(
                 gameState = if (newIndex >= state.words.size) GameState.COMPLETE else GameState.TYPING,
                 currentWordIndex = newIndex,
                 typedText = "",
-                totalKeystrokes = state.totalKeystrokes + currentWord.length,
-                correctKeystrokes = state.correctKeystrokes + currentWord.length,
+                wordResults = updatedResults,
+                totalKeystrokes = state.totalKeystrokes + correctedChars,
+                correctKeystrokes = state.correctKeystrokes + correctedChars,
                 combo = newCombo,
                 maxCombo = newMaxCombo,
                 gaugeProgress = newGauge,
-                activeComboTier = tier,
-                wordProgress = newProgress
+                activeComboTier = tier
             )
 
             updateWpmAndAccuracy(newState)
@@ -197,7 +265,6 @@ class GameplayViewModel @Inject constructor(
                 showKineticText(kineticText)
             }
 
-            // Check if all words done
             if (newIndex >= state.words.size) {
                 finishGame(newState)
             } else {
@@ -206,10 +273,21 @@ class GameplayViewModel @Inject constructor(
                 startStallTimer()
             }
         } else {
-            // Still typing the word
+            // Still typing the word — update typed text and progress
+            val updatedResults = state.wordResults.toMutableList()
+            updatedResults[state.currentWordIndex] = WordResult(
+                wordIndex = state.currentWordIndex,
+                word = currentWord,
+                typedText = newTyped,
+                isComplete = false,
+                hadMistake = false,
+                correctChars = newTyped.length
+            )
+
             val newState = state.copy(
                 gameState = GameState.TYPING,
                 typedText = newTyped,
+                wordResults = updatedResults,
                 totalKeystrokes = state.totalKeystrokes + 1,
                 correctKeystrokes = state.correctKeystrokes + 1
             )
@@ -223,8 +301,17 @@ class GameplayViewModel @Inject constructor(
     private fun handleMistake(state: GameplayUiState) {
         levelErrorCount++
 
+        // Mark current word as having a mistake
+        val updatedResults = state.wordResults.toMutableList()
+        val currentWordResult = updatedResults[state.currentWordIndex]
+        updatedResults[state.currentWordIndex] = currentWordResult.copy(
+            hadMistake = true
+        )
+
         val newState = state.copy(
             gameState = GameState.MISTAKE,
+            typedText = state.typedText,
+            wordResults = updatedResults,
             totalKeystrokes = state.totalKeystrokes + 1
         )
         updateWpmAndAccuracy(newState)
@@ -257,7 +344,7 @@ class GameplayViewModel @Inject constructor(
         if (elapsed < 1000) return
 
         val minutes = elapsed.toFloat() / 60000f
-        val wordsTyped = state.correctKeystrokes / 5  // standard: 5 chars = 1 word
+        val wordsTyped = state.correctKeystrokes / 5
         val wpm = if (minutes > 0) (wordsTyped / minutes).toInt() else 0
         val accuracy = if (state.totalKeystrokes > 0)
             state.correctKeystrokes.toFloat() / state.totalKeystrokes
@@ -272,7 +359,7 @@ class GameplayViewModel @Inject constructor(
             while (isActive) {
                 delay(1000)
                 val state = _uiState.value
-                if (state.gameState in listOf(GameState.TYPING, GameState.READY, GameState.STALLED)) {
+                if (state.gameState in listOf(GameState.TYPING, GameState.STALLED)) {
                     updateWpmAndAccuracy(state)
                 }
             }
@@ -298,6 +385,16 @@ class GameplayViewModel @Inject constructor(
                     val stars = computeStars(finalWpm, accuracy, detail, levelErrorCount)
                     val passed = stars >= 1
 
+                    // Persist level completion to backend
+                    levelRepository.completeLevel(
+                        playerId = PLAYER_ID,
+                        levelId = state.levelId,
+                        wpm = finalWpm,
+                        accuracy = accuracy,
+                        stars = stars,
+                        completed = passed
+                    )
+
                     _uiState.value = state.copy(
                         gameState = if (passed) GameState.COMPLETE else GameState.FAILED,
                         finalWpm = finalWpm,
@@ -306,10 +403,21 @@ class GameplayViewModel @Inject constructor(
                     )
                 },
                 onFailure = {
-                    // Fallback: compute stars without detail
                     val stars = if (finalWpm >= 30 && accuracy >= 0.85f) 1 else 0
+                    val passed = stars >= 1
+
+                    // Still try to persist even if detail fetch failed
+                    levelRepository.completeLevel(
+                        playerId = PLAYER_ID,
+                        levelId = state.levelId,
+                        wpm = finalWpm,
+                        accuracy = accuracy,
+                        stars = stars,
+                        completed = passed
+                    )
+
                     _uiState.value = state.copy(
-                        gameState = if (stars >= 1) GameState.COMPLETE else GameState.FAILED,
+                        gameState = if (passed) GameState.COMPLETE else GameState.FAILED,
                         finalWpm = finalWpm,
                         finalAccuracy = accuracy,
                         stars = stars
@@ -363,15 +471,6 @@ class GameplayViewModel @Inject constructor(
     }
 
     // ── Actions ───────────────────────────────────────────
-
-    fun startTyping() {
-        if (_uiState.value.gameState == GameState.READY) {
-            _uiState.value = _uiState.value.copy(gameState = GameState.TYPING)
-            startTimeMs = System.currentTimeMillis()
-            lastInputTimeMs = startTimeMs
-            startTimer()
-        }
-    }
 
     fun retry() {
         loadLevel(_uiState.value.levelId)

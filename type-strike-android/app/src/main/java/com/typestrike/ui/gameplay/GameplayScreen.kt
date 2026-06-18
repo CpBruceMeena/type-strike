@@ -6,19 +6,31 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.typestrike.ui.effects.*
 import com.typestrike.ui.theme.*
+import com.typestrike.ui.util.HapticUtil
 import kotlinx.coroutines.delay
 
 val QWERTY_ROWS = listOf(
@@ -33,6 +46,9 @@ val QWERTY_ROWS = listOf(
     listOf('A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'),
     listOf('Z', 'X', 'C', 'V', 'B', 'N', 'M')
 )
+
+private val CORRECT_GREEN = Color(0xFF22DD44)
+private val ERROR_RED = Color(0xFFFF3300)
 
 // ── Main Gameplay Screen ─────────────────────────────────
 
@@ -74,8 +90,28 @@ fun GameplayScreen(
         }
     }
 
-    // Keyboard pressed state
-    val pressedKey = remember { mutableStateOf<Char?>(null) }
+    val view = LocalView.current
+
+    // ── Haptic: word complete ──────────────────────────
+    LaunchedEffect(uiState.currentWordIndex) {
+        if (uiState.currentWordIndex > 0 && uiState.gameState == GameState.TYPING) {
+            HapticUtil.wordComplete(view)
+        }
+    }
+
+    // ── Haptic: error ─────────────────────────────────
+    LaunchedEffect(uiState.gameState) {
+        if (uiState.gameState == GameState.MISTAKE) {
+            HapticUtil.keyError(view)
+        }
+    }
+
+    // ── Haptic: combo milestone ───────────────────────
+    LaunchedEffect(uiState.showKineticText) {
+        if (uiState.showKineticText != null) {
+            HapticUtil.comboMilestone(view)
+        }
+    }
 
     val particleConfig = remember {
         ParticleConfig.fromQuality(ParticleConfig.detect())
@@ -87,7 +123,7 @@ fun GameplayScreen(
             .background(Background)
             .systemBarsPadding()
     ) {
-        // Particle background (behind everything)
+        // Particle background
         MapParticleField(
             config = particleConfig,
             modifier = Modifier.fillMaxSize()
@@ -95,6 +131,11 @@ fun GameplayScreen(
 
         when (uiState.gameState) {
             GameState.LOADING -> GameplayLoading()
+            GameState.COUNTDOWN -> CountdownOverlay(
+                countdownValue = uiState.countdownValue,
+                showGo = uiState.showGo,
+                onStart = { viewModel.startCountdown() }
+            )
             else -> {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // Arena Header
@@ -105,19 +146,29 @@ fun GameplayScreen(
                         onBack = onBack
                     )
 
-                    // Word Display Panel (with kinetic text overlay)
+                    // Combined words panel (scrollable, all words visible)
                     Box(modifier = Modifier.weight(1f)) {
-                        WordDisplayPanel(
-                            currentWord = uiState.words.getOrNull(uiState.currentWordIndex) ?: "",
+                        AllWordsPanel(
+                            words = uiState.words,
+                            wordResults = uiState.wordResults,
+                            currentWordIndex = uiState.currentWordIndex,
                             typedText = uiState.typedText,
                             gameState = uiState.gameState,
                             modifier = Modifier.fillMaxSize()
                         )
 
-                        // Kinetic text overlay (combo milestone messages)
+                        // Kinetic text overlay
                         KineticTextOverlay(
                             text = uiState.showKineticText,
                             modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+
+                    // Native keyboard hidden input (when enabled)
+                    if (uiState.useNativeKeyboard && uiState.gameState == GameState.TYPING) {
+                        NativeKeyboardInput(
+                            onKeyPress = { viewModel.onKeyPress(it) },
+                            modifier = Modifier.height(0.dp)
                         )
                     }
 
@@ -132,18 +183,13 @@ fun GameplayScreen(
                         modifier = Modifier.height(48.dp)
                     )
 
-                    // Custom Keyboard
-                    CustomKeyboard(
-                        pressedKey = pressedKey.value,
-                        onKeyPress = { char ->
-                            if (uiState.gameState == GameState.READY) {
-                                viewModel.startTyping()
-                            }
-                            viewModel.onKeyPress(char)
-                            pressedKey.value = char
-                        },
-                        modifier = Modifier.height(200.dp)
-                    )
+                    // Custom Keyboard (only when native keyboard is NOT enabled)
+                    if (!uiState.useNativeKeyboard) {
+                        CustomKeyboard(
+                            onKeyPress = { viewModel.onKeyPress(it) },
+                            modifier = Modifier.height(200.dp)
+                        )
+                    }
                 }
             }
         }
@@ -153,7 +199,7 @@ fun GameplayScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(ErrorRed.copy(alpha = 0.08f))
+                    .background(ERROR_RED.copy(alpha = 0.08f))
             )
         }
 
@@ -170,6 +216,114 @@ fun GameplayScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     color = TextBody.copy(alpha = 0.5f)
                 )
+            }
+        }
+    }
+}
+
+// ── Countdown Overlay ────────────────────────────────────
+
+@Composable
+private fun CountdownOverlay(
+    countdownValue: Int,
+    showGo: Boolean,
+    onStart: () -> Unit
+) {
+    var started by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (showGo) {
+                // GO!
+                val goScale by animateFloatAsState(
+                    targetValue = 1f,
+                    animationSpec = spring(dampingRatio = 0.4f, stiffness = 200f),
+                    label = "goScale"
+                )
+                Text(
+                    text = "GO!",
+                    style = MaterialTheme.typography.displayLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MagmaRed,
+                    letterSpacing = 8.sp,
+                    modifier = Modifier
+                        .scale(goScale)
+                        .shadow(24.dp, RoundedCornerShape(0.dp), ambientColor = MagmaRed, spotColor = MagmaRed)
+                        .padding(32.dp)
+                )
+            } else if (started) {
+                // Countdown number
+                val countScale by animateFloatAsState(
+                    targetValue = 1f,
+                    animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f),
+                    label = "countScale"
+                )
+                Text(
+                    text = "$countdownValue",
+                    style = MaterialTheme.typography.displayLarge,
+                    fontSize = 96.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextWhite,
+                    modifier = Modifier
+                        .scale(countScale)
+                        .shadow(16.dp, RoundedCornerShape(0.dp), spotColor = MagmaRed.copy(alpha = 0.5f))
+                )
+            } else {
+                // START button
+                val infiniteTransition = rememberInfiniteTransition(label = "startGlow")
+                val glowAlpha by infiniteTransition.animateFloat(
+                    initialValue = 0.3f,
+                    targetValue = 0.6f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2000, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "startGlowAlpha"
+                )
+
+                Box(modifier = Modifier.padding(horizontal = 32.dp)) {
+                    // Glow
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .padding(12.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .alpha(glowAlpha)
+                            .background(MagmaRed)
+                    )
+                    // Button
+                    Button(
+                        onClick = {
+                            started = true
+                            onStart()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MagmaRed),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 12.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "🔥  START  🔥",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = TextWhite,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 4.sp
+                            )
+                            Text(
+                                text = "Type with fury. Strike with fire.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextWhite.copy(alpha = 0.6f),
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -212,79 +366,182 @@ private fun ArenaHeader(
     }
 }
 
-// ── Word Display Panel ───────────────────────────────────
+// ── All Words Panel ──────────────────────────────────────
 
 @Composable
-private fun WordDisplayPanel(
-    currentWord: String,
+private fun AllWordsPanel(
+    words: List<String>,
+    wordResults: List<WordResult>,
+    currentWordIndex: Int,
     typedText: String,
     gameState: GameState,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "wordGlow")
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.06f,
-        targetValue = 0.12f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "wordGlow"
-    )
+    val scrollState = rememberScrollState()
+
+    // Auto-scroll to current word
+    LaunchedEffect(currentWordIndex) {
+        // Small delay to let layout settle, then scroll to current word
+        delay(50)
+        // The scroll will go to roughly the position of the current word
+        val targetScroll = (currentWordIndex * 60).coerceAtMost(
+            scrollState.maxValue
+        )
+        scrollState.animateScrollTo(targetScroll, tween(300))
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceDark.copy(alpha = 0.6f))
-            .border(1.dp, SurfaceBorder.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-            .then(
-                if (gameState == GameState.MISTAKE)
-                    Modifier.background(ErrorRed.copy(alpha = 0.05f))
-                else Modifier
-            ),
-        contentAlignment = Alignment.Center
+            .background(SurfaceDark.copy(alpha = 0.5f))
+            .border(1.dp, SurfaceBorder.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
     ) {
-        // Ambient glow
-        Box(
+        Column(
             modifier = Modifier
-                .matchParentSize()
-                .alpha(glowAlpha)
-                .background(MagmaRed.copy(alpha = 0.2f))
-        )
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(16.dp)
+        ) {
+            words.forEachIndexed { index, word ->
+                val isCurrent = index == currentWordIndex
+                val isCompleted = index < currentWordIndex
+                val wordResult = wordResults.getOrNull(index)
 
-        if (currentWord.isEmpty()) {
-            Text(
-                text = "Loading…",
-                style = MaterialTheme.typography.headlineLarge,
-                color = TextDisabled
-            )
-        } else {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-            ) {
-                currentWord.forEachIndexed { index, char ->
-                    val isTyped = index < typedText.length
-                    val isCorrect = isTyped && typedText[index] == char
-                    val isNext = index == typedText.length
-
-                    Text(
-                        text = char.toString(),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = when {
-                            isCorrect -> MagmaRed
-                            isNext -> TextWhite
-                            else -> TextBody.copy(alpha = 0.3f)
-                        },
-                        modifier = Modifier.padding(horizontal = 2.dp)
-                    )
-                }
+                WordRow(
+                    word = word,
+                    wordResult = wordResult,
+                    isCurrent = isCurrent,
+                    isCompleted = isCompleted,
+                    typedText = if (isCurrent) typedText else "",
+                    hasError = gameState == GameState.MISTAKE && isCurrent
+                )
+                Spacer(modifier = Modifier.height(6.dp))
             }
         }
     }
+}
+
+@Composable
+private fun WordRow(
+    word: String,
+    wordResult: WordResult?,
+    isCurrent: Boolean,
+    isCompleted: Boolean,
+    typedText: String,
+    hasError: Boolean
+) {
+    val bgColor = when {
+        isCurrent -> Surface.copy(alpha = 0.6f)
+        isCompleted -> SurfaceDark.copy(alpha = 0.3f)
+        else -> Color.Transparent
+    }
+    val borderColor = when {
+        isCurrent && hasError -> ERROR_RED.copy(alpha = 0.3f)
+        isCurrent -> MagmaRed.copy(alpha = 0.4f)
+        else -> Color.Transparent
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(bgColor)
+            .then(
+                if (isCurrent)
+                    Modifier.border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                else Modifier
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Word number
+        Text(
+            text = "${(wordResult?.wordIndex ?: 0) + 1}.",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isCurrent) MagmaRed else TextDisabled,
+            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.width(28.dp)
+        )
+
+        // Word characters with coloring
+        word.forEachIndexed { charIndex, char ->
+            val charColor = when {
+                // Completed word
+                isCompleted -> {
+                    val hadMistake = wordResult?.hadMistake ?: false
+                    if (hadMistake) ERROR_RED.copy(alpha = 0.5f) else CORRECT_GREEN.copy(alpha = 0.7f)
+                }
+                // Current word — typed part
+                isCurrent && charIndex < typedText.length -> {
+                    val isCorrect = typedText[charIndex] == char
+                    if (isCorrect) CORRECT_GREEN.copy(alpha = 0.9f) else ERROR_RED.copy(alpha = 0.9f)
+                }
+                // Current word — next character to type
+                isCurrent && charIndex == typedText.length -> {
+                    if (hasError) ERROR_RED else TextWhite
+                }
+                // Current word — untyped future characters
+                isCurrent && charIndex > typedText.length -> {
+                    TextBody.copy(alpha = 0.35f)
+                }
+                // Future words (not yet reached)
+                else -> TextBody.copy(alpha = 0.3f)
+            }
+
+            val isBold = isCurrent && charIndex == typedText.length
+            Text(
+                text = char.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = if (isBold) FontWeight.Bold else FontWeight.Medium,
+                color = charColor,
+                modifier = Modifier.padding(horizontal = 1.dp)
+            )
+        }
+    }
+}
+
+// ── Native Keyboard Input ────────────────────────────────
+
+@Composable
+private fun NativeKeyboardInput(
+    onKeyPress: (Char) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val focusRequester = remember { FocusRequester() }
+    var textFieldValue by remember { mutableStateOf(TextFieldValue("")) }
+    var lastProcessedLength by remember { mutableIntStateOf(0) }
+
+    // Auto-focus when visible
+    LaunchedEffect(Unit) {
+        delay(100)
+        focusRequester.requestFocus()
+    }
+
+    BasicTextField(
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            val newText = newValue.text
+            // Process new characters since last check
+            if (newText.length > lastProcessedLength) {
+                for (i in lastProcessedLength until newText.length) {
+                    onKeyPress(newText[i])
+                }
+            }
+            // Reset after processing each character
+            textFieldValue = TextFieldValue("")
+            lastProcessedLength = 0
+        },
+        modifier = Modifier
+            .focusRequester(focusRequester)
+            .then(modifier)
+            .alpha(0f) // invisible
+            .width(1.dp),
+        textStyle = TextStyle(color = Color.Transparent, fontSize = 1.sp),
+        cursorBrush = SolidColor(Color.Transparent),
+        singleLine = true
+    )
 }
 
 // ── Combo Gauge + Stats ──────────────────────────────────
@@ -391,16 +648,17 @@ private fun ComboAndStatsRow(
 
 @Composable
 private fun CustomKeyboard(
-    pressedKey: Char?,
     onKeyPress: (Char) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val keySpacing = 4.dp
+    val pressedKey = remember { mutableStateOf<Char?>(null) }
 
     // Reset pressed state after brief delay
-    LaunchedEffect(pressedKey) {
-        if (pressedKey != null) {
+    LaunchedEffect(pressedKey.value) {
+        if (pressedKey.value != null) {
             delay(100)
+            pressedKey.value = null
         }
     }
 
@@ -417,15 +675,17 @@ private fun CustomKeyboard(
                     .padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Staggered layout for rows 2 and 3
                 if (rowIndex == 1) Spacer(modifier = Modifier.width(12.dp))
                 if (rowIndex == 2) Spacer(modifier = Modifier.width(28.dp))
 
                 row.forEach { char ->
                     KeyboardKey(
                         char = char,
-                        isPressed = pressedKey == char,
-                        onClick = { onKeyPress(char) }
+                        isPressed = pressedKey.value == char,
+                        onClick = {
+                            pressedKey.value = char
+                            onKeyPress(char)
+                        }
                     )
                     Spacer(modifier = Modifier.width(keySpacing))
                 }
@@ -443,6 +703,7 @@ private fun KeyboardKey(
     isPressed: Boolean,
     onClick: () -> Unit
 ) {
+    val view = LocalView.current
     val scaleAnim by animateFloatAsState(
         targetValue = if (isPressed) 0.92f else 1f,
         animationSpec = tween(80),
@@ -467,7 +728,10 @@ private fun KeyboardKey(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onClick
+                onClick = {
+                    HapticUtil.keyPress(view)
+                    onClick()
+                }
             ),
         contentAlignment = Alignment.Center
     ) {

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.typestrike.data.model.PlayerSummary
 import com.typestrike.data.repository.PlayerRepository
-import com.typestrike.ui.home.Progression
+import com.typestrike.ui.util.Progression
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +58,7 @@ class VictoryViewModel @Inject constructor(
 
     /**
      * Called when the screen appears with the game result.
+     * Loads player data, computes XP, persists XP to backend, and manages animation.
      */
     fun loadResult(levelId: Int, wpm: Int, accuracy: Int, stars: Int) {
         viewModelScope.launch {
@@ -81,6 +82,9 @@ class VictoryViewModel @Inject constructor(
                         leveledUp = true
                         xpNeeded = xpForNextLevel(newLevel)
                     }
+
+                    // Persist XP to backend (fire-and-forget on failure — player still sees it)
+                    playerRepository.addXp(PLAYER_ID, xpEarned)
 
                     _uiState.value = VictoryUiState(
                         isLoading = false,

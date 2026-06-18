@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.typestrike.data.model.KeyboardTheme
+import com.typestrike.data.model.KeyboardThemes
 import com.typestrike.ui.effects.*
 import com.typestrike.ui.theme.*
 import kotlinx.coroutines.delay
@@ -29,6 +31,7 @@ private val LAYOUT_OPTIONS = listOf("QWERTY", "AZERTY", "QWERTZ")
 private val KEY_SIZE_OPTIONS = listOf("S", "M", "L")
 private val CLICK_TYPE_OPTIONS = listOf("BLUE", "BROWN", "RED", "LINEAR")
 private val HAPTIC_INTENSITY_OPTIONS = listOf("LIGHT", "MEDIUM", "STRONG")
+private val THEME_NAMES = com.typestrike.data.model.KeyboardThemes.ALL.associateBy { it.id }
 
 private fun keySizeLabel(size: String) = when (size) {
     "S" -> "Small"
@@ -203,11 +206,19 @@ private fun SettingsContent(
                     selected = uiState.keySize,
                     onSelect = { viewModel.updateKeySize(it) }
                 )
+                Spacer(modifier = Modifier.height(12.dp))                // Keyboard type selector
+                    SettingsSegmentedRow(
+                        label = "Keyboard Type",
+                        options = listOf("CUSTOM", "NATIVE"),
+                        optionLabels = listOf("In-App", "Device"),
+                        selected = uiState.keyboardType,
+                        onSelect = { viewModel.updateKeyboardType(it) }
+                    )
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Key click type
-                Text(
-                    text = "Key Click Type",
+                    Text(
+                        text = "Key Click Type",
                     style = MaterialTheme.typography.labelMedium,
                     color = TextLabel,
                     fontWeight = FontWeight.SemiBold
@@ -339,6 +350,77 @@ private fun SettingsContent(
                     checked = uiState.highContrast,
                     onCheckedChange = { viewModel.updateHighContrast(it) }
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ── Keyboard Themes ───────────────────
+                Text(
+                    text = "Keyboard Theme",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextLabel,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Unlock themes by completing levels",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                KeyboardThemes.ALL.forEach { theme ->
+                    val isUnlocked = theme.id in uiState.unlockedThemes
+                    val isActive = uiState.keyboardTheme == theme.id
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isActive) MagmaRed.copy(alpha = 0.12f) else Surface
+                        ),
+                        border = if (isActive)
+                            androidx.compose.foundation.BorderStroke(1.dp, MagmaRed.copy(alpha = 0.3f))
+                        else null,
+                        onClick = { if (isUnlocked) viewModel.updateKeyboardTheme(theme.id) }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Theme icon
+                            Text(
+                                text = theme.icon,
+                                fontSize = 18.sp,
+                                modifier = Modifier.alpha(if (isUnlocked) 1f else 0.4f)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = theme.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (isUnlocked) TextWhite else TextLabel,
+                                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                    if (isActive) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("✓", color = MagmaRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                Text(
+                                    text = if (isUnlocked) theme.description else "🔒 Unlock at ${theme.levelsRequired} levels",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isUnlocked) TextMuted else TextDisabled
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 

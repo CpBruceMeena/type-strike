@@ -1,0 +1,58 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+      type-strike app icon:
+      - A bold geometric "T" (for "Type") in MagmaRed
+      - A flame/strike accent coming off the right arm
+      - Clean, minimal, recognizable
+    -->
+
+    <!-- Flame teardrop body (behind the T) -->
+    <path
+        android:fillColor="#FF5020"
+        android:fillAlpha="0.12"
+        android:pathData="M54,14 C54,14 70,34 74,52 C78,70 66,86 54,92 C42,86 30,70 34,52 C38,34 54,14 54,14 Z" />
+
+    <!-- T — vertical stem -->
+    <path
+        android:fillColor="#FF5020"
+        android:pathData="M46,28 L62,28 C65.3,28 68,30.7 68,34 C68,37.3 65.3,40 62,40 L58,40 L58,72 C58,75.3 55.3,78 52,78 C48.7,78 46,75.3 46,72 L46,40 L42,40 C38.7,40 36,37.3 36,34 C36,30.7 38.7,28 42,28 L46,28 Z" />
+
+    <!-- T — horizontal crossbar (top) with tapered ends -->
+    <path
+        android:fillColor="#FF6600"
+        android:pathData="M28,26 L76,26 C79.3,26 82,28.7 82,32 C82,35.3 79.3,38 76,38 L28,38 C24.7,38 22,35.3 22,32 C22,28.7 24.7,26 28,26 Z" />
+
+    <!-- Strike accent — diagonal energy slash from right of crossbar -->
+    <path
+        android:fillColor="#FFCC00"
+        android:fillAlpha="0.8"
+        android:pathData="M74,28 L88,18 C90.5,16.3 93.5,17.5 94,20 C94.5,22.5 92.5,25 90,26.5 L80,34 C77.5,35.5 75,34 74,28 Z" />
+
+    <!-- Strike accent — secondary smaller slash -->
+    <path
+        android:fillColor="#FFCC00"
+        android:fillAlpha="0.5"
+        android:pathData="M78,30 L88,24 C90,23 92,24 92,26 C92,28 90,29.5 88,30.5 L80,34 C78,35 77,33 78,30 Z" />
+
+    <!-- Ember dot at bottom-right of flame area -->
+    <path
+        android:fillColor="#FFCC00"
+        android:fillAlpha="0.6"
+        android:pathData="M62,78 C62,78 64,80 62,82 C60,84 58,82 58,80 C58,78 62,78 62,78 Z" />
+
+    <!-- Small sparkle particle 1 -->
+    <path
+        android:fillColor="#FFCC00"
+        android:fillAlpha="0.4"
+        android:pathData="M20,18 L22,18 L22,20 L20,20 Z" />
+
+    <!-- Small sparkle particle 2 -->
+    <path
+        android:fillColor="#FF6600"
+        android:fillAlpha="0.3"
+        android:pathData="M84,44 L86,44 L86,46 L84,46 Z" />
+</vector>

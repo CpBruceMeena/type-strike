@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -27,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.typestrike.ui.effects.*
 import com.typestrike.ui.theme.*
+import com.typestrike.ui.util.HapticUtil
 import kotlinx.coroutines.delay
 import kotlin.math.sin
 
@@ -43,8 +45,13 @@ fun LevelFailedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val view = LocalView.current
+
     LaunchedEffect(Unit) {
         viewModel.loadFailedResult(levelId, wpm, accuracy)
+        // Haptic: level failed — 200ms heavy buzz
+        delay(300)
+        HapticUtil.levelFailed(view)
     }
 
     // Tap-to-skip

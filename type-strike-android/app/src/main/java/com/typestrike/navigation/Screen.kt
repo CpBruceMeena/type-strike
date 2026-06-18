@@ -6,6 +6,7 @@ package com.typestrike.navigation
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object Map : Screen("map")
+    // Reserved — level details are shown directly on the Map screen
     data object LevelPreview : Screen("level_preview/{levelId}") {
         fun createRoute(levelId: Int) = "level_preview/$levelId"
     }

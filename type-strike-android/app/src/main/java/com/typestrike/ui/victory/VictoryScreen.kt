@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.typestrike.ui.theme.*
+import com.typestrike.ui.util.HapticUtil
 import kotlinx.coroutines.delay
 
 // ── Main Screen ──────────────────────────────────────────
@@ -338,12 +340,14 @@ private fun TrophyShard(
     visible: Boolean,
     slamDelay: Int
 ) {
+    val view = LocalView.current
     var slammed by remember { mutableStateOf(false) }
 
     LaunchedEffect(visible) {
         if (visible) {
             delay(slamDelay.toLong())
             slammed = true
+            HapticUtil.trophySlam(view)
         }
     }
 

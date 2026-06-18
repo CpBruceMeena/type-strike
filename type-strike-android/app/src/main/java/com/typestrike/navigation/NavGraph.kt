@@ -9,7 +9,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.typestrike.ui.home.HomeScreen
 import com.typestrike.ui.gameplay.GameplayScreen
-import com.typestrike.ui.levelpreview.LevelPreviewScreen
 import com.typestrike.ui.map.MapScreen
 import com.typestrike.ui.victory.VictoryScreen
 import com.typestrike.ui.levelfailed.LevelFailedScreen
@@ -36,13 +35,10 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // Home / Dashboard
+        // Home / Dashboard — welcoming hub with navigation buttons
         composable(Screen.Home.route) {
             HomeScreen(
-                onJumpIn = { levelId ->
-                    navController.navigate(Screen.LevelPreview.createRoute(levelId))
-                },
-                onNavigateToMap = {
+                onPlay = {
                     navController.navigate(Screen.Map.route)
                 },
                 onNavigateToStats = {
@@ -50,37 +46,24 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToAchievements = {
+                    navController.navigate(Screen.Achievements.route)
                 }
             )
         }
 
-        // Map (Level Select)
+        // Map / Play Screen — level select with progression map
         composable(Screen.Map.route) {
             MapScreen(
                 onLevelTap = { levelId ->
-                    navController.navigate(Screen.LevelPreview.createRoute(levelId))
+                    // Navigate directly to gameplay, skipping LevelPreview
+                    navController.navigate(Screen.Gameplay.createRoute(levelId))
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },
                 onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        // Level Preview (bottom sheet)
-        composable(
-            route = Screen.LevelPreview.route,
-            arguments = listOf(navArgument("levelId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val levelId = backStackEntry.arguments?.getInt("levelId") ?: 1
-            LevelPreviewScreen(
-                levelId = levelId,
-                onStrike = { id ->
-                    navController.navigate(Screen.Gameplay.createRoute(id))
-                },
-                onDismiss = {
                     navController.popBackStack()
                 }
             )
