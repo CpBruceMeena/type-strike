@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.typestrike.data.model.PlayerSummary
 import com.typestrike.ui.effects.*
 import com.typestrike.ui.theme.*
+import com.typestrike.ui.util.formatTimestamp
 
 /**
  * Home / Dashboard Screen.
@@ -486,21 +487,6 @@ private fun ActivityItem(event: com.typestrike.data.model.ActivityEvent) {
             color = TextDisabled
         )
     }
-}
-
-private fun formatTimestamp(isoTimestamp: String): String {
-    if (isoTimestamp.isBlank()) return ""
-    return try {
-        val dt = java.time.Instant.parse(isoTimestamp)
-        val now = java.time.Instant.now()
-        val diff = java.time.Duration.between(dt, now)
-        when {
-            diff.toMinutes() < 1 -> "Just now"
-            diff.toMinutes() < 60 -> "${diff.toMinutes()}m ago"
-            diff.toHours() < 24 -> "${diff.toHours()}h ago"
-            diff.toDays() < 7 -> "${diff.toDays()}d ago"
-            else -> dt.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
-        }        } catch (_: Exception) { "" }
 }
 
 // ── Navigation Bar ───────────────────────────────────────

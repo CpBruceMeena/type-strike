@@ -69,11 +69,11 @@ Glass panels, metallic brackets, crystalline shards, and liquid fire — every s
 - Configurable settings (keyboard, sound, haptics, visuals, accessibility)
 - Particle system with device-aware quality tiers
 - Staggered entrance animations across all screens
+- Splash screen with logo reveal animation
+- Stats screen with performance charts and WPM progression
+- Achievements system (18 achievements, 5 categories)
 
 ### 🔥 Coming Next
-- Splash screen with logo reveal
-- Stats screen with performance charts
-- Achievements system
 - Sound design (key clicks, shatter SFX, music)
 - Daily challenges
 - Leaderboards

@@ -14,14 +14,28 @@ import com.typestrike.ui.map.MapScreen
 import com.typestrike.ui.victory.VictoryScreen
 import com.typestrike.ui.levelfailed.LevelFailedScreen
 import com.typestrike.ui.settings.SettingsScreen
+import com.typestrike.ui.splash.SplashScreen
+import com.typestrike.ui.stats.StatsScreen
+import com.typestrike.ui.achievements.AchievementsScreen
 
 
 @Composable
 fun NavGraph(navController: NavHostController = rememberNavController()) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route
+        startDestination = Screen.Splash.route
     ) {
+        // Splash Screen (start destination)
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onSplashComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // Home / Dashboard
         composable(Screen.Home.route) {
             HomeScreen(
@@ -171,10 +185,22 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // Stats (placeholder)
-        composable(Screen.Stats.route) { /* TODO */ }
+        // Stats
+        composable(Screen.Stats.route) {
+            StatsScreen(
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
 
-        // Achievements (placeholder)
-        composable(Screen.Achievements.route) { /* TODO */ }
+        // Achievements
+        composable(Screen.Achievements.route) {
+            AchievementsScreen(
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }

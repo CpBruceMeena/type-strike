@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
         fun createRoute(levelId: Int, wpm: Int, accuracy: Int) =
             "level_failed/$levelId/$wpm/$accuracy"
     }
+    data object Splash : Screen("splash")
     data object Settings : Screen("settings")
     data object Stats : Screen("stats")
     data object Achievements : Screen("achievements")
