@@ -1,0 +1,46 @@
+# ── Go Backend ──────────────────────────────────────────
+backend/tmp/
+backend/server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.test.exe
+
+# ── Android App (Kotlin/Jetpack Compose) ──────────────
+type-strike-android/.gradle/
+type-strike-android/build/
+type-strike-android/app/build/
+type-strike-android/local.properties
+*.iml
+.idea/
+.DS_Store
+*.apk
+*.aab
+*.ap_
+*.dex
+bin/
+gen/
+out/
+
+# ── General ────────────────────────────────────────────
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
+backend/data/
+node_modules/
+.code-review-graph/
+.code_review_graph/
+code-review-graph-cache/
+crg-cache/
+.cache/code-review-graph/
+.cache/crg/
+*.crg

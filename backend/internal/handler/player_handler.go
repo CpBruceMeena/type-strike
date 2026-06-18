@@ -1,0 +1,155 @@
+package handler
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"strconv"
+
+	"github.com/cpbrucemeena/type-strike-backend/internal/models"
+	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
+	"github.com/go-chi/chi/v5"
+)
+
+// PlayerHandler handles HTTP requests for player operations.
+type PlayerHandler struct {
+	repo *repository.Repositories
+}
+
+// NewPlayerHandler creates a new PlayerHandler.
+func NewPlayerHandler(repo *repository.Repositories) *PlayerHandler {
+	return &PlayerHandler{repo: repo}
+}
+
+// Create handles POST /api/v1/players
+func (h *PlayerHandler) Create(w http.ResponseWriter, r *http.Request) {
+	var req models.CreatePlayerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	player, err := h.repo.Player.Create(r.Context(), req)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create player")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, player)
+}
+
+// GetByID handles GET /api/v1/players/{id}
+func (h *PlayerHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_ID", "Player ID must be a number")
+		return
+	}
+
+	player, err := h.repo.Player.GetByID(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch player")
+		return
+	}
+	if player == nil {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "Player not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, player)
+}
+
+// Update handles PATCH /api/v1/players/{id}
+func (h *PlayerHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_ID", "Player ID must be a number")
+		return
+	}
+
+	var req models.UpdatePlayerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	player, err := h.repo.Player.Update(r.Context(), id, req)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "UPDATE_FAILED", "Failed to update player")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, player)
+}
+
+// AddXP handles POST /api/v1/players/{id}/xp
+func (h *PlayerHandler) AddXP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_ID", "Player ID must be a number")
+		return
+	}
+
+	var req struct {
+		XP int `json:"xp"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	player, leveledUp, err := h.repo.Player.AddXP(r.Context(), id, req.XP)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "XP_FAILED", "Failed to add XP")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"player":     player,
+		"leveled_up": leveledUp,
+	})
+}
+
+// GetSummary handles GET /api/v1/players/{id}/summary
+// Returns combined data for the home/dashboard screen.
+func (h *PlayerHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_ID", "Player ID must be a number")
+		return
+	}
+
+	player, err := h.repo.Player.GetByID(r.Context(), id)
+	if err != nil || player == nil {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "Player not found")
+		return
+	}
+
+	activity, err := h.repo.Activity.GetRecent(r.Context(), id, 3)
+	if err != nil {
+		log.Printf("failed to fetch recent activity for player %d: %v", id, err)
+	}
+
+	settings, err := h.repo.Settings.GetAll(r.Context(), id)
+	if err != nil {
+		log.Printf("failed to fetch settings for player %d: %v", id, err)
+	}
+
+	clearedCount, err := h.repo.LevelProgress.GetCompletedCount(r.Context(), id)
+	if err != nil {
+		log.Printf("failed to fetch completed count for player %d: %v", id, err)
+	}
+
+	nextLevelXP := models.XPForNextLevel(player.Level)
+
+	summary := models.PlayerSummary{
+		Player:         *player,
+		LevelsTotal:    100,
+		LevelsCleared:  clearedCount,
+		RecentActivity: activity,
+		NextLevelXP:    nextLevelXP,
+		Settings:       settings,
+	}
+
+	writeJSON(w, http.StatusOK, summary)
+}

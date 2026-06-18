@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>type-strike — Wireframe Mockup</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+
+  /* ===== PHONE FRAME ===== */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #0d0d14;
+    border-radius: 48px;
+    border: 2px solid #2a2a3a;
+    box-shadow: 0 0 80px rgba(180, 40, 40, 0.15), 0 0 160px rgba(100, 0, 200, 0.08), inset 0 0 40px rgba(0,0,0,0.8);
+    position: relative;
+    overflow: hidden;
+  }
+  .phone-notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 160px; height: 34px; background: #0d0d14;
+    border-radius: 0 0 20px 20px; z-index: 100;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    opacity: 0; pointer-events: none;
+    padding-top: 34px;
+  }
+  .screen.active { opacity: 1; pointer-events: auto; }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 70px; background: linear-gradient(180deg, rgba(13,13,20,0), rgba(13,13,20,1));
+    display: flex; justify-content: center; align-items: flex-end; gap: 40px;
+    padding-bottom: 12px; z-index: 50;
+  }
+  .tab-btn {
+    color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    cursor: pointer; transition: all 0.3s; border: none; background: none;
+    font-family: inherit; padding: 4px 12px; border-radius: 6px;
+  }
+  .tab-btn.active { color: #ff5020; text-shadow: 0 0 20px rgba(255,80,32,0.4); }
+
+  /* ===== SCREEN 1: MAP ===== */
+  .map-screen {
+    background: radial-gradient(ellipse at 50% 0%, #141420 0%, #0a0a10 100%);
+    overflow-y: auto; overflow-x: hidden;
+  }
+  .map-screen::-webkit-scrollbar { width: 2px; }
+  .map-screen::-webkit-scrollbar-thumb { background: #ff502033; border-radius: 4px; }
+
+  .map-header {
+    padding: 20px 24px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .map-player-badge {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .map-level-badge {
+    background: linear-gradient(135deg, #ff5020, #cc3300);
+    padding: 4px 12px; border-radius: 6px;
+    font-size: 12px; font-weight: 700; color: #fff;
+    box-shadow: 0 0 20px rgba(255,80,32,0.3);
+  }
+  .map-player-name { color: #aaa; font-size: 13px; font-weight: 600; }
+  .map-stars { color: #ffcc00; font-size: 13px; text-shadow: 0 0 12px rgba(255,204,0,0.3); }
+  .map-settings { color: #555; font-size: 18px; cursor: pointer; }
+
+  /* Path */
+  .map-path-container {
+    position: relative; padding: 10px 0 40px; flex: 1; min-height: 700px;
+  }
+  .map-path-line {
+    position: absolute; left: 70px; top: 10px; bottom: 40px;
+    width: 4px;
+    background: linear-gradient(180deg,
+      #ff502066 0%, #ff5020aa 20%, #ff8040aa 40%, #cc44ffaa 60%, #ff5020aa 80%, #ff502033 100%);
+    border-radius: 4px;
+    box-shadow: 0 0 12px rgba(255,80,32,0.2);
+  }
+
+  /* Level nodes */
+  .level-node {
+    display: flex; align-items: center; gap: 16px;
+    padding: 8px 16px 8px 44px;
+    position: relative; cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 6px;
+  }
+  .level-node:hover { transform: scale(1.02); }
+  .level-node-dot {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800;
+    position: relative; flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  /* Unlocked */
+  .level-node.unlocked .level-node-dot {
+    background: linear-gradient(135deg, #ff5020, #cc3300);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(255,80,32,0.4), inset 0 0 20px rgba(255,150,80,0.2);
+    border: 1px solid rgba(255,150,80,0.3);
+  }
+  /* Completed */
+  .level-node.completed .level-node-dot {
+    background: linear-gradient(135deg, #ff6633, #aa22ff);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(170,34,255,0.4), inset 0 0 20px rgba(255,150,80,0.2);
+    border: 1px solid rgba(255,200,100,0.4);
+  }
+  .level-node.completed .level-node-dot::after {
+    content: "★"; position: absolute; top: -8px; right: -8px;
+    font-size: 12px; color: #ffcc00;
+    text-shadow: 0 0 12px rgba(255,204,0,0.6);
+  }
+  /* Locked */
+  .level-node.locked .level-node-dot {
+    background: linear-gradient(135deg, #2a2a3a, #1a1a28);
+    color: #555;
+    border: 1px solid #3a3a4a;
+    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+  }
+  .level-node.locked .level-node-dot::before {
+    content: ""; position: absolute; inset: 0; border-radius: 8px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.02) 4px, rgba(255,255,255,0.02) 8px);
+  }
+  .level-node-info { flex: 1; }
+  .level-node-name { color: #ccc; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .level-node.locked .level-node-name { color: #444; }
+  .level-node-stars { color: #ffcc00; font-size: 12px; margin-top: 2px; }
+  .level-node.locked .level-node-stars { color: #333; }
+
+  /* Active node highlight */
+  .level-node.current .level-node-dot {
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 24px rgba(255,80,32,0.4); }
+    50% { box-shadow: 0 0 40px rgba(255,80,32,0.7), 0 0 60px rgba(255,80,32,0.2); }
+  }
+
+  /* Fracture zone */
+  .fracture-zone {
+    height: 40px; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    margin: 4px 0;
+  }
+  .fracture-zone::before, .fracture-zone::after {
+    content: ""; position: absolute; left: 44px;
+    height: 2px; width: 40px;
+    background: linear-gradient(90deg, transparent, #ff334422, transparent);
+  }
+  .fracture-zone::before { top: 8px; transform: rotate(-15deg); }
+  .fracture-zone::after { bottom: 8px; transform: rotate(15deg); }
+
+  /* ===== SCREEN 2: GAMEPLAY ===== */
+  .game-screen {
+    background: radial-gradient(ellipse at 50% 30%, #141420 0%, #0a0a10 100%);
+    padding: 0;
+  }
+
+  .game-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #1a1a28;
+  }
+  .game-back { color: #666; font-size: 20px; cursor: pointer; border: none; background: none; font-family: inherit; }
+  .game-level-tag {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+    color: #ff5020; font-weight: 700;
+  }
+  .game-word-count { color: #888; font-size: 12px; }
+  .game-target { color: #555; font-size: 10px; }
+
+  /* Word Display Panel */
+  .word-panel {
+    margin: 24px 20px 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 32px 20px;
+    position: relative;
+    min-height: 120px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 60px rgba(180,40,40,0.05), inset 0 0 40px rgba(0,0,0,0.3);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+  }
+  .word-panel::before {
+    content: ""; position: absolute; inset: 0; border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,120,60,0.2), transparent 60%, rgba(170,34,255,0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .word-glow-void {
+    position: absolute; top: 50%; left: 50%;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(255,80,32,0.08), transparent 70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .word-display {
+    font-size: 42px; font-weight: 900; letter-spacing: 4px;
+    color: rgba(255,255,255,0.15);
+    position: relative; z-index: 2;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .word-display .typed { color: #ff5020; text-shadow: 0 0 20px rgba(255,80,32,0.4); }
+  .word-display .current { color: #5599ff; text-shadow: 0 0 16px rgba(85,153,255,0.3); }
+  .word-display .remaining { color: rgba(255,255,255,0.15); }
+
+  /* Combo Gauge */
+  .combo-gauge-container {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 200px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 5;
+  }
+  .combo-gauge-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 0%;
+    background: linear-gradient(0deg, #ff4400, #ff6600, #ffaa00, #ff44ff, #ffffff);
+    border-radius: 0 0 8px 8px;
+    transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 20px rgba(255,68,0,0.4);
+  }
+  .combo-gauge-fill.plasma {
+    animation: plasma-surge 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes plasma-surge {
+    0% { filter: brightness(1); }
+    100% { filter: brightness(1.4); }
+  }
+  .combo-streak-text {
+    position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; font-weight: 900; color: #ff5020;
+    text-shadow: 0 0 20px rgba(255,80,32,0.6);
+    opacity: 0; transition: all 0.3s; z-index: 6;
+    text-align: right; line-height: 1.2;
+  }
+  .combo-streak-text.show { opacity: 1; }
+  .combo-streak-text .streak-num { font-size: 28px; display: block; }
+  .combo-streak-text.critical { color: #ff44ff; text-shadow: 0 0 30px rgba(255,68,255,0.6); }
+  .combo-streak-text.max { color: #fff; text-shadow: 0 0 40px rgba(255,255,255,0.6); font-size: 16px; }
+
+  /* Floating stats */
+  .game-stats-bar {
+    display: flex; justify-content: space-between;
+    padding: 0 24px; margin-top: -8px;
+  }
+  .game-stat { color: #666; font-size: 11px; }
+  .game-stat strong { color: #aaa; font-size: 16px; display: block; }
+
+  /* Keyboard zone */
+  .keyboard-zone {
+    padding: 8px 12px 100px;
+    margin-top: 12px;
+  }
+  .kb-row {
+    display: flex; justify-content: center; gap: 5px;
+    margin-bottom: 5px;
+  }
+  .kb-key {
+    width: 30px; height: 40px;
+    background: linear-gradient(180deg, #1e1e2e 0%, #161622 100%);
+    border: 1px solid #2a2a3e;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #888; font-weight: 600;
+    transition: all 0.1s;
+    box-shadow: 0 3px 0 #0a0a12, inset 0 1px 0 rgba(255,255,255,0.04);
+    cursor: pointer; user-select: none;
+    position: relative;
+  }
+  .kb-key::after {
+    content: ""; position: absolute; bottom: 0; left: 1px; right: 1px;
+    height: 3px;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.03));
+    border-radius: 0 0 4px 4px;
+  }
+  .kb-key.pressed {
+    background: linear-gradient(180deg, #ff5020 0%, #cc3300 100%);
+    border-color: #ff5020;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255,80,32,0.3);
+    transform: translateY(2px);
+  }
+  .kb-key.space {
+    width: 140px;
+  }
+
+  /* ===== SCREEN 3: VICTORY ===== */
+  .victory-overlay {
+    position: absolute; inset: 0; z-index: 60;
+    background: rgba(5,5,10,0.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: all 0.5s;
+    padding: 40px;
+  }
+  .victory-overlay.show { opacity: 1; pointer-events: auto; }
+
+  /* Metal brackets */
+  .victory-frame {
+    position: absolute; inset: 20px; pointer-events: none;
+  }
+  .victory-frame .bracket {
+    position: absolute; width: 40px; height: 40px;
+    border-color: #666; border-style: solid;
+  }
+  .victory-frame .bracket.tl { top: 0; left: 0; border-width: 3px 0 0 3px; }
+  .victory-frame .bracket.tr { top: 0; right: 0; border-width: 3px 3px 0 0; }
+  .victory-frame .bracket.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+  .victory-frame .bracket.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+
+  .victory-header {
+    position: relative; margin-bottom: 20px;
+  }
+  .victory-badge {
+    font-size: 28px; font-weight: 900; letter-spacing: 4px;
+    background: linear-gradient(135deg, #ff5020, #ffcc00, #ff44ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    filter: drop-shadow(0 0 30px rgba(255,80,32,0.4));
+    position: relative;
+  }
+  .victory-smoke {
+    position: absolute; top: 50%; left: 0; right: 0;
+    height: 4px;
+    background: radial-gradient(ellipse, rgba(255,80,32,0.1), transparent);
+    filter: blur(8px);
+  }
+
+  /* Stars / Trophies */
+  .victory-trophies {
+    display: flex; gap: 12px; margin: 10px 0 24px;
+  }
+  .trophy-shard {
+    width: 48px; height: 48px;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    background: linear-gradient(135deg, #ffcc00, #ff8800);
+    box-shadow: 0 0 30px rgba(255,204,0,0.4);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0; transform: translateY(-30px) scale(0.5);
+  }
+  .victory-overlay.show .trophy-shard:nth-child(1) { transition-delay: 0.6s; opacity: 1; transform: translateY(0) scale(1); }
+  .victory-overlay.show .trophy-shard:nth-child(2) { transition-delay: 0.8s; opacity: 1; transform: translateY(0) scale(1); }
+  .victory-overlay.show .trophy-shard:nth-child(3) { transition-delay: 1.0s; opacity: 1; transform: translateY(0) scale(1); }
+
+  /* Metrics */
+  .victory-metrics {
+    display: flex; gap: 32px; margin-bottom: 28px;
+  }
+  .victory-metric {
+    text-align: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 16px 24px;
+    backdrop-filter: blur(10px);
+  }
+  .victory-metric .value {
+    font-size: 48px; font-weight: 900;
+    background: linear-gradient(135deg, #ff5020, #ffcc00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+  .victory-metric .label {
+    font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  /* XP Bar */
+  .victory-xp-container {
+    width: 280px; margin-bottom: 28px;
+  }
+  .victory-xp-labels {
+    display: flex; justify-content: space-between;
+    color: #555; font-size: 11px; margin-bottom: 6px;
+  }
+  .victory-xp-bar {
+    height: 8px; border-radius: 4px;
+    background: #1a1a28; overflow: hidden;
+  }
+  .victory-xp-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #ff4400, #ffcc00, #ff44ff);
+    border-radius: 4px;
+    transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 20px rgba(255,68,0,0.3);
+  }
+  .victory-overlay.show .victory-xp-fill { width: 72%; }
+
+  /* Buttons */
+  .victory-buttons {
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  }
+  .victory-btn {
+    padding: 12px 28px;
+    border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .victory-btn:hover { transform: translateY(-2px); }
+  .victory-btn:active { transform: translateY(0); }
+  .victory-btn.primary {
+    background: linear-gradient(135deg, #ff5020, #cc3300);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(255,80,32,0.3);
+  }
+  .victory-btn.primary:hover { box-shadow: 0 0 40px rgba(255,80,32,0.5); }
+  .victory-btn.secondary {
+    background: rgba(255,255,255,0.06);
+    color: #aaa; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .victory-btn.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .victory-btn.tertiary {
+    background: none; color: #555; padding: 12px 16px;
+  }
+  .victory-btn.tertiary:hover { color: #888; }
+
+  /* ===== KINETIC TEXT ===== */
+  .kinetic-text {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-weight: 900; letter-spacing: 2px;
+    pointer-events: none; z-index: 55;
+    opacity: 0; transition: all 0.15s;
+    text-align: center;
+    width: 300px;
+  }
+  .kinetic-text.show {
+    animation: kinetic-pop 2s ease-out forwards;
+  }
+  @keyframes kinetic-pop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    25% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -60%) scale(0.8); }
+  }
+
+  /* ===== SHATTER PARTICLE ===== */
+  .shatter-container {
+    position: absolute; top: 50%; left: 50%;
+    pointer-events: none; z-index: 10;
+  }
+  .shatter-particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 1px;
+    animation: shatter-fly 1s ease-out forwards;
+  }
+  @keyframes shatter-fly {
+    0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(360deg) scale(0); }
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes float-up {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes glass-shine {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="phone-notch"></div>
+
+  <!-- ===== SCREEN 1: MAP ===== -->
+  <div class="screen map-screen active" id="screen-map">
+    <div class="map-header">
+      <div class="map-player-badge">
+        <div class="map-level-badge">LV.7</div>
+        <span class="map-player-name">MAGMA FINGERS</span>
+      </div>
+      <div class="map-stars">★ 142 / 300</div>
+      <div class="map-settings">⚙</div>
+    </div>
+
+    <div class="map-path-container">
+      <div class="map-path-line"></div>
+
+      <!-- Level nodes -->
+      <div class="level-node completed" onclick="goToLevel(2)">
+        <div class="level-node-dot">1</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Ember</div>
+          <div class="level-node-stars">★★★</div>
+        </div>
+      </div>
+      <div class="level-node completed" onclick="goToLevel(3)">
+        <div class="level-node-dot">2</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Kindle</div>
+          <div class="level-node-stars">★★★</div>
+        </div>
+      </div>
+      <div class="level-node completed" onclick="goToLevel(4)">
+        <div class="level-node-dot">3</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Spark</div>
+          <div class="level-node-stars">★★</div>
+        </div>
+      </div>
+      <div class="level-node completed" onclick="goToLevel(5)">
+        <div class="level-node-dot">4</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Flame</div>
+          <div class="level-node-stars">★★★</div>
+        </div>
+      </div>
+      <div class="level-node completed" onclick="goToLevel(6)">
+        <div class="level-node-dot">5</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Blaze</div>
+          <div class="level-node-stars">★★</div>
+        </div>
+      </div>
+      <div class="level-node completed" onclick="goToLevel(7)">
+        <div class="level-node-dot">6</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Inferno</div>
+          <div class="level-node-stars">★</div>
+        </div>
+      </div>
+
+      <div class="fracture-zone"></div>
+
+      <div class="level-node current unlocked" onclick="goToLevel(8)">
+        <div class="level-node-dot">7</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Magma's Edge</div>
+          <div class="level-node-stars">—</div>
+        </div>
+      </div>
+
+      <div class="level-node locked" onclick="goToLevel(8)">
+        <div class="level-node-dot">8</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Lava Tunnel</div>
+          <div class="level-node-stars">—</div>
+        </div>
+      </div>
+      <div class="level-node locked" onclick="goToLevel(9)">
+        <div class="level-node-dot">9</div>
+        <div class="level-node-info">
+          <div class="level-node-name">Core Access</div>
+          <div class="level-node-stars">—</div>
+        </div>
+      </div>
+      <div class="level-node locked" onclick="goToLevel(10)">
+        <div class="level-node-dot">10</div>
+        <div class="level-node-info">
+          <div class="level-node-name">The Crucible</div>
+          <div class="level-node-stars">—</div>
+        </div>
+      </div>
+      <div class="level-node locked">
+        <div class="level-node-dot">11</div>
+        <div class="level-node-info">
+          <div class="level-node-name">???</div>
+          <div class="level-node-stars">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn" data-screen="1">MAP</button>
+      <button class="tab-btn" data-screen="2" onclick="switchToScreen(2)">PLAY</button>
+      <button class="tab-btn" data-screen="3">STATS</button>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 2: GAMEPLAY ===== -->
+  <div class="screen game-screen" id="screen-game">
+    <div class="game-header">
+      <button class="game-back" onclick="switchToScreen(1)">←</button>
+      <span class="game-level-tag">Level 7 · Magma's Edge</span>
+      <span class="game-word-count">3 <span style="color:#555;">/</span> 12</span>
+    </div>
+
+    <div class="game-stats-bar">
+      <div class="game-stat">WPM <strong id="live-wpm">0</strong></div>
+      <div class="game-stat">ACC <strong id="live-acc">100%</strong></div>
+      <div class="game-stat">TARGET <strong style="color:#ff5020;">40 WPM</strong></div>
+    </div>
+
+    <!-- Word Panel -->
+    <div class="word-panel" id="wordPanel">
+      <div class="word-glow-void"></div>
+      <div class="word-display" id="wordDisplay">
+        <span class="remaining">STRIKE</span>
+      </div>
+      <div class="shatter-container" id="shatterContainer"></div>
+
+      <!-- Combo Gauge -->
+      <div class="combo-gauge-container">
+        <div class="combo-gauge-fill" id="comboGauge"></div>
+      </div>
+      <div class="combo-streak-text" id="comboText">
+        <span class="streak-num" id="streakNum">0</span>
+        <span id="streakLabel">IGNITING!</span>
+      </div>
+    </div>
+
+    <!-- Keyboard -->
+    <div class="keyboard-zone" id="keyboardZone">
+      <div class="kb-row">
+        <div class="kb-key" data-key="q">Q</div>
+        <div class="kb-key" data-key="w">W</div>
+        <div class="kb-key" data-key="e">E</div>
+        <div class="kb-key" data-key="r">R</div>
+        <div class="kb-key" data-key="t">T</div>
+        <div class="kb-key" data-key="y">Y</div>
+        <div class="kb-key" data-key="u">U</div>
+        <div class="kb-key" data-key="i">I</div>
+        <div class="kb-key" data-key="o">O</div>
+        <div class="kb-key" data-key="p">P</div>
+      </div>
+      <div class="kb-row">
+        <div class="kb-key" data-key="a">A</div>
+        <div class="kb-key" data-key="s">S</div>
+        <div class="kb-key" data-key="d">D</div>
+        <div class="kb-key" data-key="f">F</div>
+        <div class="kb-key" data-key="g">G</div>
+        <div class="kb-key" data-key="h">H</div>
+        <div class="kb-key" data-key="j">J</div>
+        <div class="kb-key" data-key="k">K</div>
+        <div class="kb-key" data-key="l">L</div>
+      </div>
+      <div class="kb-row">
+        <div class="kb-key" style="width:46px;" data-key="shift">⇧</div>
+        <div class="kb-key" data-key="z">Z</div>
+        <div class="kb-key" data-key="x">X</div>
+        <div class="kb-key" data-key="c">C</div>
+        <div class="kb-key" data-key="v">V</div>
+        <div class="kb-key" data-key="b">B</div>
+        <div class="kb-key" data-key="n">N</div>
+        <div class="kb-key" data-key="m">M</div>
+        <div class="kb-key" style="width:46px;" data-key="backspace">⌫</div>
+      </div>
+      <div class="kb-row">
+        <div class="kb-key space" data-key=" "></div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn" data-screen="1" onclick="switchToScreen(1)">MAP</button>
+      <button class="tab-btn" data-screen="2" onclick="switchToScreen(2)">PLAY</button>
+      <button class="tab-btn" data-screen="3">STATS</button>
+    </div>
+
+    <!-- Kinetic Text -->
+    <div class="kinetic-text" id="kineticText"></div>
+
+    <!-- Victory Overlay -->
+    <div class="victory-overlay" id="victoryOverlay">
+      <div class="victory-frame">
+        <div class="bracket tl"></div>
+        <div class="bracket tr"></div>
+        <div class="bracket bl"></div>
+        <div class="bracket br"></div>
+      </div>
+      <div class="victory-header">
+        <div class="victory-badge">LEVEL BURNT</div>
+        <div class="victory-smoke"></div>
+      </div>
+      <div class="victory-trophies">
+        <div class="trophy-shard"></div>
+        <div class="trophy-shard"></div>
+        <div class="trophy-shard"></div>
+      </div>
+      <div class="victory-metrics">
+        <div class="victory-metric">
+          <div class="value" id="resultWpm">87</div>
+          <div class="label">WPM</div>
+        </div>
+        <div class="victory-metric">
+          <div class="value" id="resultAcc">96%</div>
+          <div class="label">ACCURACY</div>
+        </div>
+      </div>
+      <div class="victory-xp-container">
+        <div class="victory-xp-labels">
+          <span>120 XP</span>
+          <span style="color:#ff5020;">NEXT LEVEL</span>
+          <span>320 XP</span>
+        </div>
+        <div class="victory-xp-bar">
+          <div class="victory-xp-fill" id="xpFill"></div>
+        </div>
+      </div>
+      <div class="victory-buttons">
+        <button class="victory-btn primary" onclick="resetGame()">PLAY AGAIN</button>
+        <button class="victory-btn secondary" onclick="closeVictory()">NEXT LEVEL</button>
+        <button class="victory-btn tertiary" onclick="closeVictory(); switchToScreen(1)">BACK TO MAP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== Word Bank =====
+  const wordBank = [
+    "STRIKE", "FLAME", "MAGMA", "EMBER", "BLAZE", "FURY", "SCORCH", "FORGE",
+    "CRUSH", "SHATTER", "PLASMA", "INFERNO", "IGNITE", "BURST", "THRUST",
+    "BLAZE", "CRYSTAL", "OBSIDIAN", "VOLCANO", "THUNDER", "RAPID", "SPEED",
+    "PRECISE", "ACCURATE", "POWER", "RAGING", "BURNING", "GLASS", "SHARD"
+  ];
+
+  let currentWordIndex = 0;
+  let currentWord = "";
+  let typedSoFar = "";
+  let streak = 0;
+  let totalCorrect = 0;
+  let totalMistakes = 0;
+  let totalChars = 0;
+  let levelWords = [];
+  let isPlaying = false;
+  let wpmInterval = null;
+  let startTime = null;
+  let wordCount = 0;
+  let completedWords = 0;
+
+  // ===== Screen switching =====
+  function switchToScreen(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    if (n === 1) document.getElementById('screen-map').classList.add('active');
+    if (n === 2) {
+      document.getElementById('screen-game').classList.add('active');
+      startLevel();
+    }
+    // Highlight the correct tab button in each tab bar by data-screen attribute
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.screen) === n);
+    });
+  }
+
+  // ===== Map level click =====
+  function goToLevel(level) {
+    // Find first unlocked level
+    const unlocked = document.querySelector('.level-node.unlocked');
+    if (unlocked) {
+      switchToScreen(2);
+    }
+  }
+
+  // ===== Gameplay =====
+  function startLevel() {
+    levelWords = [...wordBank].sort(() => Math.random() - 0.5).slice(0, 12);
+    currentWordIndex = 0;
+    streak = 0;
+    totalCorrect = 0;
+    totalMistakes = 0;
+    totalChars = 0;
+    completedWords = 0;
+    isPlaying = true;
+    startTime = Date.now();
+    document.getElementById('victoryOverlay').classList.remove('show');
+    document.getElementById('kineticText').classList.remove('show');
+    document.querySelector('.game-word-count').textContent = `0 / ${levelWords.length}`;
+    updateComboGauge();
+    updateStats();
+    loadNextWord();
+
+    if (wpmInterval) clearInterval(wpmInterval);
+    wpmInterval = setInterval(updateWPM, 1000);
+  }
+
+  function loadNextWord() {
+    if (currentWordIndex >= levelWords.length) {
+      // Level complete
+      isPlaying = false;
+      setTimeout(showVictory, 300);
+      return;
+    }
+    currentWord = levelWords[currentWordIndex];
+    typedSoFar = "";
+    currentWordIndex++;
+    renderWord();
+    document.querySelector('.game-word-count').textContent =
+      `${completedWords} / ${levelWords.length}`;
+  }
+
+  function renderWord() {
+    const display = document.getElementById('wordDisplay');
+    if (!currentWord) { display.innerHTML = ''; return; }
+
+    let html = '';
+    for (let i = 0; i < currentWord.length; i++) {
+      const letter = currentWord[i];
+      if (i < typedSoFar.length) {
+        html += `<span class="typed">${letter}</span>`;
+      } else if (i === typedSoFar.length) {
+        html += `<span class="current">${letter}</span>`;
+      } else {
+        html += `<span class="remaining">${letter}</span>`;
+      }
+    }
+    display.innerHTML = html;
+  }
+
+  function handleChar(char) {
+    if (!isPlaying || !currentWord || char === ' ') return;
+
+    // Press key animation
+    document.querySelectorAll('.kb-key').forEach(k => {
+      const key = k.dataset.key;
+      if (key === char.toLowerCase() || key === char.toUpperCase()) {
+        k.classList.add('pressed');
+        setTimeout(() => k.classList.remove('pressed'), 100);
+      }
+    });
+
+    const expected = currentWord[typedSoFar.length];
+    if (!expected) return;
+
+    if (char.toLowerCase() === expected.toLowerCase()) {
+      // Correct
+      typedSoFar += expected;
+      totalCorrect++;
+      totalChars++;
+      streak++;
+      triggerShatter();
+
+      if (typedSoFar.length === currentWord.length) {
+        // Word complete
+        completedWords++;
+        showKineticText(streak);
+        setTimeout(loadNextWord, 200);
+      }
+    } else {
+      // Incorrect
+      totalMistakes++;
+      totalChars++;
+      triggerCrack();
+      // Reset typed so far for this word
+      typedSoFar = "";
+    }
+
+    renderWord();
+    updateComboGauge();
+    updateStats();
+  }
+
+  function triggerShatter() {
+    const container = document.getElementById('shatterContainer');
+    const panel = document.getElementById('wordPanel');
+    const rect = panel.getBoundingClientRect();
+    const colors = ['#ff5020', '#ff8020', '#ffcc00', '#ff44ff', '#ff6600'];
+
+    for (let i = 0; i < 12; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'shatter-particle';
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 40 + Math.random() * 80;
+      particle.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+      particle.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+      particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+      particle.style.boxShadow = `0 0 6px ${particle.style.background}`;
+      particle.style.width = `${3 + Math.random() * 4}px`;
+      particle.style.height = particle.style.width;
+      container.appendChild(particle);
+      setTimeout(() => particle.remove(), 1000);
+    }
+  }
+
+  function triggerCrack() {
+    const panel = document.getElementById('wordPanel');
+    panel.style.borderColor = '#ff2200';
+    panel.style.boxShadow = '0 0 40px rgba(255,0,0,0.2), inset 0 0 60px rgba(255,0,0,0.05)';
+    setTimeout(() => {
+      const defaultColor = 'rgba(255,255,255,0.08)';
+      panel.style.borderColor = defaultColor;
+      panel.style.boxShadow = '0 0 60px rgba(180,40,40,0.05), inset 0 0 40px rgba(0,0,0,0.3)';
+    }, 400);
+
+    // Electrical crack lines
+    const container = document.getElementById('shatterContainer');
+    for (let i = 0; i < 6; i++) {
+      const crack = document.createElement('div');
+      crack.className = 'shatter-particle';
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 20 + Math.random() * 40;
+      crack.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+      crack.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+      crack.style.background = '#ff2200';
+      crack.style.boxShadow = '0 0 10px rgba(255,0,0,0.6)';
+      crack.style.width = '2px';
+      crack.style.height = `${4 + Math.random() * 8}px`;
+      container.appendChild(crack);
+      setTimeout(() => crack.remove(), 500);
+    }
+  }
+
+  function updateComboGauge() {
+    const gauge = document.getElementById('comboGauge');
+    const pct = Math.min(streak / 30 * 100, 100);
+    gauge.style.height = `${pct}%`;
+
+    const text = document.getElementById('comboText');
+    const num = document.getElementById('streakNum');
+    const label = document.getElementById('streakLabel');
+
+    num.textContent = streak;
+    text.classList.remove('show', 'critical', 'max');
+
+    if (streak >= 5) {
+      text.classList.add('show');
+      if (streak >= 30) {
+        text.classList.add('max');
+        label.textContent = 'IGNITION SPEED!';
+        gauge.classList.add('plasma');
+      } else if (streak >= 15) {
+        text.classList.add('critical');
+        label.textContent = 'CRITICAL COMBO!';
+        gauge.classList.remove('plasma');
+      } else if (streak >= 10) {
+        label.textContent = 'BURNING!';
+        gauge.classList.remove('plasma');
+      } else {
+        label.textContent = 'IGNITING!';
+        gauge.classList.remove('plasma');
+      }
+    } else {
+      text.classList.remove('show');
+      gauge.classList.remove('plasma');
+    }
+  }
+
+  function showKineticText(streak) {
+    const el = document.getElementById('kineticText');
+    let msg = '';
+    let color = '#ff5020';
+
+    if (streak >= 5) {
+      msg = 'IGNITING!';
+      color = '#ff8020';
+    }
+    if (streak >= 10) {
+      msg = 'BURNING!';
+      color = '#ff6600';
+    }
+    if (streak >= 15) {
+      msg = 'CRITICAL\nCOMBO!';
+      color = '#ff44ff';
+    }
+    if (streak >= 20) {
+      msg = 'MAX FRENZY!';
+      color = '#ffaa00';
+    }
+    if (streak >= 30) {
+      msg = 'IGNITION\nSPEED!';
+      color = '#ffffff';
+    }
+
+    if (msg) {
+      el.textContent = msg;
+      el.style.color = color;
+      el.style.textShadow = `0 0 40px ${color}40, 0 0 80px ${color}20`;
+      el.classList.remove('show');
+      void el.offsetWidth;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+    }
+  }
+
+  function updateStats() {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const wpm = elapsed > 0 ? Math.round((totalCorrect / 5) / (elapsed / 60)) : 0;
+    document.getElementById('live-wpm').textContent = wpm;
+    const acc = totalChars > 0 ? Math.round((totalCorrect / totalChars) * 100) : 100;
+    document.getElementById('live-acc').textContent = `${acc}%`;
+  }
+
+  function updateWPM() {
+    updateStats();
+  }
+
+  function showVictory() {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const finalWpm = Math.round((totalCorrect / 5) / (elapsed / 60));
+    const finalAcc = totalChars > 0 ? Math.round((totalCorrect / totalChars) * 100) : 100;
+
+    document.getElementById('resultWpm').textContent = finalWpm;
+    document.getElementById('resultAcc').textContent = `${finalAcc}%`;
+    document.getElementById('victoryOverlay').classList.add('show');
+    document.getElementById('xpFill').style.width = '0%';
+    setTimeout(() => {
+      document.getElementById('xpFill').style.width = '72%';
+    }, 100);
+
+    if (wpmInterval) clearInterval(wpmInterval);
+  }
+
+  function closeVictory() {
+    document.getElementById('victoryOverlay').classList.remove('show');
+    switchToScreen(1);
+  }
+
+  function resetGame() {
+    startLevel();
+  }
+
+  // ===== Keyboard Input =====
+  document.addEventListener('keydown', (e) => {
+    if (e.key.length === 1 && /[a-zA-Z ]/.test(e.key)) {
+      e.preventDefault();
+      handleChar(e.key.toUpperCase());
+    }
+  });
+
+  // Click on keyboard
+  document.querySelectorAll('.kb-key').forEach(keyEl => {
+    keyEl.addEventListener('click', () => {
+      const key = keyEl.dataset.key;
+      if (key === 'backspace' || key === 'shift') return;
+      handleChar(key.toUpperCase());
+    });
+  });
+
+  // Touch key highlighting
+  document.querySelectorAll('.kb-key').forEach(keyEl => {
+    keyEl.addEventListener('touchstart', (e) => {
+      const key = keyEl.dataset.key;
+      if (key === 'backspace' || key === 'shift') return;
+      handleChar(key.toUpperCase());
+    });
+  });
+
+  // ===== Particle background effect on map =====
+  function createMapParticles() {
+    const map = document.querySelector('.map-screen');
+    for (let i = 0; i < 20; i++) {
+      const p = document.createElement('div');
+      p.style.cssText = `
+        position: absolute; width: 2px; height: 2px;
+        background: rgba(255,80,32,${0.2 + Math.random() * 0.3});
+        left: ${Math.random() * 100}%;
+        top: ${Math.random() * 100}%;
+        pointer-events: none;
+        animation: float-up ${3 + Math.random() * 4}s ease-out infinite;
+        animation-delay: ${Math.random() * 3}s;
+      `;
+      map.appendChild(p);
+    }
+  }
+  createMapParticles();
+</script>
+
+</body>
+</html>

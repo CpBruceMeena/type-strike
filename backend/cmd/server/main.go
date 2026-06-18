@@ -1,0 +1,143 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/cpbrucemeena/type-strike-backend/internal/config"
+	"github.com/cpbrucemeena/type-strike-backend/internal/database"
+	"github.com/cpbrucemeena/type-strike-backend/internal/handler"
+	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
+	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
+)
+
+func main() {
+	cfg := config.Load()
+
+	// Context with cancellation for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Connect to PostgreSQL
+	log.Println("Connecting to PostgreSQL...")
+	pool, err := database.Connect(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer pool.Close()
+	log.Println("Connected to PostgreSQL successfully")
+
+	// Initialize repositories
+	repos := repository.NewRepositories(pool)
+
+	// Initialize handlers
+	playerHandler := handler.NewPlayerHandler(repos)
+	levelHandler := handler.NewLevelHandler(repos, pool)
+	activityHandler := handler.NewActivityHandler(repos)
+	settingsHandler := handler.NewSettingsHandler(repos)
+	analyticsHandler := handler.NewAnalyticsHandler(repos)
+	levelDataHandler := handler.NewLevelDataHandler(repos)
+
+	// Setup router
+	r := chi.NewRouter()
+
+	// Middleware
+	r.Use(chimiddleware.RequestID)
+	r.Use(chimiddleware.RealIP)
+	r.Use(chimiddleware.Logger)
+	r.Use(chimiddleware.Recoverer)
+	r.Use(chimiddleware.Timeout(30 * time.Second))
+
+	// Health check
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok","service":"type-strike-backend"}`))
+	})
+
+	// API v1
+	r.Route("/api/v1", func(r chi.Router) {
+		// Players
+		r.Route("/players", func(r chi.Router) {
+			r.Post("/", playerHandler.Create)
+			r.Get("/{id}", playerHandler.GetByID)
+			r.Patch("/{id}", playerHandler.Update)
+			r.Post("/{id}/xp", playerHandler.AddXP)
+			r.Get("/{id}/summary", playerHandler.GetSummary)
+			r.Get("/{id}/next-level", levelHandler.GetNextLevel)
+
+			// Player activity
+			r.Get("/{playerId}/activity", activityHandler.GetRecent)
+			r.Post("/{playerId}/activity", activityHandler.Record)
+
+			// Player level progress
+			r.Get("/{playerId}/levels", levelHandler.GetAllProgress)
+			r.Get("/{playerId}/levels/{levelId}", levelHandler.GetProgress)
+			r.Post("/{playerId}/levels/{levelId}/complete", levelHandler.UpdateProgress)
+
+			// Player settings
+			r.Get("/{playerId}/settings", settingsHandler.GetAll)
+			r.Put("/{playerId}/settings", settingsHandler.BatchUpdate)
+		})
+
+		// Level catalog (static configuration for all 100 levels)
+		r.Route("/levels", func(r chi.Router) {
+			r.Get("/", levelDataHandler.GetAll)
+			r.Get("/next", levelDataHandler.GetNext)
+			r.Get("/{levelId}", levelDataHandler.GetByID)
+		})
+
+		// Analytics (global, not player-specific)
+		r.Route("/analytics", func(r chi.Router) {
+			r.Post("/events", analyticsHandler.RecordEvent)
+			r.Get("/players/{playerId}/daily-stats", analyticsHandler.GetDailyStats)
+			r.Post("/players/{playerId}/daily-stats", analyticsHandler.UpdateDailyStats)
+		})
+	})
+
+	// Start server
+	server := &http.Server{
+		Addr:         cfg.Addr(),
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Graceful shutdown
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Println("Shutting down server...")
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Fatalf("Server shutdown error: %v", err)
+		}
+		cancel()
+	}()
+
+	log.Printf("type-strike backend server starting on %s", cfg.Addr())
+	fmt.Printf(`
+  ╔═══════════════════════════════════════╗
+  ║      type-strike backend server       ║
+  ║      Listening on %s        ║
+  ╚═══════════════════════════════════════╝
+`, cfg.Addr())
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server error: %v", err)
+	}
+
+	log.Println("Server stopped gracefully")
+}

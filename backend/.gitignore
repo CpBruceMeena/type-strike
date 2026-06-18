@@ -1,0 +1,22 @@
+# Binaries
+/server
+/cmd/server/server
+*.exe
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
