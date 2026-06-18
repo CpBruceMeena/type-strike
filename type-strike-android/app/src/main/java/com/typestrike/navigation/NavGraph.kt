@@ -125,7 +125,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                     }
                 },
                 onNextLevel = { nextId ->
-                    navController.navigate(Screen.Gameplay.createRoute(nextId.coerceAtMost(100))) {
+                    navController.navigate(Screen.Gameplay.createRoute(nextId)) {
                         popUpTo(Screen.Home.route)
                     }
                 },

@@ -73,7 +73,10 @@ fun HomeScreen(
         ) {
             // Top bar
             EntranceFadeSlide(entranceStarted, delayMs = 0) {
-                HomeTopBar(onSettingsClick = onNavigateToSettings)
+                HomeTopBar(
+                    onSettingsClick = onNavigateToSettings,
+                    streakCount = uiState.streakCount
+                )
             }
 
             // Scrollable content — weighted spacers distribute empty space evenly
@@ -158,7 +161,10 @@ fun HomeScreen(
 // ── Top Bar ──────────────────────────────────────────────
 
 @Composable
-private fun HomeTopBar(onSettingsClick: () -> Unit) {
+private fun HomeTopBar(
+    onSettingsClick: () -> Unit,
+    streakCount: Int = 0
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -178,14 +184,37 @@ private fun HomeTopBar(onSettingsClick: () -> Unit) {
                 letterSpacing = 1.sp
             )
         }
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .clickable(onClick = onSettingsClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("⚙", fontSize = 18.sp, color = TextLabel)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Streak display
+            if (streakCount > 0) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MagmaRed.copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text("🔥", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "$streakCount",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MagmaRed,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            // Settings
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onSettingsClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("⚙", fontSize = 18.sp, color = TextLabel)
+            }
         }
     }
 }

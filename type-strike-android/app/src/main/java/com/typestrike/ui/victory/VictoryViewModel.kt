@@ -2,10 +2,14 @@ package com.typestrike.ui.victory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.typestrike.audio.SoundManager
 import com.typestrike.data.model.PlayerSummary
 import com.typestrike.data.repository.PlayerRepository
+import com.typestrike.data.repository.SettingsRepository
 import com.typestrike.ui.util.Progression
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +50,9 @@ data class VictoryUiState(
  */
 @HiltViewModel
 class VictoryViewModel @Inject constructor(
-    private val playerRepository: PlayerRepository
+    private val playerRepository: PlayerRepository,
+    private val settingsRepository: SettingsRepository,
+    private val soundManager: SoundManager
 ) : ViewModel() {
 
     companion object {
@@ -64,12 +70,21 @@ class VictoryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = VictoryUiState(isLoading = true, finalWpm = wpm, finalAccuracy = accuracy, stars = stars)
 
-            val summaryResult = playerRepository.getSummary(PLAYER_ID)
+            // Load player summary and settings in parallel
+            val summaryDeferred = async { playerRepository.getSummary(PLAYER_ID) }
+            val settingsDeferred = async { settingsRepository.getAll(PLAYER_ID) }
+            val summaryResult = summaryDeferred.await()
+            val settingsResult = settingsDeferred.await()
+
+            // Get sound volume from settings (fire-and-forget read — failure is non-critical)
+            val soundVolume = (settingsResult.getOrNull()?.get("sound_volume")?.toFloatOrNull() ?: 0.8f).coerceIn(0f, 1f)
+            soundManager.playVictory(soundVolume)
+
             summaryResult.fold(
                 onSuccess = { summary ->
+                    val currentLevel = summary.player.level
                     val xpEarned = computeXpEarned(stars, levelId)
                     val newXp = summary.player.xp + xpEarned
-                    val currentLevel = summary.player.level
                     var leveledUp = false
                     var newLevel = currentLevel
                     var adjustedXp = newXp
@@ -105,7 +120,7 @@ class VictoryViewModel @Inject constructor(
                     )
                 },
                 onFailure = { error ->
-                    // Fallback: show result without XP data
+                    // Fallback: show result without XP data - still play victory sound
                     _uiState.value = VictoryUiState(
                         isLoading = false,
                         hasError = true,

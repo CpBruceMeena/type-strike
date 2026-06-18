@@ -25,7 +25,13 @@ class LevelRepository @Inject constructor(
         val apiResult = safeApiCall {
             val response = api.getLevelDetail(levelId, playerId)
             if (response.isSuccessful) {
-                response.body() ?: throw Exception("Empty response")
+                val body = response.body() ?: throw Exception("Empty response")
+                // Treat missing paragraph as API failure so we fall through to LocalLevelData.
+                // An old server might respond without the paragraph field.
+                if (body.paragraph.isNullOrEmpty()) {
+                    throw Exception("Missing paragraph in API response")
+                }
+                body
             } else {
                 throw Exception("API error: ${response.code()} ${response.message()}")
             }

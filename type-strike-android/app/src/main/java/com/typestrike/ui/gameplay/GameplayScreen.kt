@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,11 +42,10 @@ import com.typestrike.ui.theme.*
 import com.typestrike.ui.util.HapticUtil
 import kotlinx.coroutines.delay
 
-val QWERTY_ROWS = listOf(
-    listOf('Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'),
-    listOf('A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'),
-    listOf('Z', 'X', 'C', 'V', 'B', 'N', 'M')
-)
+private val NUMBER_ROW = listOf('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
+private val QWERTY_ROW = listOf('q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p')
+private val ASDF_ROW = listOf('a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'')
+private val ZXCV_ROW = listOf('z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', '-', '=')
 
 private val CORRECT_GREEN = Color(0xFF22DD44)
 private val ERROR_RED = Color(0xFFFF3300)
@@ -169,6 +169,7 @@ fun GameplayScreen(
                     if (uiState.useNativeKeyboard && uiState.gameState == GameState.TYPING) {
                         NativeKeyboardInput(
                             onKeyPress = { viewModel.onKeyPress(it) },
+                            onBackspace = { viewModel.onBackspace() },
                             modifier = Modifier.height(0.dp)
                         )
                     }
@@ -188,7 +189,8 @@ fun GameplayScreen(
                     if (!uiState.useNativeKeyboard) {
                         CustomKeyboard(
                             onKeyPress = { viewModel.onKeyPress(it) },
-                            modifier = Modifier.height(200.dp)
+                            onBackspace = { viewModel.onBackspace() },
+                            modifier = Modifier.height(220.dp)
                         )
                     }
                 }
@@ -448,6 +450,7 @@ private fun ParagraphPanel(
 @Composable
 private fun NativeKeyboardInput(
     onKeyPress: (Char) -> Unit,
+    onBackspace: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -463,9 +466,17 @@ private fun NativeKeyboardInput(
         value = textFieldValue,
         onValueChange = { newValue ->
             val newText = newValue.text
-            if (newText.length > lastProcessedLength) {
-                for (i in lastProcessedLength until newText.length) {
-                    onKeyPress(newText[i])
+            when {
+                newText.length > lastProcessedLength -> {
+                    // Characters were added — forward each new char
+                    for (i in lastProcessedLength until newText.length) {
+                        onKeyPress(newText[i])
+                    }
+                }
+                newText.length < lastProcessedLength -> {
+                    // Characters were removed (backspace) — one per deleted char
+                    val removed = lastProcessedLength - newText.length
+                    repeat(removed) { onBackspace() }
                 }
             }
             textFieldValue = TextFieldValue("")
@@ -583,6 +594,7 @@ private fun ComboAndStatsRow(
 @Composable
 private fun CustomKeyboard(
     onKeyPress: (Char) -> Unit,
+    onBackspace: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val keySpacing = 4.dp
@@ -598,34 +610,166 @@ private fun CustomKeyboard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.Center
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        QWERTY_ROWS.forEachIndexed { rowIndex, row ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                if (rowIndex == 1) Spacer(modifier = Modifier.width(12.dp))
-                if (rowIndex == 2) Spacer(modifier = Modifier.width(28.dp))
-
-                row.forEach { char ->
-                    KeyboardKey(
-                        char = char,
-                        isPressed = pressedKey.value == char,
-                        onClick = {
-                            pressedKey.value = char
-                            onKeyPress(char)
-                        }
-                    )
-                    Spacer(modifier = Modifier.width(keySpacing))
-                }
-
-                if (rowIndex == 1) Spacer(modifier = Modifier.width(12.dp))
-                if (rowIndex == 2) Spacer(modifier = Modifier.width(28.dp))
+        // Row 0 — Numbers
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            NUMBER_ROW.forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = 26.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+                Spacer(modifier = Modifier.width(3.dp))
             }
+        }
+
+        // Row 1 — QWERTY
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            QWERTY_ROW.forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = 28.dp,
+                    keyHeight = 34.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
+        }
+
+        // Row 2 — ASDF + ; '
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Spacer(modifier = Modifier.width(16.dp))
+            ASDF_ROW.forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = 28.dp,
+                    keyHeight = 34.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+        }
+
+        // Row 3 — ZXCV + , . / - =
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Spacer(modifier = Modifier.width(24.dp))
+            ZXCV_ROW.forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = 26.dp,
+                    keyHeight = 34.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
+            Spacer(modifier = Modifier.width(24.dp))
+        }
+
+        // Row 4 — Symbols ! @ # $ % ^ & * ( ) _ + |
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            val symbolRow = listOf('!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '|')
+            symbolRow.forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = 22.dp,
+                    keyHeight = 32.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
+        }
+
+        // Bottom row: backspace + punctuation around SPACE
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(4.dp))
+
+            // Backspace key (wider for prominence)
+            BackspaceKey(
+                onClick = onBackspace,
+                modifier = Modifier.width(36.dp).height(36.dp)
+            )
+            Spacer(modifier = Modifier.width(3.dp))
+
+            listOf('"', ':').forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = 24.dp,
+                    keyHeight = 36.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
+
+            SpaceBar(
+                isPressed = pressedKey.value == ' ',
+                onClick = {
+                    pressedKey.value = ' '
+                    onKeyPress(' ')
+                },
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(3.dp))
+
+            listOf('?', '>', '[', ']').forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = 24.dp,
+                    keyHeight = 36.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
+            Spacer(modifier = Modifier.width(4.dp))
         }
     }
 }
@@ -634,7 +778,9 @@ private fun CustomKeyboard(
 private fun KeyboardKey(
     char: Char,
     isPressed: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    keyWidth: Dp = 30.dp,
+    keyHeight: Dp = 36.dp
 ) {
     val view = LocalView.current
     val scaleAnim by animateFloatAsState(
@@ -645,8 +791,8 @@ private fun KeyboardKey(
 
     Box(
         modifier = Modifier
-            .width(30.dp)
-            .height(40.dp)
+            .width(keyWidth)
+            .height(keyHeight)
             .scale(scaleAnim)
             .clip(RoundedCornerShape(6.dp))
             .background(
@@ -673,6 +819,107 @@ private fun KeyboardKey(
             style = MaterialTheme.typography.labelMedium,
             color = if (isPressed) TextWhite else TextBody,
             fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun BackspaceKey(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val view = LocalView.current
+    var isPressed by remember { mutableStateOf(false) }
+    val scaleAnim by animateFloatAsState(
+        targetValue = if (isPressed) 0.92f else 1f,
+        animationSpec = tween(80),
+        label = "bsScale"
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scaleAnim)
+            .clip(RoundedCornerShape(6.dp))
+            .background(
+                if (isPressed) MagmaRed else Surface,
+                shape = RoundedCornerShape(6.dp)
+            )
+            .border(
+                1.dp,
+                if (isPressed) MagmaRed else SurfaceBorder,
+                RoundedCornerShape(6.dp)
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {
+                    isPressed = true
+                    HapticUtil.keyPress(view)
+                    onClick()
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "⌫",
+            style = MaterialTheme.typography.titleMedium,
+            color = if (isPressed) TextWhite else TextBody,
+            fontWeight = FontWeight.Bold
+        )
+    }
+
+    // Auto-reset pressed state
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            delay(100)
+            isPressed = false
+        }
+    }
+}
+
+@Composable
+private fun SpaceBar(
+    isPressed: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val view = LocalView.current
+    val scaleAnim by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(80),
+        label = "spaceScale"
+    )
+
+    Box(
+        modifier = modifier
+            .height(38.dp)
+            .scale(scaleAnim)
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isPressed) MagmaRed else Surface,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .border(
+                1.dp,
+                if (isPressed) MagmaRed else SurfaceBorder,
+                RoundedCornerShape(8.dp)
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {
+                    HapticUtil.keyPress(view)
+                    onClick()
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "SPACE",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isPressed) TextWhite else TextMuted,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 2.sp
         )
     }
 }

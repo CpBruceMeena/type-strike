@@ -135,6 +135,12 @@ func (h *LevelHandler) executeLevelComplete(ctx context.Context, playerID, level
 		return nil, err
 	}
 
+	// Update streak after level completion
+	if _, err := h.repo.Player.UpdateStreak(ctx, playerID); err != nil {
+		log.Printf("streak update failed (non-fatal): player=%d err=%v", playerID, err)
+		// non-fatal: streak update failure shouldn't block level completion
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}

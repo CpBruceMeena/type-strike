@@ -45,6 +45,10 @@ crg-cache/
 .cache/crg/
 *.crg
 
+# ── Cabinet (product docs, specs, design reviews) ────
+cabinet/
+type-strike-wireframe.html
+
 # ── Root-level assets / screenshots ───────────────────
 *.png
 !type-strike-android/app/src/main/res/**/*.png

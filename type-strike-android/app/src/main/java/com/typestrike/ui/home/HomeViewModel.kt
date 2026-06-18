@@ -35,6 +35,8 @@ data class HomeUiState(
     val levelsCleared: Int = 0,
     val levelsTotal: Int = 100,
     val nextLevelId: Int = 1,
+    // Streak
+    val streakCount: Int = 0,
     // Tiers for the progression preview
     val tiers: List<TierPreview> = TIER_PREVIEWS,
     // Animation
@@ -55,6 +57,7 @@ private val TIER_PREVIEWS = listOf(
     TierPreview("Igneous", "🌋", 0xFFFFAA44, "Levels 26–50", "Medium length, capital letters, some numbers"),
     TierPreview("Magma Core", "⚡", 0xFFCC44FF, "Levels 51–75", "Complex text, special chars, mixed case"),
     TierPreview("Obsidian", "🖤", 0xFF8866DD, "Levels 76–100", "Code-like syntax, edge case characters"),
+    TierPreview("Beyond", "∞", 0xFFAA66FF, "Levels 101+", "Endless challenge — keep climbing!"),
 )
 
 /**
@@ -101,7 +104,8 @@ class HomeViewModel @Inject constructor(
                         todaysBestWpm = summary.todaysBestWpm,
                         levelsCleared = summary.levelsCleared,
                         levelsTotal = summary.levelsTotal,
-                        nextLevelId = (summary.levelsCleared + 1).coerceIn(1, 100),
+                        nextLevelId = (summary.levelsCleared + 1).coerceAtLeast(1),
+                        streakCount = summary.streakCount,
                         entranceStarted = false
                     )
                 },

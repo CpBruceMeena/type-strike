@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.typestrike.data.model.KeyboardTheme
 import com.typestrike.data.model.KeyboardThemes
+import com.typestrike.audio.SoundManager
 import com.typestrike.data.repository.LevelRepository
 import com.typestrike.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,7 +54,8 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val levelRepository: LevelRepository
+    private val levelRepository: LevelRepository,
+    private val soundManager: SoundManager
 ) : ViewModel() {
 
     companion object {
@@ -124,6 +126,8 @@ class SettingsViewModel @Inject constructor(
     fun updateKeyClickType(value: String) {
         _uiState.value = _uiState.value.copy(keyClickType = value)
         saveSetting("key_click_type", value)
+        // Preview the selected click type sound
+        soundManager.previewKeyClick(value, _uiState.value.soundVolume)
     }
 
     fun updateSoundVolume(value: Float) {

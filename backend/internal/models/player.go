@@ -12,6 +12,8 @@ type Player struct {
 	TotalStars   int       `json:"total_stars"`
 	CreatedAt    time.Time `json:"created_at"`
 	LastPlayedAt time.Time `json:"last_played_at"`
+	StreakCount  int       `json:"streak_count"`
+	LastStreakDate *time.Time `json:"last_streak_date,omitempty"`
 }
 
 // CreatePlayerRequest is the payload for creating a new player.

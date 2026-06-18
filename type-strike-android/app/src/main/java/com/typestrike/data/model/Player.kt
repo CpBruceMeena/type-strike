@@ -13,7 +13,9 @@ data class Player(
     val xp: Int,
     @SerializedName("total_stars") val totalStars: Int,
     @SerializedName("created_at") val createdAt: String,
-    @SerializedName("last_played_at") val lastPlayedAt: String
+    @SerializedName("last_played_at") val lastPlayedAt: String,
+    @SerializedName("streak_count") val streakCount: Int = 0,
+    @SerializedName("last_streak_date") val lastStreakDate: String? = null
 )
 
 /**
@@ -26,7 +28,8 @@ data class PlayerSummary(
     @SerializedName("levels_cleared") val levelsCleared: Int,
     @SerializedName("recent_activity") val recentActivity: List<ActivityEvent>,
     @SerializedName("next_level_xp") val nextLevelXp: Int,
-    val settings: Map<String, String>
+    val settings: Map<String, String>,
+    @SerializedName("streak_count") val streakCount: Int = 0
 )
 
 /**

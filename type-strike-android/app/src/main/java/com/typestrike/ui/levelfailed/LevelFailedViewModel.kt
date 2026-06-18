@@ -2,9 +2,12 @@ package com.typestrike.ui.levelfailed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.typestrike.audio.SoundManager
 import com.typestrike.data.repository.LevelRepository
 import com.typestrike.data.repository.PlayerRepository
+import com.typestrike.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,7 +48,9 @@ data class LevelFailedUiState(
 @HiltViewModel
 class LevelFailedViewModel @Inject constructor(
     private val playerRepository: PlayerRepository,
-    private val levelRepository: LevelRepository
+    private val levelRepository: LevelRepository,
+    private val settingsRepository: SettingsRepository,
+    private val soundManager: SoundManager
 ) : ViewModel() {
 
     companion object {
@@ -64,9 +69,17 @@ class LevelFailedViewModel @Inject constructor(
                 finalAccuracy = accuracy
             )
 
-            // Load player summary and level detail in parallel
-            val summaryResult = playerRepository.getSummary(PLAYER_ID)
-            val levelResult = levelRepository.getLevelDetail(levelId, PLAYER_ID)
+            // Load player summary, level detail, and settings in parallel
+            val summaryDeferred = async { playerRepository.getSummary(PLAYER_ID) }
+            val levelDeferred = async { levelRepository.getLevelDetail(levelId, PLAYER_ID) }
+            val settingsDeferred = async { settingsRepository.getAll(PLAYER_ID) }
+            val summaryResult = summaryDeferred.await()
+            val levelResult = levelDeferred.await()
+            val settingsResult = settingsDeferred.await()
+
+            // Play failure sound (respecting saved volume)
+            val soundVolume = (settingsResult.getOrNull()?.get("sound_volume")?.toFloatOrNull() ?: 0.8f).coerceIn(0f, 1f)
+            soundManager.playFailed(soundVolume)
 
             val summary = summaryResult.getOrNull()
             val level = levelResult.getOrNull()

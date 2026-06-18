@@ -2,6 +2,7 @@ package com.typestrike.ui.gameplay
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.typestrike.audio.SoundManager
 import com.typestrike.data.model.LevelDetail
 import com.typestrike.data.repository.LevelRepository
 import com.typestrike.data.repository.PlayerRepository
@@ -100,7 +101,8 @@ data class GameplayUiState(
 class GameplayViewModel @Inject constructor(
     private val levelRepository: LevelRepository,
     private val playerRepository: PlayerRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val soundManager: SoundManager
 ) : ViewModel() {
 
     companion object {
@@ -118,7 +120,12 @@ class GameplayViewModel @Inject constructor(
     private var mistakeJob: Job? = null
     private var kineticTextJob: Job? = null
     private var timerJob: Job? = null
-    private var mistakeDuringRun = 0  // for star calculation: 3 stars requires 0 mistakes
+    private var mistakeDuringRun = 0
+
+    // Sound settings cached during loadLevel
+    private var _soundVolume: Float = 0.8f
+    private var _musicVolume: Float = 0.5f
+    private var _keyClickType: String = "BLUE"
 
     fun loadLevel(levelId: Int) {
         viewModelScope.launch {
@@ -131,13 +138,25 @@ class GameplayViewModel @Inject constructor(
             }
 
             val keyboardType = settingsResult.getOrNull()?.get("keyboard_type") ?: "CUSTOM"
+            val soundVolume = (settingsResult.getOrNull()?.get("sound_volume")?.toFloatOrNull() ?: 0.8f).coerceIn(0f, 1f)
+            val musicVolume = (settingsResult.getOrNull()?.get("music_volume")?.toFloatOrNull() ?: 0.5f).coerceIn(0f, 1f)
+            val keyClickType = settingsResult.getOrNull()?.get("key_click_type") ?: "BLUE"
 
             detailResult.fold(
                 onSuccess = { detail ->
-                    val paragraph = detail.paragraph
+                    val paragraph = detail.paragraph ?: run {
+                        // Fallback if paragraph is null (e.g., API returned incomplete data)
+                        android.util.Log.w("GameplayVM", "Paragraph was null for level ${detail.id}, using empty string")
+                        ""
+                    }
                     val charResults = paragraph.mapIndexed { index, _ ->
                         CharResult(charIndex = index)
                     }
+
+                    // Store sound settings for use during gameplay
+                    _soundVolume = soundVolume
+                    _musicVolume = musicVolume
+                    _keyClickType = keyClickType
 
                     _uiState.value = GameplayUiState(
                         gameState = GameState.COUNTDOWN,
@@ -152,6 +171,10 @@ class GameplayViewModel @Inject constructor(
                     )
                 },
                 onFailure = { error ->
+                    _soundVolume = soundVolume
+                    _musicVolume = musicVolume
+                    _keyClickType = keyClickType
+
                     _uiState.value = GameplayUiState(
                         gameState = GameState.COUNTDOWN,
                         hasError = true,
@@ -168,13 +191,20 @@ class GameplayViewModel @Inject constructor(
     fun startCountdown() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(countdownValue = 3)
+            soundManager.playCountdown(_soundVolume)
             delay(700)
             _uiState.value = _uiState.value.copy(countdownValue = 2)
+            soundManager.playCountdown(_soundVolume)
             delay(700)
             _uiState.value = _uiState.value.copy(countdownValue = 1)
+            soundManager.playCountdown(_soundVolume)
             delay(700)
             _uiState.value = _uiState.value.copy(showGo = true)
+            soundManager.playGo(_soundVolume)
             delay(500)
+
+            // Start background music
+            soundManager.startMusic(_musicVolume)
 
             _uiState.value = _uiState.value.copy(
                 gameState = GameState.TYPING,
@@ -196,7 +226,11 @@ class GameplayViewModel @Inject constructor(
 
         val expectedChar = state.paragraph[state.currentCharIndex]
 
-        if (char == expectedChar) {
+        // Play key click (every registered keystroke)
+        soundManager.playKeyClick(_keyClickType, _soundVolume)
+
+        // Case-insensitive comparison — keyboard sends lowercase, paragraphs may be mixed-case
+        if (char.equals(expectedChar, ignoreCase = true)) {
             handleCorrectChar(state)
         } else {
             handleMistake(state)
@@ -210,6 +244,12 @@ class GameplayViewModel @Inject constructor(
         val newGauge = computeGauge(newCombo)
         val tier = getActiveTier(newCombo)
 
+        // Play combo milestone sound when tier advances
+        val tierChanged = tier != state.activeComboTier && tier.title.isNotEmpty()
+        if (tierChanged) {
+            soundManager.playComboMilestone(_soundVolume)
+        }
+
         // Update char result
         val updatedResults = state.charResults.toMutableList()
         updatedResults[state.currentCharIndex] = CharResult(
@@ -218,7 +258,7 @@ class GameplayViewModel @Inject constructor(
             isTyped = true
         )
 
-        val kineticText = if (tier != state.activeComboTier && tier.title.isNotEmpty()) tier.title else null
+        val kineticText = if (tierChanged) tier.title else null
 
         val isComplete = newIndex >= state.paragraph.length
 
@@ -251,6 +291,9 @@ class GameplayViewModel @Inject constructor(
 
     private fun handleMistake(state: GameplayUiState) {
         mistakeDuringRun++
+
+        // Play error sound
+        soundManager.playError(_soundVolume)
 
         // Mark current char as wrong
         val updatedResults = state.charResults.toMutableList()
@@ -348,6 +391,9 @@ class GameplayViewModel @Inject constructor(
                         completed = passed
                     )
 
+                    // Stop background music
+                    soundManager.stopMusic()
+
                     _uiState.value = state.copy(
                         gameState = if (passed) GameState.COMPLETE else GameState.FAILED,
                         finalWpm = finalWpm,
@@ -367,6 +413,9 @@ class GameplayViewModel @Inject constructor(
                         stars = stars,
                         completed = passed
                     )
+
+                    // Stop background music
+                    soundManager.stopMusic()
 
                     _uiState.value = state.copy(
                         gameState = if (passed) GameState.COMPLETE else GameState.FAILED,
@@ -420,6 +469,52 @@ class GameplayViewModel @Inject constructor(
             delay(1800)
             _uiState.value = _uiState.value.copy(showKineticText = null)
         }
+    }
+
+    // ── Backspace ──────────────────────────────────────────
+
+    fun onBackspace() {
+        val state = _uiState.value
+        if (state.gameState !in listOf(GameState.TYPING, GameState.MISTAKE)) return
+        if (state.currentCharIndex <= 0) return
+
+        val prevIdx = state.currentCharIndex - 1
+        val prevResult = state.charResults.getOrNull(prevIdx) ?: return
+
+        // Only backspace if the character was actually typed
+        if (!prevResult.isTyped) return
+
+        val updatedResults = state.charResults.toMutableList()
+        updatedResults[prevIdx] = CharResult(charIndex = prevIdx, isCorrect = true, isTyped = false)
+
+        // Adjust counters
+        val newTotal = state.totalKeystrokes - 1
+        val newCorrect = if (prevResult.isCorrect) state.correctKeystrokes - 1 else state.correctKeystrokes
+        val newErrors = if (!prevResult.isCorrect) state.errorCount - 1 else state.errorCount
+
+        if (!prevResult.isCorrect) {
+            mistakeDuringRun = (mistakeDuringRun - 1).coerceAtLeast(0)
+        }
+
+        _uiState.value = state.copy(
+            currentCharIndex = prevIdx,
+            charResults = updatedResults,
+            totalKeystrokes = newTotal.coerceAtLeast(0),
+            correctKeystrokes = newCorrect.coerceAtLeast(0),
+            errorCount = newErrors.coerceAtLeast(0),
+            combo = 0,
+            gaugeProgress = 0f,
+            gameState = GameState.TYPING
+        )
+
+        // Cancel mistake cooldown so user can type immediately
+        mistakeJob?.cancel()
+        stallJob?.cancel()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.stopMusic()
     }
 
     // ── Actions ───────────────────────────────────────────

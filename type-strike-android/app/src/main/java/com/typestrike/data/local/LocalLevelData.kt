@@ -49,6 +49,18 @@ object LocalLevelData {
         "Perfection", "Immortal", "Transcendence", "Eternal Flame", "Type-Strike"
     )
 
+    // Extensible pool for levels 101+. Add more names here to create more levels!
+    private val BEYOND_NAMES = listOf(
+        "New Dawn", "Solar Ignition", "Plasma Surge", "Infinite Loop", "Recursion",
+        "Deep Core", "Mantle Shift", "Crust Break", "Lava Rise", "Volcanic Winter",
+        "Phoenix", "Rebirth", "Second Wind", "Afterglow", "Supernova Remnant",
+        "Neutron Star", "Pulsar Wave", "Gamma Burst", "Cosmic Dust", "Stellar Wind",
+        "Nebula", "Protostar", "Red Giant", "White Dwarf", "Black Hole",
+        "Event Horizon", "Singularity", "Wormhole", "Dark Energy", "Antimatter",
+        "Quantum Entanglement", "String Theory", "Dark Flow", "Cosmic Ray", "Solar Wind II",
+        "The Final Spark", "Ember's Return", "Infinite Forge", "The Last Keycap", "God Mode",
+    )
+
     private data class TierConfig(
         val name: String,
         val levelNames: List<String>,
@@ -161,11 +173,11 @@ object LocalLevelData {
                     val base = advancedStructures[rng.nextInt(advancedStructures.size)]()
                         .replaceFirstChar { it.uppercase() }
                     val formatted = when (rng.nextInt(5)) {
-                        0 -> "\"${base.trimEnd('.')}\" — level ${levelId + 1} requires ${60 + rng.nextInt(40)}wpm at ${90 + rng.nextInt(10)}% acc."
+                        0 -> "\"${base.trimEnd('.')}\" - level ${levelId + 1} requires ${60 + rng.nextInt(40)}wpm at ${90 + rng.nextInt(10)}% acc."
                         1 -> "${base.trimEnd('.')} \$${rng.nextInt(1000)}.${rng.nextInt(100)} value @${50 + rng.nextInt(50)}% threshold."
                         2 -> "type_strike_${pick(adjs, rng)} => ${base.trimEnd('.')} (err#${rng.nextInt(5)})."
                         3 -> "${base.trimEnd('.')} [REQ: ${70 + rng.nextInt(30)} WPM | ACC: ${93 + rng.nextInt(7)}%]"
-                        4 -> "${base.trimEnd('.')} — precision++ && speed++ @ 100%!"
+                        4 -> "${base.trimEnd('.')} - precision++ && speed++ @ 100%!"
                         else -> base
                     }
                     sentences.add(formatted)
@@ -176,11 +188,50 @@ object LocalLevelData {
         return sentences.joinToString(" ")
     }
 
-    /** All 100 levels, lazily generated once. */
+    /** All pre-generated levels (first 100). */
     val allLevels: List<LevelDetail> by lazy { generateAllLevels() }
 
     /** Returns a specific level by ID (1-indexed). */
-    fun getLevel(id: Int): LevelDetail? = allLevels.getOrNull(id - 1)
+    fun getLevel(id: Int): LevelDetail? {
+        if (id < 1) return null
+        if (id <= allLevels.size) {
+            return allLevels.getOrNull(id - 1)
+        }
+        // Dynamically generate levels beyond the pre-generated 100
+        return generateDynamicLevel(id)
+    }
+
+    /** Dynamic name generator for levels beyond the BEYOND_NAMES pool. */
+    private fun genBeyondName(levelId: Int): String {
+        val adj = listOf("Ultimate", "Infinite", "Luminous", "Radiant", "Eternal", "Arcane", "Mythic", "Astral", "Void", "Omega")
+        val nouns = listOf("Strike", "Forge", "Flame", "Core", "Storm", "Fury", "Blade", "Spark", "Star", "Gate")
+        val rng = Random(levelId.toLong())
+        return "${adj[rng.nextInt(adj.size)]} ${nouns[rng.nextInt(nouns.size)]} — $levelId"
+    }
+
+    /** Dynamically generates a level config for IDs > 100. */
+    private fun generateDynamicLevel(id: Int): LevelDetail {
+        val rng = Random(id.toLong() * 1000 + 42)
+        val paragraph = genParagraph(id, rng)
+
+        // Scale difficulty: WPM starts at 85 and increases by ~3 per 10 levels
+        val baseWpm = (85 + (id - 100) / 10 * 3).coerceAtMost(200)
+        val baseAcc = if (id > 150) 96 else 95
+
+        // Name from beyond pool or auto-generated
+        val poolIdx = id - 101
+        val name = if (poolIdx in BEYOND_NAMES.indices) BEYOND_NAMES[poolIdx] else genBeyondName(id)
+
+        return LevelDetail(
+            id = id,
+            name = name,
+            tier = "beyond",
+            difficulty = 5,
+            passWpm = baseWpm,
+            passAccuracy = baseAcc,
+            paragraph = paragraph
+        )
+    }
 
     private fun generateAllLevels(): List<LevelDetail> {
         val results = mutableListOf<LevelDetail>()

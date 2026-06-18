@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/cpbrucemeena/type-strike-backend/internal/data"
 	"github.com/cpbrucemeena/type-strike-backend/internal/models"
 	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
 	"github.com/go-chi/chi/v5"
@@ -144,11 +145,12 @@ func (h *PlayerHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 
 	summary := models.PlayerSummary{
 		Player:         *player,
-		LevelsTotal:    100,
+		LevelsTotal:    data.GetLevelTotalCount(), // named levels: 100 pre-generated + all beyond names
 		LevelsCleared:  clearedCount,
 		RecentActivity: activity,
 		NextLevelXP:    nextLevelXP,
 		Settings:       settings,
+		StreakCount:    player.StreakCount,
 	}
 
 	writeJSON(w, http.StatusOK, summary)

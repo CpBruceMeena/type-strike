@@ -7,7 +7,6 @@ func XPForNextLevel(currentLevel int) int {
 }
 
 // PlayerSummary is the combined response for the home/dashboard screen.
-// It aggregates player identity, today's stats, and recent activity.
 type PlayerSummary struct {
 	Player         Player            `json:"player"`
 	TodaysBestWPM  int               `json:"todays_best_wpm"`
@@ -16,6 +15,7 @@ type PlayerSummary struct {
 	RecentActivity []Activity        `json:"recent_activity"`
 	NextLevelXP    int               `json:"next_level_xp"`
 	Settings       map[string]string `json:"settings"`
+	StreakCount    int               `json:"streak_count"`
 }
 
 // LevelDetail returns detailed info about a specific level for the Level Preview.

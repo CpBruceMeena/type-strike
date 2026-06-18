@@ -1,6 +1,12 @@
 # ⚡ type-strike
 
-**Type with fury. Strike with fire.**
+<p align="center">
+  <img src="docs/logo.png" alt="type-strike" width="400">
+</p>
+
+<p align="center">
+  <strong>Type with fury. Strike with fire.</strong>
+</p>
 
 type-strike is a mobile typing game that turns every word into an explosive arcade battle. No flat typing tests — just visceral feedback, liquid-fueled combos, and a journey through 100+ levels of fire and fury.
 
@@ -88,6 +94,10 @@ Unlock new keyboard appearances by clearing levels:
 ## Roadmap
 
 ### ✅ Shipped (Latest)
+- Background music — looping ambient electronic track in E minor (130 BPM), starts on gameplay countdown, stops on level complete/failed
+- Sound design — programmatic PCM-16 audio engine: 4 key click types (Blue/Brown/Red/Linear), correct chime, error buzz, combo arpeggio, victory fanfare, level failed tone, countdown beep + GO sweep
+- Backspace key (⌫) on keyboard — undo mistakes to maintain accuracy for 3-star runs
+- Keyboard completeness — all ASCII paragraph characters now have keys, unlimited beyond-level-100 support
 - Countdown overlay with START button and 3-2-1-GO animation
 - Haptic feedback system (key press, error, word complete, combo milestone, trophy slam, level failed)
 - 6 unlockable keyboard themes with settings UI

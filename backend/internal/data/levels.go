@@ -28,11 +28,56 @@ func init() {
 }
 
 // GetLevel returns the config for a specific level ID (1-indexed).
+// Levels beyond the pre-generated 100 are generated dynamically on-the-fly,
+// so new levels can be added indefinitely without a code change.
 func GetLevel(id int) *LevelConfig {
-	if id < 1 || id > len(LevelConfigs) {
+	if id < 1 {
 		return nil
 	}
-	return &LevelConfigs[id-1]
+	if id <= len(LevelConfigs) {
+		return &LevelConfigs[id-1]
+	}
+	// Dynamically generate level for IDs beyond the existing catalog.
+	return generateDynamicLevel(id)
+}
+
+// generateDynamicLevel creates a level config on-the-fly for IDs > 100.
+// Uses the "beyond" tier with difficulty and WPM/accuracy scaling.
+func generateDynamicLevel(id int) *LevelConfig {
+	parts := advancedParts
+	seed := int64(id)*1000 + 42
+	paragraph := genParagraph(id, parts, seed)
+
+	// Scale difficulty gradually beyond level 100:
+	// WPM: starts at 85 (end of Obsidian) and increases by ~3 per 10 levels
+	// Accuracy: stays at 95%
+	baseWPM := 85 + (id-100)/10*3
+	if baseWPM > 200 {
+		baseWPM = 200
+	}
+	baseAcc := 95
+	if id > 150 {
+		baseAcc = 96
+	}
+
+	// Generate a name
+	name := genBeyondName(id)
+
+	// Use the first few beyond names for the "beyond" pool, then auto-generate
+	poolIdx := id - 101
+	if poolIdx >= 0 && poolIdx < len(beyondNames) {
+		name = beyondNames[poolIdx]
+	}
+
+	return &LevelConfig{
+		ID:           id,
+		Name:         name,
+		Tier:         TierBeyond,
+		Difficulty:   5,
+		PassWPM:      baseWPM,
+		PassAccuracy: baseAcc,
+		Paragraph:    paragraph,
+	}
 }
 
 // GetLevelsForTier returns all level configs for a given tier.
@@ -71,6 +116,7 @@ const (
 	TierIgneous   = "igneious"
 	TierMagmaCore = "magma_core"
 	TierObsidian  = "obsidian"
+	TierBeyond    = "beyond"
 )
 
 var tierRange = map[string][2]int{
@@ -78,6 +124,7 @@ var tierRange = map[string][2]int{
 	TierIgneous:   {26, 50},
 	TierMagmaCore: {51, 75},
 	TierObsidian:  {76, 100},
+	TierBeyond:    {101, -1}, // -1 means unlimited — levels are generated dynamically
 }
 
 var emberNames = []string{
@@ -110,6 +157,29 @@ var obsidianNames = []string{
 	"Zenith", "Apex", "Pinnacle", "Omega", "Absolute Zero",
 	"Speed of Light", "Last Stand", "Final Forge", "Unstoppable", "Godspeed",
 	"Perfection", "Immortal", "Transcendence", "Eternal Flame", "Type-Strike",
+}
+
+// beyondNames is an extensible pool for levels 101+.
+// Add new names here to create more levels!
+var beyondNames = []string{
+	"New Dawn", "Solar Ignition", "Plasma Surge", "Infinite Loop", "Recursion",
+	"Deep Core", "Mantle Shift", "Crust Break", "Lava Rise", "Volcanic Winter",
+	"Phoenix", "Rebirth", "Second Wind", "Afterglow", "Supernova Remnant",
+	"Neutron Star", "Pulsar Wave", "Gamma Burst", "Cosmic Dust", "Stellar Wind",
+	"Nebula", "Protostar", "Red Giant", "White Dwarf", "Black Hole",
+	"Event Horizon", "Singularity", "Wormhole", "Dark Energy", "Antimatter",
+	"Quantum Entanglement", "String Theory", "Dark Flow", "Cosmic Ray", "Solar Wind II",
+	"The Final Spark", "Ember's Return", "Infinite Forge", "The Last Keycap", "God Mode",
+}
+
+// genBeyondName generates a name for levels beyond the beyondNames pool.
+func genBeyondName(levelID int) string {
+	adjectives := []string{"Ultimate", "Infinite", "Luminous", "Radiant", "Eternal", "Arcane", "Mythic", "Astral", "Void", "Omega"}
+	nouns := []string{"Strike", "Forge", "Flame", "Core", "Storm", "Fury", "Blade", "Spark", "Star", "Gate"}
+	seed := rand.New(rand.NewSource(int64(levelID)))
+	a := adjectives[seed.Intn(len(adjectives))]
+	n := nouns[seed.Intn(len(nouns))]
+	return fmt.Sprintf("%s %s — %d", a, n, levelID)
 }
 
 // ── Paragraph Generation ─────────────────────────────────
@@ -268,7 +338,7 @@ func genParagraph(levelID int, parts sentenceParts, seed int64) string {
 			// Add various special characters and formatting
 			switch rng.Intn(5) {
 			case 0:
-				base = fmt.Sprintf("\"%s\" — level %d requires %dwpm at %d%% acc.", strings.TrimRight(base, "."), levelID+1, 60+rng.Intn(40), 90+rng.Intn(10))
+				base = fmt.Sprintf("\"%s\" - level %d requires %dwpm at %d%% acc.", strings.TrimRight(base, "."), levelID+1, 60+rng.Intn(40), 90+rng.Intn(10))
 			case 1:
 				base = fmt.Sprintf("%s $%d.%02d value @%d%% threshold.", strings.TrimRight(base, "."), rng.Intn(1000), rng.Intn(100), 50+rng.Intn(50))
 			case 2:
@@ -276,13 +346,20 @@ func genParagraph(levelID int, parts sentenceParts, seed int64) string {
 			case 3:
 				base = fmt.Sprintf("%s [REQ: %d WPM | ACC: %d%%]", strings.TrimRight(base, "."), 70+rng.Intn(30), 93+rng.Intn(7))
 			case 4:
-				base = fmt.Sprintf("%s — precision++ && speed++ @ 100%%!", strings.TrimRight(base, "."))
+				base = fmt.Sprintf("%s - precision++ && speed++ @ 100%%!", strings.TrimRight(base, "."))
 			}
 			sentences = append(sentences, base)
 		}
 	}
 
 	return strings.Join(sentences, " ")
+}
+
+// GetLevelTotalCount returns the total number of levels that have unique names
+// (pre-generated 100 + all named beyond levels). Levels beyond this count are
+// dynamically generated with auto-generated names.
+func GetLevelTotalCount() int {
+	return len(LevelConfigs) + len(beyondNames)
 }
 
 // GenerateFreshLevels generates all 100 levels with fresh paragraphs (exported for seeding tools).
