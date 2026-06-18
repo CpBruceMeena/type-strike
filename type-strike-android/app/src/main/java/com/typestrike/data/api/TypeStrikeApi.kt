@@ -67,6 +67,18 @@ interface TypeStrikeApi {
         @Body request: RecordActivityRequest
     ): Response<ActivityEvent>
 
+    // ── Daily Challenge Endpoints ──────────────────────────
+
+    @GET("api/v1/players/{playerId}/daily-challenges")
+    suspend fun getDailyChallenges(@Path("playerId") playerId: Int): Response<DailyChallengesResponse>
+
+    @POST("api/v1/players/{playerId}/daily-challenges/{challengeId}/complete")
+    suspend fun submitChallengeResult(
+        @Path("playerId") playerId: Int,
+        @Path("challengeId") challengeId: Int,
+        @Body request: SubmitChallengeRequest
+    ): Response<SubmitChallengeResponse>
+
     // ── Settings Endpoints ──────────────────────────────────
 
     @GET("api/v1/players/{playerId}/settings")

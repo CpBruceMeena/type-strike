@@ -16,6 +16,7 @@ import com.typestrike.ui.settings.SettingsScreen
 import com.typestrike.ui.splash.SplashScreen
 import com.typestrike.ui.stats.StatsScreen
 import com.typestrike.ui.achievements.AchievementsScreen
+import com.typestrike.ui.dailychallenges.DailyChallengesScreen
 
 
 @Composable
@@ -41,6 +42,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 onPlay = {
                     navController.navigate(Screen.Map.route)
                 },
+                onJumpIn = { levelId ->
+                    navController.navigate(Screen.Gameplay.createRoute(levelId))
+                },
                 onNavigateToStats = {
                     navController.navigate(Screen.Stats.route)
                 },
@@ -49,6 +53,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 },
                 onNavigateToAchievements = {
                     navController.navigate(Screen.Achievements.route)
+                },
+                onNavigateToDailyChallenges = {
+                    navController.navigate(Screen.DailyChallenges.route)
                 }
             )
         }
@@ -182,6 +189,18 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             AchievementsScreen(
                 onBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        // Daily Challenges
+        composable(Screen.DailyChallenges.route) {
+            DailyChallengesScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onPlayChallenge = { levelId ->
+                    navController.navigate(Screen.Gameplay.createRoute(levelId))
                 }
             )
         }

@@ -2,6 +2,7 @@ package com.typestrike.ui.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.typestrike.data.local.LocalLevelData
 import com.typestrike.data.repository.LevelRepository
 import com.typestrike.data.repository.PlayerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -79,49 +80,43 @@ class MapViewModel @Inject constructor(
                 Triple(levelsDeferred.await(), progressDeferred.await(), summaryDeferred.await())
             }
 
-            levelsResult.fold(
-                onSuccess = { levels ->
-                    val progressMap = progressResult.getOrNull()?.associateBy { it.levelId } ?: emptyMap()
-                    val player = summaryResult.getOrNull()?.player
-                    val clearedCount = summaryResult.getOrNull()?.levelsCleared ?: 0
+            // Levels always succeed now (falls back to local data)
+            val levels = levelsResult.getOrDefault(LocalLevelData.allLevels)
+            val progressMap = progressResult.getOrNull()?.associateBy { it.levelId } ?: emptyMap()
+            val player = summaryResult.getOrNull()?.player
 
-                    // Determine which levels are unlocked: the first uncompleted + all before it
-                    val firstUncompleted = clearedCount + 1
+            // Compute cleared count from progress map (works with or without summary)
+            val clearedCount = progressMap.values.count { it.completed }
+            val firstUncompleted = (clearedCount + 1).coerceIn(1, 100)
 
-                    val mapLevels = levels.map { level ->
-                        val prog = progressMap[level.id]
-                        MapLevelItem(
-                            id = level.id,
-                            name = level.name,
-                            tier = level.tier,
-                            difficulty = level.difficulty,
-                            passWpm = level.passWpm,
-                            passAccuracy = level.passAccuracy,
-                            stars = level.playerStars ?: prog?.stars ?: 0,
-                            bestWpm = level.playerBestWpm ?: prog?.bestWpm ?: 0,
-                            bestAccuracy = (level.playerBestAcc ?: prog?.bestAccuracy)?.toFloat() ?: 0f,
-                            completed = prog?.completed ?: false,
-                            attempts = prog?.attempts ?: 0,
-                            isUnlocked = level.id <= firstUncompleted
-                        )
-                    }
+            val mapLevels = levels.map { level ->
+                val prog = progressMap[level.id]
+                val completed = prog?.completed ?: false
+                MapLevelItem(
+                    id = level.id,
+                    name = level.name,
+                    tier = level.tier,
+                    difficulty = level.difficulty,
+                    passWpm = level.passWpm,
+                    passAccuracy = level.passAccuracy,
+                    stars = level.playerStars ?: prog?.stars ?: 0,
+                    bestWpm = level.playerBestWpm ?: prog?.bestWpm ?: 0,
+                    bestAccuracy = (level.playerBestAcc ?: prog?.bestAccuracy)?.toFloat() ?: 0f,
+                    completed = completed,
+                    attempts = prog?.attempts ?: 0,
+                    isUnlocked = level.id <= firstUncompleted
+                )
+            }
 
-                    _uiState.value = MapUiState(
-                        isLoading = false,
-                        levels = mapLevels,
-                        playerLevel = player?.level ?: 1,
-                        playerTitle = player?.title ?: "RECRUIT",
-                        playerStars = player?.totalStars ?: 0,
-                        firstUncompletedLevelId = firstUncompleted.coerceAtMost(100)
-                    )
-                },
-                onFailure = { error ->
-                    _uiState.value = MapUiState(
-                        isLoading = false,
-                        hasError = true,
-                        errorMessage = error.message ?: "Failed to load map data"
-                    )
-                }
+            _uiState.value = MapUiState(
+                isLoading = false,
+                hasError = levelsResult.isFailure && progressResult.isFailure && summaryResult.isFailure,
+                errorMessage = if (levelsResult.isFailure) levelsResult.exceptionOrNull()?.message else null,
+                levels = mapLevels,
+                playerLevel = player?.level ?: 1,
+                playerTitle = player?.title ?: "RECRUIT",
+                playerStars = player?.totalStars ?: 0,
+                firstUncompletedLevelId = firstUncompleted
             )
         }
     }

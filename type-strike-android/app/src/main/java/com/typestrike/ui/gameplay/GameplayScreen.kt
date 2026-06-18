@@ -6,10 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -24,14 +22,16 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,6 +49,8 @@ val QWERTY_ROWS = listOf(
 
 private val CORRECT_GREEN = Color(0xFF22DD44)
 private val ERROR_RED = Color(0xFFFF3300)
+private val CURSOR_WHITE = Color(0xFFFFF8E7)
+private val UNTYPED_DIM = Color(0xFF6A6A7A)
 
 // ── Main Gameplay Screen ─────────────────────────────────
 
@@ -92,9 +94,9 @@ fun GameplayScreen(
 
     val view = LocalView.current
 
-    // ── Haptic: word complete ──────────────────────────
-    LaunchedEffect(uiState.currentWordIndex) {
-        if (uiState.currentWordIndex > 0 && uiState.gameState == GameState.TYPING) {
+    // ── Haptic: character complete (every 5 chars for pacing) ─
+    LaunchedEffect(uiState.currentCharIndex) {
+        if (uiState.currentCharIndex > 0 && uiState.currentCharIndex % 5 == 0 && uiState.gameState == GameState.TYPING) {
             HapticUtil.wordComplete(view)
         }
     }
@@ -138,21 +140,20 @@ fun GameplayScreen(
             )
             else -> {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Arena Header
+                    // Arena Header (showing char progress instead of word progress)
                     ArenaHeader(
                         levelName = uiState.levelName,
-                        wordIndex = uiState.currentWordIndex,
-                        wordCount = uiState.words.size,
+                        charIndex = uiState.currentCharIndex,
+                        charCount = uiState.paragraph.length,
                         onBack = onBack
                     )
 
-                    // Combined words panel (scrollable, all words visible)
+                    // Paragraph panel (scrollable, character-by-character coloring)
                     Box(modifier = Modifier.weight(1f)) {
-                        AllWordsPanel(
-                            words = uiState.words,
-                            wordResults = uiState.wordResults,
-                            currentWordIndex = uiState.currentWordIndex,
-                            typedText = uiState.typedText,
+                        ParagraphPanel(
+                            paragraph = uiState.paragraph,
+                            charResults = uiState.charResults,
+                            currentCharIndex = uiState.currentCharIndex,
                             gameState = uiState.gameState,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -183,7 +184,7 @@ fun GameplayScreen(
                         modifier = Modifier.height(48.dp)
                     )
 
-                    // Custom Keyboard (only when native keyboard is NOT enabled)
+                    // Custom Keyboard
                     if (!uiState.useNativeKeyboard) {
                         CustomKeyboard(
                             onKeyPress = { viewModel.onKeyPress(it) },
@@ -237,7 +238,6 @@ private fun CountdownOverlay(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (showGo) {
-                // GO!
                 val goScale by animateFloatAsState(
                     targetValue = 1f,
                     animationSpec = spring(dampingRatio = 0.4f, stiffness = 200f),
@@ -255,7 +255,6 @@ private fun CountdownOverlay(
                         .padding(32.dp)
                 )
             } else if (started) {
-                // Countdown number
                 val countScale by animateFloatAsState(
                     targetValue = 1f,
                     animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f),
@@ -272,7 +271,6 @@ private fun CountdownOverlay(
                         .shadow(16.dp, RoundedCornerShape(0.dp), spotColor = MagmaRed.copy(alpha = 0.5f))
                 )
             } else {
-                // START button
                 val infiniteTransition = rememberInfiniteTransition(label = "startGlow")
                 val glowAlpha by infiniteTransition.animateFloat(
                     initialValue = 0.3f,
@@ -285,7 +283,6 @@ private fun CountdownOverlay(
                 )
 
                 Box(modifier = Modifier.padding(horizontal = 32.dp)) {
-                    // Glow
                     Box(
                         modifier = Modifier
                             .matchParentSize()
@@ -294,7 +291,6 @@ private fun CountdownOverlay(
                             .alpha(glowAlpha)
                             .background(MagmaRed)
                     )
-                    // Button
                     Button(
                         onClick = {
                             started = true
@@ -329,19 +325,21 @@ private fun CountdownOverlay(
     }
 }
 
-// ── Arena Header ─────────────────────────────────────────
+// ── Arena Header (updated for paragraphs) ────────────────
 
 @Composable
 private fun ArenaHeader(
     levelName: String,
-    wordIndex: Int,
-    wordCount: Int,
+    charIndex: Int,
+    charCount: Int,
     onBack: () -> Unit
 ) {
+    val progress = if (charCount > 0) (charIndex.toFloat() / charCount).coerceIn(0f, 1f) else 0f
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(56.dp)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -358,36 +356,73 @@ private fun ArenaHeader(
                 maxLines = 1
             )
             Text(
-                text = "$wordIndex / $wordCount words",
+                text = "$charIndex / $charCount chars",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextMuted
             )
         }
+        // Mini progress bar
+        Box(
+            modifier = Modifier
+                .width(60.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(SurfaceDark)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(progress)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MagmaRed)
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
     }
 }
 
-// ── All Words Panel ──────────────────────────────────────
+// ── Paragraph Panel ──────────────────────────────────────
 
 @Composable
-private fun AllWordsPanel(
-    words: List<String>,
-    wordResults: List<WordResult>,
-    currentWordIndex: Int,
-    typedText: String,
+private fun ParagraphPanel(
+    paragraph: String,
+    charResults: List<CharResult>,
+    currentCharIndex: Int,
     gameState: GameState,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
 
-    // Auto-scroll to current word
-    LaunchedEffect(currentWordIndex) {
-        // Small delay to let layout settle, then scroll to current word
+    // Auto-scroll to keep current char line visible
+    LaunchedEffect(currentCharIndex, paragraph) {
         delay(50)
-        // The scroll will go to roughly the position of the current word
-        val targetScroll = (currentWordIndex * 60).coerceAtMost(
-            scrollState.maxValue
-        )
-        scrollState.animateScrollTo(targetScroll, tween(300))
+        val charsPerLine = 30f.coerceAtLeast(1f)
+        val currentLine = (currentCharIndex / charsPerLine).toInt()
+        val targetScroll = (currentLine * 48).coerceAtMost(scrollState.maxValue)
+        scrollState.animateScrollTo(targetScroll, tween(200))
+    }
+
+    // Simple scrollable box — Text handles wrapping row-wise naturally.
+    val annotated = remember(paragraph, charResults, currentCharIndex, gameState) {
+        buildAnnotatedString {
+            paragraph.forEachIndexed { charIndex, char ->
+                val result = charResults.getOrNull(charIndex)
+                val isCurrent = charIndex == currentCharIndex
+                val isTyped = result?.isTyped == true
+                val isCorrect = result?.isCorrect ?: true
+
+                val color = when {
+                    isCurrent && gameState == GameState.MISTAKE -> ERROR_RED
+                    isCurrent -> CURSOR_WHITE
+                    isTyped && isCorrect -> CORRECT_GREEN
+                    isTyped && !isCorrect -> ERROR_RED
+                    else -> UNTYPED_DIM
+                }
+                withStyle(SpanStyle(color = color, fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal)) {
+                    append(char)
+                }
+            }
+        }
     }
 
     Box(
@@ -397,108 +432,14 @@ private fun AllWordsPanel(
             .clip(RoundedCornerShape(12.dp))
             .background(SurfaceDark.copy(alpha = 0.5f))
             .border(1.dp, SurfaceBorder.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+            .verticalScroll(scrollState)
+            .padding(12.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(16.dp)
-        ) {
-            words.forEachIndexed { index, word ->
-                val isCurrent = index == currentWordIndex
-                val isCompleted = index < currentWordIndex
-                val wordResult = wordResults.getOrNull(index)
-
-                WordRow(
-                    word = word,
-                    wordResult = wordResult,
-                    isCurrent = isCurrent,
-                    isCompleted = isCompleted,
-                    typedText = if (isCurrent) typedText else "",
-                    hasError = gameState == GameState.MISTAKE && isCurrent
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun WordRow(
-    word: String,
-    wordResult: WordResult?,
-    isCurrent: Boolean,
-    isCompleted: Boolean,
-    typedText: String,
-    hasError: Boolean
-) {
-    val bgColor = when {
-        isCurrent -> Surface.copy(alpha = 0.6f)
-        isCompleted -> SurfaceDark.copy(alpha = 0.3f)
-        else -> Color.Transparent
-    }
-    val borderColor = when {
-        isCurrent && hasError -> ERROR_RED.copy(alpha = 0.3f)
-        isCurrent -> MagmaRed.copy(alpha = 0.4f)
-        else -> Color.Transparent
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
-            .then(
-                if (isCurrent)
-                    Modifier.border(1.dp, borderColor, RoundedCornerShape(8.dp))
-                else Modifier
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Word number
         Text(
-            text = "${(wordResult?.wordIndex ?: 0) + 1}.",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isCurrent) MagmaRed else TextDisabled,
-            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-            modifier = Modifier.width(28.dp)
+            text = annotated,
+            style = MaterialTheme.typography.titleMedium,
+            lineHeight = 28.sp
         )
-
-        // Word characters with coloring
-        word.forEachIndexed { charIndex, char ->
-            val charColor = when {
-                // Completed word
-                isCompleted -> {
-                    val hadMistake = wordResult?.hadMistake ?: false
-                    if (hadMistake) ERROR_RED.copy(alpha = 0.5f) else CORRECT_GREEN.copy(alpha = 0.7f)
-                }
-                // Current word — typed part
-                isCurrent && charIndex < typedText.length -> {
-                    val isCorrect = typedText[charIndex] == char
-                    if (isCorrect) CORRECT_GREEN.copy(alpha = 0.9f) else ERROR_RED.copy(alpha = 0.9f)
-                }
-                // Current word — next character to type
-                isCurrent && charIndex == typedText.length -> {
-                    if (hasError) ERROR_RED else TextWhite
-                }
-                // Current word — untyped future characters
-                isCurrent && charIndex > typedText.length -> {
-                    TextBody.copy(alpha = 0.35f)
-                }
-                // Future words (not yet reached)
-                else -> TextBody.copy(alpha = 0.3f)
-            }
-
-            val isBold = isCurrent && charIndex == typedText.length
-            Text(
-                text = char.toString(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = if (isBold) FontWeight.Bold else FontWeight.Medium,
-                color = charColor,
-                modifier = Modifier.padding(horizontal = 1.dp)
-            )
-        }
     }
 }
 
@@ -513,7 +454,6 @@ private fun NativeKeyboardInput(
     var textFieldValue by remember { mutableStateOf(TextFieldValue("")) }
     var lastProcessedLength by remember { mutableIntStateOf(0) }
 
-    // Auto-focus when visible
     LaunchedEffect(Unit) {
         delay(100)
         focusRequester.requestFocus()
@@ -523,20 +463,18 @@ private fun NativeKeyboardInput(
         value = textFieldValue,
         onValueChange = { newValue ->
             val newText = newValue.text
-            // Process new characters since last check
             if (newText.length > lastProcessedLength) {
                 for (i in lastProcessedLength until newText.length) {
                     onKeyPress(newText[i])
                 }
             }
-            // Reset after processing each character
             textFieldValue = TextFieldValue("")
             lastProcessedLength = 0
         },
         modifier = Modifier
             .focusRequester(focusRequester)
             .then(modifier)
-            .alpha(0f) // invisible
+            .alpha(0f)
             .width(1.dp),
         textStyle = TextStyle(color = Color.Transparent, fontSize = 1.sp),
         cursorBrush = SolidColor(Color.Transparent),
@@ -562,7 +500,6 @@ private fun ComboAndStatsRow(
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Combo gauge (vertical bar)
         Box(
             modifier = Modifier
                 .width(8.dp)
@@ -587,7 +524,6 @@ private fun ComboAndStatsRow(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Streak info
         Column(modifier = Modifier.width(60.dp)) {
             if (combo > 0) {
                 Text(
@@ -608,7 +544,6 @@ private fun ComboAndStatsRow(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // WPM
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "$liveWpm",
@@ -625,7 +560,6 @@ private fun ComboAndStatsRow(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Accuracy
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "${(accuracy * 100).toInt()}%",
@@ -654,7 +588,6 @@ private fun CustomKeyboard(
     val keySpacing = 4.dp
     val pressedKey = remember { mutableStateOf<Char?>(null) }
 
-    // Reset pressed state after brief delay
     LaunchedEffect(pressedKey.value) {
         if (pressedKey.value != null) {
             delay(100)

@@ -2,9 +2,12 @@ package com.typestrike.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.typestrike.data.repository.LevelRepository
 import com.typestrike.data.repository.PlayerRepository
 import com.typestrike.ui.util.Progression
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,13 +16,14 @@ import javax.inject.Inject
 
 /**
  * UI state for the Home / Dashboard screen.
- * Shows player identity, quick stats, and navigation to game modes.
+ * New-user friendly: gracefully handles the case where no player exists yet.
  */
 data class HomeUiState(
     val isLoading: Boolean = true,
+    val hasPlayer: Boolean = false,
     val hasError: Boolean = false,
     val errorMessage: String? = null,
-    // Player data
+    // Player data (only populated when hasPlayer is true)
     val playerLevel: Int = 1,
     val playerTitle: String = "RECRUIT",
     val totalStars: Int = 0,
@@ -30,13 +34,32 @@ data class HomeUiState(
     val todaysBestWpm: Int = 0,
     val levelsCleared: Int = 0,
     val levelsTotal: Int = 100,
+    val nextLevelId: Int = 1,
+    // Tiers for the progression preview
+    val tiers: List<TierPreview> = TIER_PREVIEWS,
     // Animation
     val entranceStarted: Boolean = false
 )
 
+/** Preview data for a tier shown on the home page. */
+data class TierPreview(
+    val name: String,
+    val icon: String,
+    val color: Long,
+    val levelRange: String,
+    val description: String
+)
+
+private val TIER_PREVIEWS = listOf(
+    TierPreview("Ember", "🔥", 0xFFFF5020, "Levels 1–25", "Short, simple sentences — build your rhythm"),
+    TierPreview("Igneous", "🌋", 0xFFFFAA44, "Levels 26–50", "Medium length, capital letters, some numbers"),
+    TierPreview("Magma Core", "⚡", 0xFFCC44FF, "Levels 51–75", "Complex text, special chars, mixed case"),
+    TierPreview("Obsidian", "🖤", 0xFF8866DD, "Levels 76–100", "Code-like syntax, edge case characters"),
+)
+
 /**
  * ViewModel for the Home/Dashboard screen.
- * Loads player summary and exposes state for UI components.
+ * Designed for new users: shows a welcoming hub with level progression preview.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -51,10 +74,10 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        loadSummary()
+        loadDashboard()
     }
 
-    private fun loadSummary() {
+    private fun loadDashboard() {
         viewModelScope.launch {
             _uiState.value = HomeUiState(isLoading = true)
 
@@ -68,6 +91,7 @@ class HomeViewModel @Inject constructor(
 
                     _uiState.value = HomeUiState(
                         isLoading = false,
+                        hasPlayer = true,
                         playerLevel = currentLevel,
                         playerTitle = player.title.ifBlank { "RECRUIT" },
                         totalStars = player.totalStars,
@@ -77,14 +101,18 @@ class HomeViewModel @Inject constructor(
                         todaysBestWpm = summary.todaysBestWpm,
                         levelsCleared = summary.levelsCleared,
                         levelsTotal = summary.levelsTotal,
+                        nextLevelId = (summary.levelsCleared + 1).coerceIn(1, 100),
                         entranceStarted = false
                     )
                 },
                 onFailure = { error ->
+                    // New user — no player exists yet. This is NOT an error.
+                    // Show the welcoming home page with progression preview.
                     _uiState.value = HomeUiState(
                         isLoading = false,
-                        hasError = true,
-                        errorMessage = error.message ?: "Failed to load data",
+                        hasPlayer = false,
+                        hasError = false,
+                        nextLevelId = 1,
                         entranceStarted = false
                     )
                 }
@@ -97,15 +125,18 @@ class HomeViewModel @Inject constructor(
     }
 
     fun retry() {
-        loadSummary()
+        loadDashboard()
     }
 
     /**
      * Dynamic sub-label for the JUMP IN button based on player state.
      */
     fun jumpInLabel(): String = when {
-        _uiState.value.levelsCleared == 0 -> "Begin your journey"
+        !_uiState.value.hasPlayer -> "Start your journey — Level 1"
+        _uiState.value.levelsCleared == 0 -> "Start with Level 1"
         _uiState.value.levelsCleared >= _uiState.value.levelsTotal -> "Practice mode — no limits!"
-        else -> "Continue where you left off"
+        else -> "Continue at Level ${_uiState.value.nextLevelId}"
     }
+
+    fun getNextLevelId(): Int = _uiState.value.nextLevelId
 }

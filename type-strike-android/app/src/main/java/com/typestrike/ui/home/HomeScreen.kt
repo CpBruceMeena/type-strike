@@ -34,14 +34,15 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(
     onPlay: () -> Unit = {},
+    onJumpIn: (Int) -> Unit = {},
     onNavigateToStats: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToAchievements: () -> Unit = {},
+    onNavigateToDailyChallenges: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Staggered entrance animation
     var entranceStarted by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(100)
@@ -58,9 +59,8 @@ fun HomeScreen(
             .fillMaxSize()
             .background(Background)
     ) {
-        // Particle background
         MapParticleField(
-            config = particleConfig.copy(opacity = 0.3f),
+            config = particleConfig.copy(opacity = 0.25f),
             modifier = Modifier.fillMaxSize()
         )
 
@@ -71,81 +71,83 @@ fun HomeScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            // Top App Bar
+            // Top bar
             EntranceFadeSlide(entranceStarted, delayMs = 0) {
-                TopAppBar(onSettingsClick = onNavigateToSettings)
+                HomeTopBar(onSettingsClick = onNavigateToSettings)
             }
 
-            // Main scrollable content
+            // Scrollable content — weighted spacers distribute empty space evenly
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(12.dp))
+                // ── Top breathing room (more for new users with larger hero) ──
+                Spacer(modifier = Modifier.weight(if (!uiState.hasPlayer) 0.10f else 0.06f))
 
-                // ── Player Identity Card ──────────────
-                EntranceFadeSlide(entranceStarted, delayMs = 150) {
-                    when {
-                        uiState.isLoading -> PlayerIdentitySkeleton()
-                        uiState.hasError -> PlayerIdentityError(
-                            message = uiState.errorMessage ?: "Failed to load",
-                            onRetry = { viewModel.retry() }
-                        )
-                        else -> PlayerIdentityCard(
-                            level = uiState.playerLevel,
-                            title = uiState.playerTitle,
-                            totalStars = uiState.totalStars,
-                            maxStars = uiState.levelsTotal * 3,
-                            xp = uiState.xp,
-                            xpForNext = uiState.xpForNext,
-                            xpProgress = uiState.xpProgress
-                        )
-                    }
+                // ── Welcome Hero or Compact Player Card ──────
+                if (!uiState.hasPlayer) {
+                    WelcomeHero(entranceStarted = entranceStarted)
+                } else {
+                    CompactPlayerCard(
+                        level = uiState.playerLevel,
+                        title = uiState.playerTitle,
+                        totalStars = uiState.totalStars,
+                        xpProgress = uiState.xpProgress,
+                        entranceStarted = entranceStarted
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.weight(0.07f))
 
-                // ── JUMP IN Button ────────────────────
-                EntranceFadeSlide(entranceStarted, delayMs = 350) {
+                // ── JUMP IN Button ────────────────────────────
+                EntranceFadeSlide(entranceStarted, delayMs = 300) {
                     JumpInButton(
                         subLabel = viewModel.jumpInLabel(),
-                        onClick = onPlay
+                        onClick = { onJumpIn(viewModel.getNextLevelId()) }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.weight(0.07f))
 
-                // ── Quick Stats Row ───────────────────
-                EntranceFadeSlide(entranceStarted, delayMs = 550) {
-                    QuickStatsRow(
-                        todaysBestWpm = uiState.todaysBestWpm,
-                        levelsCleared = uiState.levelsCleared,
-                        levelsTotal = uiState.levelsTotal
-                    )
+                // ── Level Progression Preview ─────────────────
+                EntranceFadeSlide(entranceStarted, delayMs = 500) {
+                    ProgressionPreview(previewTiers = uiState.tiers)
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(0.05f))
 
-                // ── Secondary Nav Row ─────────────────
-                EntranceFadeSlide(entranceStarted, delayMs = 750) {
+                // ── Quick Stats (only for existing players) ──
+                if (uiState.hasPlayer) {
+                    EntranceFadeSlide(entranceStarted, delayMs = 700) {
+                        CompactStats(
+                            todaysBestWpm = uiState.todaysBestWpm,
+                            levelsCleared = uiState.levelsCleared,
+                            levelsTotal = uiState.levelsTotal
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(0.04f))
+                }
+
+                // ── Secondary Nav Row ─────────────────────────
+                EntranceFadeSlide(entranceStarted, delayMs = 800) {
                     SecondaryNavRow(
-                        onStatsClick = onNavigateToStats,
+                        onDailyChallengesClick = onNavigateToDailyChallenges,
                         onAchievementsClick = onNavigateToAchievements,
-                        onSettingsClick = onNavigateToSettings
+                        onStatsClick = onNavigateToStats
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // ── Bottom breathing room ─────────────────────
+                Spacer(modifier = Modifier.weight(0.10f))
             }
 
-            // Navigation Bar
+            // Bottom Navigation Bar
             EntranceFadeSlide(entranceStarted, delayMs = 900) {
-                NavigationBar(
+                HomeNavBar(
                     activeTab = "Home",
-                    onHomeClick = { },
-                    onMapClick = onPlay,
+                    onPlayClick = onPlay,
                     onStatsClick = onNavigateToStats
                 )
             }
@@ -153,282 +155,252 @@ fun HomeScreen(
     }
 }
 
-// ── Top App Bar ──────────────────────────────────────────
+// ── Top Bar ──────────────────────────────────────────────
 
 @Composable
-private fun TopAppBar(onSettingsClick: () -> Unit) {
+private fun HomeTopBar(onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .padding(horizontal = 16.dp),
+            .height(44.dp)
+            .padding(horizontal = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "🔥",
-                fontSize = 18.sp,
-                modifier = Modifier.alpha(0.7f)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+            Text("🔥", fontSize = 16.sp, modifier = Modifier.alpha(0.7f))
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = "type-strike",
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleMedium,
                 color = TextWhite,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
         }
-        TextButton(
-            onClick = onSettingsClick,
+        Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(36.dp)
                 .clip(CircleShape)
+                .clickable(onClick = onSettingsClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("⚙", fontSize = 18.sp, color = TextLabel)
+        }
+    }
+}
+
+// ── Welcome Hero (new users) ─────────────────────────────
+
+@Composable
+private fun WelcomeHero(entranceStarted: Boolean) {
+    EntranceFadeSlide(entranceStarted, delayMs = 120) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 24.dp)
         ) {
             Text(
-                text = "⚙",
-                fontSize = 20.sp,
-                color = TextLabel
+                text = "TYPE WITH FURY",
+                style = MaterialTheme.typography.headlineLarge,
+                fontSize = 28.sp,
+                color = TextWhite,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 4.sp,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Strike through 100 levels of fire, magma, and obsidian.\nEach level challenges your speed & precision.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextMuted,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
             )
         }
     }
 }
 
-// ── Player Identity Card ─────────────────────────────────
+// ── Compact Player Card (existing users) ─────────────────
 
 @Composable
-private fun PlayerIdentityCard(
+private fun CompactPlayerCard(
     level: Int,
     title: String,
     totalStars: Int,
-    maxStars: Int,
-    xp: Int,
-    xpForNext: Int,
-    xpProgress: Float
+    xpProgress: Float,
+    entranceStarted: Boolean
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.85f)),
-        border = BorderStroke(1.dp, SurfaceBorder.copy(alpha = 0.3f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Top row: Level badge + Star count
+    EntranceFadeSlide(entranceStarted, delayMs = 120) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.8f)),
+            border = BorderStroke(1.dp, SurfaceBorder.copy(alpha = 0.25f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Level badge with gradient
+                // Level badge
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .background(
-                            brush = Brush.linearGradient(
+                            Brush.linearGradient(
                                 colors = listOf(MagmaRed, MagmaRedDark),
                                 start = androidx.compose.ui.geometry.Offset.Zero,
                                 end = androidx.compose.ui.geometry.Offset.Infinite
                             )
                         )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "⚡",
-                            fontSize = 12.sp,
-                            color = TextWhite
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "LV.$level",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = TextWhite,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Star count
-                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "★",
-                        color = MoltenGold,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.shadow(
-                            4.dp,
-                            RoundedCornerShape(0.dp),
-                            spotColor = MoltenGold.copy(alpha = 0.4f)
-                        )
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "$totalStars",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MoltenGold,
+                        text = "LV.$level",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextWhite,
                         fontWeight = FontWeight.Bold
                     )
-                    if (maxStars > 0) {
-                        Text(
-                            text = " / $maxStars",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextMuted
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title.uppercase(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = TextWhite,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    // XP bar compact
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .padding(end = 8.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(SurfaceBorder.copy(alpha = 0.4f))
+                    ) {
+                        val animProg by animateFloatAsState(
+                            targetValue = xpProgress.coerceIn(0f, 1f),
+                            animationSpec = tween(1200, easing = FastOutSlowInEasing),
+                            label = "xpBar"
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(animProg)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(
+                                    Brush.horizontalGradient(listOf(MagmaRed, MoltenGold))
+                                )
                         )
                     }
                 }
+                Spacer(modifier = Modifier.width(8.dp))
+                // Stars
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("★", color = MoltenGold, fontSize = 14.sp,
+                        modifier = Modifier.shadow(2.dp, RoundedCornerShape(0.dp), spotColor = MoltenGold.copy(alpha = 0.3f)))
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text("$totalStars", style = MaterialTheme.typography.labelLarge, color = MoltenGold, fontWeight = FontWeight.Bold)
+                }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Player title
-            Text(
-                text = title.uppercase(),
-                style = MaterialTheme.typography.headlineSmall,
-                color = TextWhite,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
-                maxLines = 1
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // XP Progress Bar
-            XpProgressBar(
-                xp = xp,
-                xpForNext = xpForNext,
-                progress = xpProgress,
-                nextLevel = level + 1
-            )
         }
     }
 }
 
-// ── XP Progress Bar ──────────────────────────────────────
+// ── Level Progression Preview ────────────────────────────
 
 @Composable
-private fun XpProgressBar(
-    xp: Int,
-    @Suppress("UNUSED_PARAMETER") xpForNext: Int,
-    progress: Float,
-    nextLevel: Int
-) {
-    // Animated fill
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = tween(1200, easing = FastOutSlowInEasing),
-        label = "xpProgress"
-    )
-
-    val percentage = (progress * 100).toInt()
-
-    // XP labels
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = "$xp XP",
-            style = MaterialTheme.typography.labelSmall,
-            color = TextLabel,
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = "$percentage% → LV.$nextLevel",
-            style = MaterialTheme.typography.labelSmall,
-            color = MagmaRed,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-
-    Spacer(modifier = Modifier.height(4.dp))
-
-    // Track
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(8.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(SurfaceBorder.copy(alpha = 0.5f))
-    ) {
-        // Fill with gradient — animated via fillMaxWidth
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(animatedProgress)
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(4.dp))
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(MagmaRed, MoltenGold)
-                    )
-                )
-        )
-    }
-}
-
-// ── Player Identity Skeleton ─────────────────────────────
-
-@Composable
-private fun PlayerIdentitySkeleton() {
-    Card(
+private fun ProgressionPreview(previewTiers: List<TierPreview>) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .height(96.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.5f))
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                color = MagmaRed,
-                modifier = Modifier.size(24.dp),
-                strokeWidth = 2.dp
+        Text(
+            text = "PROGRESSION",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextMuted,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 2.sp,
+            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+        )
+
+        previewTiers.forEachIndexed { index, tier ->
+            TierPreviewRow(
+                tier = tier,
+                isLast = index == previewTiers.lastIndex,
+                animDelay = index * 100
             )
         }
     }
 }
 
-// ── Player Identity Error ─────────────────────────────────
-
 @Composable
-private fun PlayerIdentityError(
-    message: String,
-    onRetry: () -> Unit
+private fun TierPreviewRow(
+    tier: TierPreview,
+    isLast: Boolean,
+    animDelay: Int
 ) {
-    Card(
+    val animProgress by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(400, delayMillis = animDelay, easing = FastOutSlowInEasing),
+        label = "tier_${tier.name}"
+    )
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.5f))
+            .alpha(animProgress)
+            .padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Tier icon
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .size(32.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(tier.color).copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "⚠️",
-                fontSize = 14.sp
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted,
-                modifier = Modifier.weight(1f)
-            )
-            TextButton(onClick = onRetry) {
-                Text("Retry", color = MagmaRed, style = MaterialTheme.typography.labelSmall)
+            Text(tier.icon, fontSize = 14.sp)
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = tier.name.uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color(tier.color),
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = tier.levelRange,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextDisabled
+                )
             }
+            Text(
+                text = tier.description,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted,
+                lineHeight = 14.sp
+            )
+        }
+        // Arrow connector (except last)
+        if (!isLast) {
+            Text(
+                text = "▸",
+                color = TextDisabled.copy(alpha = 0.4f),
+                fontSize = 10.sp,
+                modifier = Modifier.padding(start = 4.dp)
+            )
         }
     }
 }
@@ -448,7 +420,7 @@ private fun JumpInButton(
             animation = tween(2000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "jumpInGlowAlpha"
+        label = "jumpInGlow"
     )
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -462,43 +434,34 @@ private fun JumpInButton(
 
     Box(
         modifier = Modifier
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 16.dp)
             .fillMaxWidth()
     ) {
-        // Glow behind button
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .padding(horizontal = 8.dp, vertical = 8.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .alpha(glowAlpha)
                 .background(MagmaRed)
         )
-
         Button(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(56.dp)
                 .scale(pulseScale),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MagmaRed
-            ),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 8.dp
-            )
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MagmaRed),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "🔥",
-                        fontSize = 20.sp
-                    )
+                    Text("🔥", fontSize = 18.sp)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "JUMP IN",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         color = TextWhite,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp
@@ -515,10 +478,10 @@ private fun JumpInButton(
     }
 }
 
-// ── Quick Stats Row ──────────────────────────────────────
+// ── Compact Stats (existing users only) ──────────────────
 
 @Composable
-private fun QuickStatsRow(
+private fun CompactStats(
     todaysBestWpm: Int,
     levelsCleared: Int,
     levelsTotal: Int
@@ -526,205 +489,158 @@ private fun QuickStatsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Today's Best WPM
-        QuickStatCard(
+        MiniStatCard(
             label = "Today's Best",
             value = if (todaysBestWpm > 0) "$todaysBestWpm WPM" else "—",
-            accentColor = MagmaRed,
+            accent = MagmaRed,
             modifier = Modifier.weight(1f)
         )
-
-        // Levels Completed
-        QuickStatCard(
+        MiniStatCard(
             label = "Levels",
             value = "$levelsCleared / $levelsTotal",
-            accentColor = TextBody,
+            accent = TextBody,
             modifier = Modifier.weight(1f)
         )
     }
 }
 
 @Composable
-private fun QuickStatCard(
+private fun MiniStatCard(
     label: String,
     value: String,
-    accentColor: Color,
+    accent: Color,
     modifier: Modifier = Modifier
 ) {
-    // Entrance value animation
-    val cardAlpha by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(500),
-        label = "quickStatAlpha"
-    )
-
     Card(
-        modifier = modifier
-            .height(72.dp)
-            .alpha(cardAlpha),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Surface.copy(alpha = 0.8f)
-        ),
-        border = BorderStroke(1.dp, SurfaceBorder.copy(alpha = 0.3f))
+        modifier = modifier.height(52.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.7f)),
+        border = BorderStroke(1.dp, SurfaceBorder.copy(alpha = 0.2f))
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.Center
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = TextMuted,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp
+                color = TextMuted
             )
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                color = accentColor,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
+                style = MaterialTheme.typography.titleMedium,
+                color = accent,
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
 
-// ── Secondary Navigation Row ─────────────────────────────
+// ── Secondary Nav Row ────────────────────────────────────
 
 @Composable
 private fun SecondaryNavRow(
-    onStatsClick: () -> Unit,
+    onDailyChallengesClick: () -> Unit,
     onAchievementsClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onStatsClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Stats button
-        OutlinedButton(
-            onClick = onStatsClick,
-            modifier = Modifier.height(42.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextBody),
-            border = BorderStroke(1.dp, SurfaceBorder.copy(alpha = 0.5f))
-        ) {
-            Text(
-                text = "📊  STATS",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp
-            )
-        }
+        SecondaryNavButton("🎯  DAILY", MagmaRed, onDailyChallengesClick)
+        Spacer(modifier = Modifier.width(8.dp))
+        SecondaryNavButton("🏆  REWARDS", TextBody, onAchievementsClick)
+        Spacer(modifier = Modifier.width(8.dp))
+        SecondaryNavButton("📊  STATS", TextBody, onStatsClick)
+    }
+}
 
-        Spacer(modifier = Modifier.width(10.dp))
-
-        // Achievements / Rewards button
-        OutlinedButton(
-            onClick = onAchievementsClick,
-            modifier = Modifier.height(42.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextBody),
-            border = BorderStroke(1.dp, SurfaceBorder.copy(alpha = 0.5f))
-        ) {
-            Text(
-                text = "🏆  REWARDS",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        // Settings button
-        OutlinedButton(
-            onClick = onSettingsClick,
-            modifier = Modifier.height(42.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextBody),
-            border = BorderStroke(1.dp, SurfaceBorder.copy(alpha = 0.5f))
-        ) {
-            Text(
-                text = "⚙  SETTINGS",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp
-            )
-        }
+@Composable
+private fun SecondaryNavButton(
+    text: String,
+    color: Color,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.height(36.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = color),
+        border = BorderStroke(1.dp, color.copy(alpha = if (color == MagmaRed) 0.4f else 0.2f)),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (color == MagmaRed) FontWeight.Bold else FontWeight.SemiBold,
+            letterSpacing = 0.5.sp
+        )
     }
 }
 
 // ── Navigation Bar ───────────────────────────────────────
 
 @Composable
-private fun NavigationBar(
+private fun HomeNavBar(
     activeTab: String,
-    onHomeClick: () -> Unit,
-    onMapClick: () -> Unit,
+    onPlayClick: () -> Unit,
     onStatsClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Background,
         tonalElevation = 0.dp,
-        shadowElevation = 8.dp
+        shadowElevation = 6.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(56.dp)
                 .background(Background)
-                .padding(bottom = 8.dp),
+                .padding(bottom = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavigationTab("🏠", "Home", activeTab == "Home", onHomeClick)
-            NavigationTab("🗺", "Play", activeTab == "Play", onMapClick)
-            NavigationTab("📊", "Stats", activeTab == "Stats", onStatsClick)
+            NavTab("🏠", "Home", activeTab == "Home", onClick = {})
+            NavTab("🗺", "Play", activeTab == "Play", onClick = onPlayClick)
+            NavTab("📊", "Stats", activeTab == "Stats", onClick = onStatsClick)
         }
     }
 }
 
 @Composable
-private fun NavigationTab(
+private fun NavTab(
     icon: String,
     label: String,
     isActive: Boolean,
     onClick: () -> Unit
 ) {
-    val color = if (isActive) MagmaRed else TextDisabled
+    val color = if (isActive) MagmaRed else TextDisabled.copy(alpha = 0.6f)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .size(64.dp)
-            .padding(4.dp)
+            .size(56.dp)
+            .padding(2.dp)
             .clickable(onClick = onClick)
     ) {
-        if (isActive) {
-            Box(
-                modifier = Modifier
-                    .width(20.dp)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(1.5.dp))
-                    .background(MagmaRed)
-            )
-        } else {
-            Spacer(modifier = Modifier.height(3.dp))
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = icon, fontSize = 20.sp, color = color)
+        Box(
+            modifier = Modifier
+                .width(if (isActive) 16.dp else 0.dp)
+                .height(3.dp)
+                .clip(RoundedCornerShape(1.5.dp))
+                .background(MagmaRed)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(text = icon, fontSize = 18.sp, color = color)
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = color,
             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
         )
@@ -748,24 +664,16 @@ private fun EntranceFadeSlide(
     AnimatedContent(
         targetState = state.targetState,
         transitionSpec = {
-            val delay = delayMs.toLong()
-            slideInVertically(
-                animationSpec = tween(
-                    durationMillis = 500,
-                    delayMillis = delay.toInt(),
-                    easing = FastOutSlowInEasing
-                ),
+            val d = delayMs.toLong()
+            val enter = slideInVertically(
+                animationSpec = tween(500, delayMillis = d.toInt(), easing = FastOutSlowInEasing),
                 initialOffsetY = { it / 2 }
-            ) + fadeIn(
-                animationSpec = tween(
-                    durationMillis = 300,
-                    delayMillis = delay.toInt()
-                )
-            ) togetherWith
-            slideOutVertically(
+            ) + fadeIn(animationSpec = tween(300, delayMillis = d.toInt()))
+            val exit = slideOutVertically(
                 animationSpec = tween(300),
                 targetOffsetY = { it / 2 }
             ) + fadeOut(tween(200))
+            enter togetherWith exit
         },
         modifier = modifier,
         label = "entrance_$delayMs"

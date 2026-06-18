@@ -6,7 +6,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -353,7 +355,7 @@ private fun LevelPreviewContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Word Preview ────────────────────────────────
+        // ── Paragraph Preview ───────────────────────────
         AnimatedVisibility(
             visible = animPhase >= 4,
             enter = fadeIn(tween(300))
@@ -362,37 +364,34 @@ private fun LevelPreviewContent(
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
             ) {
+                // Short preview of the paragraph
+                val previewText = detail.paragraph
+                    .take(120)
+                    .replaceFirstChar { it.uppercase() }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("⚡", fontSize = 12.sp, color = TextDisabled)
+                    Text("📜", fontSize = 12.sp, color = TextDisabled)
                     Spacer(modifier = Modifier.width(8.dp))
-                    detail.sampleWords.take(3).forEachIndexed { index, word ->
-                        AnimatedVisibility(
-                            visible = animPhase >= 4,
-                            enter = fadeIn(tween(200, delayMillis = 100 + index * 100))
-                        ) {
-                            Row {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(Surface.copy(alpha = 0.3f))
-                                        .border(1.dp, SurfaceBorder, RoundedCornerShape(6.dp))
-                                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = word,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = TextLabel,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                                if (index < 2) Spacer(modifier = Modifier.width(8.dp))
-                            }
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Surface.copy(alpha = 0.3f))
+                            .border(1.dp, SurfaceBorder, RoundedCornerShape(8.dp))
+                            .height(48.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "\"$previewText…\"",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextLabel,
+                            maxLines = 2
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${detail.wordMinLength}–${detail.wordMaxLength} letter words · ${detail.wordCount} total",
+                    text = "${detail.paragraph.length} characters · mixed case, numbers, punctuation",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextDisabled,
                     modifier = Modifier.padding(start = 24.dp)

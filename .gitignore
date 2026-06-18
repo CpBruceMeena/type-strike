@@ -44,3 +44,11 @@ crg-cache/
 .cache/code-review-graph/
 .cache/crg/
 *.crg
+
+# ── Root-level assets / screenshots ───────────────────
+*.png
+!type-strike-android/app/src/main/res/**/*.png
+!type-strike-android/app/src/main/res/drawable/**/*.png
+
+# ── Backend build artifacts ──────────────────────────
+backend/scripts/seed_levels

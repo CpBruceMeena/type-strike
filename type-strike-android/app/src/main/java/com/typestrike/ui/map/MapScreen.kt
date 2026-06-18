@@ -91,35 +91,38 @@ fun MapScreen(
     val isRefreshing = uiState.isRefreshing
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
-        when {
-            uiState.isLoading -> MapLoadingState()
-            uiState.hasError -> MapErrorState(
-                message = uiState.errorMessage ?: "Failed to load",
-                onRetry = { viewModel.loadMapData() }
-            )
-            else -> {
-                // Main content
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Particle background (behind everything)
-                    MapParticleField(
-                        config = particleConfig,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 56.dp)
-                    )
+        // Particle background (always visible, even during errors)
+        MapParticleField(
+            config = particleConfig,
+            modifier = Modifier.fillMaxSize()
+        )
 
-                    // Header
-                    MapHeader(
-                        playerLevel = uiState.playerLevel,
-                        playerTitle = uiState.playerTitle,
-                        playerStars = uiState.playerStars,
-                        onSettingsClick = onNavigateToSettings,
-                        onBackClick = onNavigateBack,
-                        entranceStarted = entranceStarted
-                    )
+        // Header (always visible, even during loading/error)
+        MapHeader(
+            playerLevel = uiState.playerLevel,
+            playerTitle = uiState.playerTitle,
+            playerStars = uiState.playerStars,
+            onSettingsClick = onNavigateToSettings,
+            onBackClick = onNavigateBack,
+            entranceStarted = entranceStarted
+        )
 
-                    // Level list
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        // Main content area
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 100.dp)  // Below header
+        ) {
+            when {
+                uiState.isLoading && uiState.levels.isEmpty() -> MapLoadingState()
+                uiState.hasError && uiState.levels.isEmpty() -> MapEmptyState(
+                    message = uiState.errorMessage ?: "Could not load levels. Make sure the backend server is running on port 8080.",
+                    onRetry = { viewModel.loadMapData() },
+                    onBack = onNavigateBack
+                )
+                else -> {
+                    Box(Modifier.fillMaxSize()) {
+                        // Level list
                         MapLevelList(
                             levels = uiState.levels,
                             listState = listState,
@@ -128,25 +131,14 @@ fun MapScreen(
                             onLevelTap = onLevelTap
                         )
 
-                        // Refreshing indicator
-                        if (isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(top = 8.dp)
-                                    .size(24.dp),
-                                color = MagmaRed,
-                                strokeWidth = 2.dp
-                            )
-                        }
-
-                        // Error banner on top
-                        if (uiState.hasError) {
+                        // Error banner on top of list (for refresh errors)
+                        if (uiState.hasError && uiState.levels.isNotEmpty()) {
                             Surface(
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(16.dp)
+                                    .padding(top = 8.dp),
                                 shape = RoundedCornerShape(8.dp),
                                 color = ErrorRed.copy(alpha = 0.15f)
                             ) {
@@ -158,34 +150,44 @@ fun MapScreen(
                                 )
                             }
                         }
-                    }
-                }
 
-                // Scroll-to-current FAB (overlaid at bottom)
-                if (uiState.firstUncompletedLevelId > 1) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        FloatingActionButton(
-                            onClick = {
-                                val targetIndex = uiState.levels.indexOfFirst { it.id == uiState.firstUncompletedLevelId }
-                                if (targetIndex >= 0) {
-                                    scope.launch {
-                                        val tierHeaderIndex = (uiState.firstUncompletedLevelId - 1) / 25
-                                        listState.animateScrollToItem(
-                                            index = targetIndex + tierHeaderIndex + 1,
-                                            scrollOffset = -200
-                                        )
+                        // Refreshing indicator
+                        if (isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = if (uiState.hasError) 64.dp else 8.dp)
+                                    .size(24.dp),
+                                color = MagmaRed,
+                                strokeWidth = 2.dp
+                            )
+                        }
+
+                        // Scroll-to-current FAB (overlaid at bottom)
+                        if (uiState.firstUncompletedLevelId > 1) {
+                            FloatingActionButton(
+                                onClick = {
+                                    val targetIndex = uiState.levels.indexOfFirst { it.id == uiState.firstUncompletedLevelId }
+                                    if (targetIndex >= 0) {
+                                        scope.launch {
+                                            val tierHeaderIndex = (uiState.firstUncompletedLevelId - 1) / 25
+                                            listState.animateScrollToItem(
+                                                index = targetIndex + tierHeaderIndex + 1,
+                                                scrollOffset = -200
+                                            )
+                                        }
                                     }
-                                }
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp)
-                                .size(40.dp),
-                            containerColor = MagmaRed,
-                            shape = CircleShape,
-                            elevation = FloatingActionButtonDefaults.elevation(4.dp)
-                        ) {
-                            Text("↓", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(16.dp)
+                                    .size(40.dp),
+                                containerColor = MagmaRed,
+                                shape = CircleShape,
+                                elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                            ) {
+                                Text("↓", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -969,27 +971,63 @@ private fun MapLoadingState() {
     }
 }
 
-// ── Error State ──────────────────────────────────────────
+// ── Empty / Error State (when no levels loaded) ─────────
 
 @Composable
-private fun MapErrorState(message: String, onRetry: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("⚠️", fontSize = 32.sp)
+private fun MapEmptyState(
+    message: String,
+    onRetry: () -> Unit,
+    onBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        ) {
+            Text("🔥", fontSize = 48.sp, modifier = Modifier.alpha(0.5f))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "NO LEVELS LOADED",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextWhite,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = TextMuted,
-                modifier = Modifier.padding(horizontal = 32.dp),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = onRetry,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MagmaRed)
             ) {
-                Text("Retry", color = TextWhite)
+                Text(
+                    text = "RETRY CONNECTION",
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(onClick = onBack) {
+                Text(
+                    text = "BACK TO HOME",
+                    color = TextLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    letterSpacing = 1.sp
+                )
             }
         }
     }

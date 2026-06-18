@@ -1,6 +1,7 @@
 package com.typestrike.data.repository
 
 import com.typestrike.data.api.TypeStrikeApi
+import com.typestrike.data.local.LocalLevelData
 import com.typestrike.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,6 +10,8 @@ import javax.inject.Singleton
 
 /**
  * Repository for level-related operations.
+ * Falls back to [LocalLevelData] when the backend API is unavailable,
+ * ensuring the Map screen always shows levels.
  */
 @Singleton
 class LevelRepository @Inject constructor(
@@ -16,25 +19,44 @@ class LevelRepository @Inject constructor(
 ) {
     /**
      * Gets level detail with player's best progress.
+     * Falls back to local level data when the API fails.
      */
-    suspend fun getLevelDetail(levelId: Int, playerId: Int): Result<LevelDetail> = safeApiCall {
-        val response = api.getLevelDetail(levelId, playerId)
-        if (response.isSuccessful) {
-            response.body() ?: throw Exception("Empty response")
+    suspend fun getLevelDetail(levelId: Int, playerId: Int): Result<LevelDetail> {
+        val apiResult = safeApiCall {
+            val response = api.getLevelDetail(levelId, playerId)
+            if (response.isSuccessful) {
+                response.body() ?: throw Exception("Empty response")
+            } else {
+                throw Exception("API error: ${response.code()} ${response.message()}")
+            }
+        }
+        // Fall back to local data on failure
+        return if (apiResult.isSuccess) {
+            apiResult
         } else {
-            throw Exception("API error: ${response.code()} ${response.message()}")
+            val local = LocalLevelData.getLevel(levelId)
+            if (local != null) Result.success(local) else apiResult
         }
     }
 
     /**
      * Gets all 100 level configs.
+     * Falls back to local level data when the API fails.
      */
-    suspend fun getAllLevels(): Result<List<LevelDetail>> = safeApiCall {
-        val response = api.getAllLevels()
-        if (response.isSuccessful) {
-            response.body() ?: throw Exception("Empty response")
+    suspend fun getAllLevels(): Result<List<LevelDetail>> {
+        val apiResult = safeApiCall {
+            val response = api.getAllLevels()
+            if (response.isSuccessful) {
+                response.body() ?: throw Exception("Empty response")
+            } else {
+                throw Exception("API error: ${response.code()} ${response.message()}")
+            }
+        }
+        // Fall back to local data on failure
+        return if (apiResult.isSuccess) {
+            apiResult
         } else {
-            throw Exception("API error: ${response.code()} ${response.message()}")
+            Result.success(LocalLevelData.allLevels)
         }
     }
 

@@ -26,10 +26,7 @@ type LevelDetail struct {
 	Difficulty    int      `json:"difficulty"`
 	PassWPM       int      `json:"pass_wpm"`
 	PassAccuracy  int      `json:"pass_accuracy"`
-	WordMinLength int      `json:"word_min_length"`
-	WordMaxLength int      `json:"word_max_length"`
-	WordCount     int      `json:"word_count"`
-	SampleWords   []string `json:"sample_words"`
+	Paragraph     string   `json:"paragraph"`
 	PlayerBestWPM *int     `json:"player_best_wpm,omitempty"`
 	PlayerBestAcc *float64 `json:"player_best_acc,omitempty"`
 	PlayerStars   *int     `json:"player_stars,omitempty"`

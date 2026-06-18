@@ -12,10 +12,7 @@ data class LevelDetail(
     val difficulty: Int,
     @SerializedName("pass_wpm") val passWpm: Int,
     @SerializedName("pass_accuracy") val passAccuracy: Int,
-    @SerializedName("word_min_length") val wordMinLength: Int,
-    @SerializedName("word_max_length") val wordMaxLength: Int,
-    @SerializedName("word_count") val wordCount: Int,
-    @SerializedName("sample_words") val sampleWords: List<String>,
+    val paragraph: String,
     @SerializedName("player_best_wpm") val playerBestWpm: Int? = null,
     @SerializedName("player_best_acc") val playerBestAcc: Float? = null,
     @SerializedName("player_stars") val playerStars: Int? = null

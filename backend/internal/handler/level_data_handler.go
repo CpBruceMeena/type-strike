@@ -26,15 +26,13 @@ func (h *LevelDataHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	results := make([]map[string]interface{}, len(configs))
 	for i, c := range configs {
 		results[i] = map[string]interface{}{
-			"id":              c.ID,
-			"name":            c.Name,
-			"tier":            c.Tier,
-			"difficulty":      c.Difficulty,
-			"pass_wpm":        c.PassWPM,
-			"pass_accuracy":   c.PassAccuracy,
-			"word_min_length": c.WordMinLength,
-			"word_max_length": c.WordMaxLength,
-			"word_count":      c.WordCount,
+			"id":            c.ID,
+			"name":          c.Name,
+			"tier":          c.Tier,
+			"difficulty":    c.Difficulty,
+			"pass_wpm":      c.PassWPM,
+			"pass_accuracy": c.PassAccuracy,
+			"paragraph":     c.Paragraph,
 		}
 	}
 	writeJSON(w, http.StatusOK, results)

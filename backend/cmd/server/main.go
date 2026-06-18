@@ -44,6 +44,7 @@ func main() {
 	settingsHandler := handler.NewSettingsHandler(repos)
 	analyticsHandler := handler.NewAnalyticsHandler(repos)
 	levelDataHandler := handler.NewLevelDataHandler(repos)
+	dailyChallengeHandler := handler.NewDailyChallengeHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -92,6 +93,12 @@ func main() {
 			r.Get("/", levelDataHandler.GetAll)
 			r.Get("/next", levelDataHandler.GetNext)
 			r.Get("/{levelId}", levelDataHandler.GetByID)
+		})
+
+		// Daily Challenges (standalone challenge mode)
+		r.Route("/players/{playerId}/daily-challenges", func(r chi.Router) {
+			r.Get("/", dailyChallengeHandler.GetOrGenerate)
+			r.Post("/{challengeId}/complete", dailyChallengeHandler.SubmitResult)
 		})
 
 		// Analytics (global, not player-specific)
