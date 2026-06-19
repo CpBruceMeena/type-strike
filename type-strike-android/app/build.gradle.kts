@@ -23,10 +23,20 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../typestrike-release.keystore")
+            storePassword = System.getenv("TS_STORE_PASSWORD") ?: "1uNAbwlbA7ZjL+Va"
+            keyAlias = "typestrike"
+            keyPassword = System.getenv("TS_KEY_PASSWORD") ?: "1uNAbwlbA7ZjL+Va"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isDebuggable = true
