@@ -6,8 +6,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -87,31 +89,44 @@ fun HomeScreen(
                 )
             }
 
-            // ── Scrollable content ────────────────────
+            // ── Dashboard content (scrollable, no weight-based gaps) ───
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Spacer(modifier = Modifier.weight(0.06f))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // ── Welcome Hero or Enhanced Player Card ──
-                if (!uiState.hasPlayer) {
-                    WelcomeHero(entranceStarted = entranceStarted)
-                } else {
-                    EnhancedPlayerCard(
-                        level = uiState.playerLevel,
-                        title = uiState.playerTitle,
-                        totalStars = uiState.totalStars,
-                        xp = uiState.xp,
-                        xpForNext = uiState.xpForNext,
-                        xpProgress = uiState.xpProgress,
-                        entranceStarted = entranceStarted
-                    )
+                EntranceFadeSlide(entranceStarted, delayMs = 120) {
+                    if (!uiState.hasPlayer) {
+                        WelcomeHero()
+                    } else {
+                        EnhancedPlayerCard(
+                            level = uiState.playerLevel,
+                            title = uiState.playerTitle,
+                            totalStars = uiState.totalStars,
+                            xp = uiState.xp,
+                            xpForNext = uiState.xpForNext,
+                            xpProgress = uiState.xpProgress
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.weight(0.08f))
+                // ── Quick Stats Row ────────────────────
+                if (uiState.hasPlayer) {
+                    EntranceFadeSlide(entranceStarted, delayMs = 200) {
+                        QuickStatRow(
+                            bestWpm = uiState.todaysBestWpm,
+                            totalStars = uiState.totalStars,
+                            streakCount = uiState.streakCount,
+                            levelsCleared = uiState.levelsCleared
+                        )
+                    }
+                }
 
                 // ── JUMP IN Button ────────────────────
                 EntranceFadeSlide(entranceStarted, delayMs = 300) {
@@ -121,32 +136,33 @@ fun HomeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(0.06f))
-
-                // ── Daily Challenge Card ──────────────
+                // ── Two-column: Daily + Achievement side by side ──
                 if (uiState.hasPlayer) {
                     EntranceFadeSlide(entranceStarted, delayMs = 500) {
-                        DailyChallengeHomeCard(
-                            summary = uiState.dailyChallengeSummary,
-                            onClick = onNavigateToDailyChallenges
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // Daily Challenge mini card
+                            DailyChallengeMiniCard(
+                                summary = uiState.dailyChallengeSummary,
+                                onClick = onNavigateToDailyChallenges,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            // Achievement spotlight mini card
+                            if (uiState.spotlightAchievement != null) {
+                                AchievementMiniCard(
+                                    achievement = uiState.spotlightAchievement!!,
+                                    onClick = onNavigateToAchievements,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.weight(0.06f))
                 }
 
-                // ── Achievement Spotlight ─────────────
-                if (uiState.hasPlayer && uiState.spotlightAchievement != null) {
-                    EntranceFadeSlide(entranceStarted, delayMs = 700) {
-                        AchievementSpotlightCard(
-                            achievement = uiState.spotlightAchievement!!,
-                            onClick = onNavigateToAchievements
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(0.06f))
-                }
-
-                // ── Bottom breathing room ─────────────
-                Spacer(modifier = Modifier.weight(0.08f))
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             // Bottom Navigation Bar
@@ -261,30 +277,30 @@ private fun HomeTopBar(
 // ── Welcome Hero (new users) ─────────────────────────────
 
 @Composable
-private fun WelcomeHero(entranceStarted: Boolean) {
-    EntranceFadeSlide(entranceStarted, delayMs = 120) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        ) {
-            Text(
-                text = "TYPE WITH FURY",
-                style = MaterialTheme.typography.headlineLarge,
-                fontSize = 28.sp,
-                color = TextWhite,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 4.sp,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Strike through 100 levels of fire, magma, and obsidian.\nEach level challenges your speed & precision.",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-        }
+private fun WelcomeHero() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp)
+    ) {
+        Text(
+            text = "TYPE WITH FURY",
+            style = MaterialTheme.typography.headlineLarge,
+            fontSize = 28.sp,
+            color = TextWhite,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 4.sp,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "Strike through 100 levels of fire, magma, and obsidian.\nEach level challenges your speed & precision.",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextMuted,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp
+        )
     }
 }
 
@@ -297,142 +313,195 @@ private fun EnhancedPlayerCard(
     totalStars: Int,
     xp: Int,
     xpForNext: Int,
-    xpProgress: Float,
-    entranceStarted: Boolean
+    xpProgress: Float
 ) {
-    EntranceFadeSlide(entranceStarted, delayMs = 120) {
-        val glowTransition = rememberInfiniteTransition(label = "cardGlow")
-        val borderGlow by glowTransition.animateFloat(
-            initialValue = 0.3f,
-            targetValue = 0.6f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(2000, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "cardBorderGlow"
-        )
+    val glowTransition = rememberInfiniteTransition(label = "cardGlow")
+    val borderGlow by glowTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cardBorderGlow"
+    )
 
-        Card(
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.85f)),
+        border = BorderStroke(1.dp, MagmaRed.copy(alpha = borderGlow * 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.85f)),
-            border = BorderStroke(1.dp, MagmaRed.copy(alpha = borderGlow * 0.5f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // ── Circular XP arc ─────────────────
+            Box(
+                modifier = Modifier.size(56.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // ── Circular XP arc ─────────────────
-                Box(
-                    modifier = Modifier.size(56.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val animProgress by animateFloatAsState(
-                        targetValue = xpProgress.coerceIn(0f, 1f),
-                        animationSpec = tween(1200, easing = FastOutSlowInEasing),
-                        label = "xpArcAnim"
-                    )
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val strokeW = 4.dp.toPx()
-                        val arcSize = Size(size.width - strokeW, size.height - strokeW)
-                        val arcTopLeft = Offset(strokeW / 2f, strokeW / 2f)
+                val animProgress by animateFloatAsState(
+                    targetValue = xpProgress.coerceIn(0f, 1f),
+                    animationSpec = tween(1200, easing = FastOutSlowInEasing),
+                    label = "xpArcAnim"
+                )
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val strokeW = 4.dp.toPx()
+                    val arcSize = Size(size.width - strokeW, size.height - strokeW)
+                    val arcTopLeft = Offset(strokeW / 2f, strokeW / 2f)
 
-                        // Background ring
-                        drawArc(
-                            brush = SolidColor(SurfaceBorder.copy(alpha = 0.3f)),
-                            startAngle = -90f,
-                            sweepAngle = 360f,
-                            useCenter = false,
-                            topLeft = arcTopLeft,
-                            size = arcSize,
-                            style = Stroke(width = strokeW, cap = StrokeCap.Round)
-                        )
-                        // Progress ring
-                        drawArc(
-                            brush = Brush.sweepGradient(
-                                colors = listOf(MagmaRed, MoltenGold, MagmaRed),
-                                center = Offset(size.width / 2f, size.height / 2f)
-                            ),
-                            startAngle = -90f,
-                            sweepAngle = 360f * animProgress,
-                            useCenter = false,
-                            topLeft = arcTopLeft,
-                            size = arcSize,
-                            style = Stroke(width = strokeW, cap = StrokeCap.Round)
-                        )
-                    }
-                    // Level number in center
+                    // Background ring
+                    drawArc(
+                        brush = SolidColor(SurfaceBorder.copy(alpha = 0.3f)),
+                        startAngle = -90f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        topLeft = arcTopLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeW, cap = StrokeCap.Round)
+                    )
+                    // Progress ring
+                    drawArc(
+                        brush = Brush.sweepGradient(
+                            colors = listOf(MagmaRed, MoltenGold, MagmaRed),
+                            center = Offset(size.width / 2f, size.height / 2f)
+                        ),
+                        startAngle = -90f,
+                        sweepAngle = 360f * animProgress,
+                        useCenter = false,
+                        topLeft = arcTopLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeW, cap = StrokeCap.Round)
+                    )
+                }
+                Text(
+                    text = "$level",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title.uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "$xp / $xpForNext XP",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted
+                )
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "$level",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = TextWhite,
+                        text = "★",
+                        color = MoltenGold,
+                        fontSize = 16.sp,
+                        modifier = Modifier.shadow(3.dp, RoundedCornerShape(0.dp), spotColor = MoltenGold.copy(alpha = 0.4f))
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "$totalStars",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MoltenGold,
                         fontWeight = FontWeight.Bold
                     )
                 }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                // ── Player info ─────────────────────
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title.uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "$xp / $xpForNext XP",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextMuted
-                    )
-                }
-
-                // ── Stars ──────────────────────────
-                Column(horizontalAlignment = Alignment.End) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "★",
-                            color = MoltenGold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.shadow(3.dp, RoundedCornerShape(0.dp), spotColor = MoltenGold.copy(alpha = 0.4f))
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "$totalStars",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MoltenGold,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    // XP label below stars
-                    val xpPercent = (xpProgress * 100).toInt()
-                    Text(
-                        text = "$xpPercent%",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MagmaRed.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                val xpPercent = (xpProgress * 100).toInt()
+                Text(
+                    text = "$xpPercent%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MagmaRed.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
 }
 
-// ── Daily Challenge Home Card ────────────────────────────
+// ── Quick Stat Row ───────────────────────────────────────
 
 @Composable
-private fun DailyChallengeHomeCard(
-    summary: DailyChallengeSummary,
-    onClick: () -> Unit
+private fun QuickStatRow(
+    bestWpm: Int,
+    totalStars: Int,
+    streakCount: Int,
+    levelsCleared: Int
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "dcGlow")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        StatPill("⚡", "$bestWpm", "WPM", MagmaRed, Modifier.weight(1f))
+        StatPill("★", "$totalStars", "Stars", MoltenGold, Modifier.weight(1f))
+        StatPill("🔥", "$streakCount", "Streak", MagmaRed, Modifier.weight(1f))
+        StatPill("🗺", "$levelsCleared", "Done", TextBody, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun StatPill(
+    icon: String,
+    value: String,
+    label: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.6f)),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.15f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = icon, fontSize = 12.sp)
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted,
+                fontSize = 9.sp
+            )
+        }
+    }
+}
+
+// ── Daily Challenge Mini Card (compact, for side-by-side layout) ─
+
+@Composable
+private fun DailyChallengeMiniCard(
+    summary: DailyChallengeSummary,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "dcMiniGlow")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.15f,
         targetValue = 0.35f,
@@ -440,248 +509,227 @@ private fun DailyChallengeHomeCard(
             animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "dcGlowAlpha"
+        label = "dcMiniGlowAlpha"
     )
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+        modifier = modifier
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.85f)),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.8f)),
         border = BorderStroke(1.dp, MoltenGold.copy(alpha = if (summary.hasIncomplete) glowAlpha else 0.1f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
         ) {
-            // ── Left icon area ──────────────────────
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = if (summary.completed >= summary.total)
-                                listOf(MoltenGold, MoltenGold.copy(alpha = 0.4f))
-                            else
-                                listOf(MagmaRed, MagmaRedDark)
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
+            // Icon row
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (summary.completed >= summary.total) MoltenGold.copy(alpha = 0.2f)
+                            else MagmaRed.copy(alpha = 0.2f)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (summary.completed >= summary.total) "🏆" else "🎯",
+                        fontSize = 16.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (summary.completed >= summary.total) "🏆" else "🎯",
-                    fontSize = 20.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // ── Info ────────────────────────────────
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "DAILY CHALLENGES",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = "DAILY",
+                    style = MaterialTheme.typography.labelSmall,
                     color = TextWhite,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "${summary.completed} / ${summary.total} complete",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextBody
-                    )
-                    if (summary.streakCount > 1) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "🔥 ×${String.format("%.1f", summary.streakMultiplier)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MagmaRed,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp
-                        )
-                    }
-                }
+            }
 
-                // Mini progress dots
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(summary.total) { i ->
-                        val filled = i < summary.completed
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (filled) MagmaRed
-                                    else SurfaceBorder.copy(alpha = 0.3f)
-                                )
-                        )
-                    }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Progress: "1 / 3"
+            Text(
+                text = "${summary.completed} / ${summary.total}",
+                style = MaterialTheme.typography.headlineLarge,
+                fontSize = 20.sp,
+                color = if (summary.completed >= summary.total) MoltenGold else TextWhite,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "challenges",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted
+            )
+
+            // Mini progress dots
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                repeat(summary.total) { i ->
+                    val filled = i < summary.completed
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (filled) MagmaRed
+                                else SurfaceBorder.copy(alpha = 0.3f)
+                            )
+                    )
                 }
             }
 
-            // ── Play button ─────────────────────────
-            if (summary.hasIncomplete) {
-                val pulse by infiniteTransition.animateFloat(
-                    initialValue = 0.9f,
-                    targetValue = 1f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(1200, easing = FastOutSlowInEasing),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "dcBtnPulse"
+            // Streak multiplier if active
+            if (summary.streakCount > 1) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "🔥 ×${String.format("%.1f", summary.streakMultiplier)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MagmaRed,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 9.sp
                 )
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .scale(pulse)
-                        .clip(CircleShape)
-                        .background(MagmaRed),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("▶", color = TextWhite, fontSize = 16.sp, modifier = Modifier.padding(start = 2.dp))
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MoltenGold.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("✓", color = MoltenGold, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
             }
         }
     }
 }
 
-// ── Achievement Spotlight Card ───────────────────────────
+// ── Achievement Mini Card (compact, for side-by-side layout) ─
 
 @Composable
-private fun AchievementSpotlightCard(
+private fun AchievementMiniCard(
     achievement: Achievement,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val isUnlocked = achievement.isUnlocked
     val accentColor = if (isUnlocked) MoltenGold else MagmaRed
 
-    val infiniteTransition = rememberInfiniteTransition(label = "achGlow")
-    val progressPulse by infiniteTransition.animateFloat(
-        initialValue = 0.15f,
-        targetValue = 0.35f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "achProgressPulse"
-    )
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+        modifier = modifier
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.7f)),
-        border = BorderStroke(1.dp, accentColor.copy(alpha = if (isUnlocked) 0.2f else 0.1f))
+        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.8f)),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.12f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
         ) {
-            // Icon
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (isUnlocked) MoltenGold.copy(alpha = 0.15f)
-                        else accentColor.copy(alpha = if (achievement.progress > 0) progressPulse else 0.05f)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
+            // Icon + label
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(accentColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = achievement.icon,
+                        fontSize = 14.sp,
+                        modifier = Modifier.alpha(if (isUnlocked) 1f else 0.6f)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = achievement.icon,
-                    fontSize = 16.sp,
-                    modifier = Modifier.alpha(if (isUnlocked) 1f else 0.6f)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (isUnlocked) "★ UNLOCKED" else "NEXT ACHIEVEMENT",
+                    text = if (isUnlocked) "★ DONE" else "ACHIEVE",
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isUnlocked) MoltenGold else TextMuted,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    fontSize = 9.sp
-                )
-                Spacer(modifier = Modifier.height(1.dp))
-                Text(
-                    text = achievement.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextWhite,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.height(1.dp))
-                Text(
-                    text = achievement.description,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextMuted,
-                    fontSize = 10.sp,
-                    maxLines = 1
+                    fontSize = 9.sp,
+                    letterSpacing = 1.sp
                 )
             }
 
-            // Progress or checkmark
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Title
+            Text(
+                text = achievement.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 12.sp,
+                color = TextWhite,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // Progress or status
             if (isUnlocked) {
-                Text("✓", color = MoltenGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "✓ Completed",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MoltenGold,
+                    fontSize = 9.sp
+                )
             } else if (achievement.progress > 0f) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(SurfaceBorder.copy(alpha = 0.3f))
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(accentColor.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${(achievement.progress * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = accentColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 9.sp
-                        )
-                    }
+                            .fillMaxHeight()
+                            .fillMaxWidth(achievement.progress)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(MagmaRed, MoltenGold)
+                                )
+                            )
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = achievement.description,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextMuted,
+                        fontSize = 8.sp,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
                     if (achievement.progressText.isNotBlank()) {
                         Text(
                             text = achievement.progressText,
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextDisabled,
-                            fontSize = 7.sp
+                            color = accentColor,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             } else {
-                Text("🔒", fontSize = 16.sp, modifier = Modifier.alpha(0.4f))
+                Text(
+                    text = achievement.description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted,
+                    fontSize = 9.sp,
+                    maxLines = 2
+                )
             }
         }
     }
 }
+
+
+
+
 
 // ── JUMP IN Button ───────────────────────────────────────
 
