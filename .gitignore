@@ -54,5 +54,9 @@ type-strike-wireframe.html
 !type-strike-android/app/src/main/res/**/*.png
 !type-strike-android/app/src/main/res/drawable/**/*.png
 
+# ── Android Keystore (DO NOT COMMIT) ───────────────────
+*.keystore
+*.jks
+
 # ── Backend build artifacts ──────────────────────────
 backend/scripts/seed_levels
