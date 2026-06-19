@@ -29,7 +29,9 @@ data class DailyChallenge(
  */
 data class DailyChallengesResponse(
     val challenges: List<DailyChallenge>,
-    val date: String
+    val date: String,
+    @SerializedName("streak_count") val streakCount: Int = 0,
+    @SerializedName("streak_multiplier") val streakMultiplier: Double = 1.0
 )
 
 /**
@@ -49,5 +51,7 @@ data class SubmitChallengeResponse(
     @SerializedName("reward_xp") val rewardXp: Int = 0,
     @SerializedName("reward_stars") val rewardStars: Int = 0,
     @SerializedName("just_completed") val justCompleted: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    @SerializedName("streak_count") val streakCount: Int = 0,
+    @SerializedName("streak_multiplier") val streakMultiplier: Double = 1.0
 )

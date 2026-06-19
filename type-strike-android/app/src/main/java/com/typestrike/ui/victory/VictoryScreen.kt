@@ -42,6 +42,7 @@ fun VictoryScreen(
     onPlayAgain: (Int) -> Unit = {},
     onNextLevel: (Int) -> Unit = {},
     onBackToMap: () -> Unit = {},
+    onBack: () -> Unit = {},
     viewModel: VictoryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,7 +98,15 @@ fun VictoryScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // ── Back button (always visible, replaces top spacer) ──
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        TextButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                            Text("←", color = TextBody, fontSize = 22.sp)
+                        }
+                    }
 
                     // ── Header Badge ─────────────────────
                     if (uiState.animPhase >= 3) {

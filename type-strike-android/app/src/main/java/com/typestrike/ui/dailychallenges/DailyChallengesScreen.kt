@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -83,7 +84,9 @@ fun DailyChallengesScreen(
                 total = uiState.challenges.size,
                 totalXp = uiState.totalRewardXp,
                 totalStars = uiState.totalRewardStars,
-                date = uiState.challengeDate
+                date = uiState.challengeDate,
+                streakCount = uiState.streakCount,
+                streakMultiplier = uiState.streakMultiplier
             )
 
             when {
@@ -105,8 +108,79 @@ fun DailyChallengesScreen(
             RewardAnimation(
                 xp = uiState.lastRewardXp,
                 stars = uiState.lastRewardStars,
+                multiplier = uiState.streakMultiplier,
+                streakCount = uiState.streakCount,
                 onDismiss = { viewModel.dismissReward() }
             )
+        }
+    }
+}
+
+// ── Streak Badge ──────────────────────────────────────────
+
+@Composable
+private fun StreakBadge(
+    streakCount: Int,
+    multiplier: Double
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "streakGlow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "streakGlow"
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (streakCount > 1) MagmaRed.copy(alpha = 0.15f)
+                else SurfaceBorder.copy(alpha = 0.2f)
+            )
+            .border(
+                1.dp,
+                if (streakCount > 1) MagmaRed.copy(alpha = if (streakCount > 2) 0.4f else 0.2f)
+                else SurfaceBorder.copy(alpha = 0.1f),
+                RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        // Flame glow for active streak
+        if (streakCount > 1) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MagmaRed.copy(alpha = glowAlpha))
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+
+        Text(
+            text = if (streakCount >= 1) "\uD83D\uDD25" else "\uD83D\uDD25",
+            fontSize = 14.sp
+        )
+        Spacer(modifier = Modifier.width(3.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "$streakCount",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (streakCount > 1) MagmaRed else TextMuted,
+                fontWeight = if (streakCount > 1) FontWeight.Bold else FontWeight.SemiBold
+            )
+            if (streakCount > 0 && multiplier > 1.0) {
+                Text(
+                    text = "${String.format("%.1f", multiplier)}×",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MagmaRed.copy(alpha = 0.7f),
+                    fontSize = 8.sp
+                )
+            }
         }
     }
 }
@@ -121,7 +195,9 @@ private fun DailyChallengesHeader(
     total: Int,
     totalXp: Int,
     totalStars: Int,
-    date: String
+    date: String,
+    streakCount: Int = 0,
+    streakMultiplier: Double = 1.0
 ) {
     AnimatedVisibility(
         visible = entranceStarted,
@@ -139,7 +215,7 @@ private fun DailyChallengesHeader(
                     Text("\u2190", color = TextBody, fontSize = 22.sp)
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "DAILY CHALLENGES",
                         style = MaterialTheme.typography.titleMedium,
@@ -155,6 +231,9 @@ private fun DailyChallengesHeader(
                         )
                     }
                 }
+
+                // Streak badge
+                StreakBadge(streakCount = streakCount, multiplier = streakMultiplier)
             }
 
             // Progress summary card
@@ -489,6 +568,8 @@ private fun TargetPill(
 private fun RewardAnimation(
     xp: Int,
     stars: Int,
+    multiplier: Double = 1.0,
+    streakCount: Int = 0,
     onDismiss: () -> Unit
 ) {
     var visible by remember { mutableStateOf(true) }
@@ -540,22 +621,41 @@ private fun RewardAnimation(
                         letterSpacing = 2.sp,
                         textAlign = TextAlign.Center
                     )
+                    if (multiplier > 1.0 && streakCount > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(MagmaRed.copy(alpha = 0.12f))
+                                .padding(horizontal = 10.dp, vertical = 3.dp)
+                        ) {
+                            Text("\uD83D\uDD25", fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "$streakCount-day streak! ×${String.format("%.1f", multiplier)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MagmaRed,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (xp > 0) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "+$xp",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    color = MagmaRed,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text("XP", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                            }
+                    if (xp > 0) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "+$xp",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MagmaRed,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text("XP", style = MaterialTheme.typography.labelSmall, color = TextMuted)
                         }
+                    }
                         if (stars > 0) {
                             if (xp > 0) Spacer(modifier = Modifier.width(32.dp))
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -24,6 +24,9 @@ data class DailyChallengesUiState(
     val totalRewardXp: Int = 0,
     val totalRewardStars: Int = 0,
     val entranceStarted: Boolean = false,
+    // Streak bonus
+    val streakCount: Int = 0,
+    val streakMultiplier: Double = 1.0,
     // Track which challenge's gameplay just completed (to show reward animation)
     val lastCompletedChallengeId: Int? = null,
     val lastRewardXp: Int = 0,
@@ -62,6 +65,8 @@ class DailyChallengesViewModel @Inject constructor(
                         totalCompleted = challenges.count { it.completed },
                         totalRewardXp = challenges.filter { it.completed }.sumOf { it.rewardXp },
                         totalRewardStars = challenges.filter { it.completed }.sumOf { it.rewardStars },
+                        streakCount = response.streakCount,
+                        streakMultiplier = response.streakMultiplier,
                         entranceStarted = true
                     )
                 },
@@ -108,6 +113,8 @@ class DailyChallengesViewModel @Inject constructor(
                         totalCompleted = updated.count { it.completed },
                         totalRewardXp = updated.filter { it.completed }.sumOf { it.rewardXp },
                         totalRewardStars = updated.filter { it.completed }.sumOf { it.rewardStars },
+                        streakCount = response.streakCount,
+                        streakMultiplier = response.streakMultiplier,
                         lastCompletedChallengeId = if (justCompleted) challengeId else null,
                         lastRewardXp = if (justCompleted) response.rewardXp else 0,
                         lastRewardStars = if (justCompleted) response.rewardStars else 0,

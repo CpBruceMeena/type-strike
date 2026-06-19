@@ -41,6 +41,7 @@ fun LevelFailedScreen(
     accuracy: Int,
     onRetry: (Int) -> Unit = {},
     onBackToMap: () -> Unit = {},
+    onBack: () -> Unit = {},
     viewModel: LevelFailedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,7 +106,17 @@ fun LevelFailedScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    // ── Back button (always visible, replaces top spacer) ──
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        TextButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                            Text("←", color = TextBody, fontSize = 22.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // ── LEVEL BREACHED Badge ──────────
                     if (uiState.animPhase >= 2) {

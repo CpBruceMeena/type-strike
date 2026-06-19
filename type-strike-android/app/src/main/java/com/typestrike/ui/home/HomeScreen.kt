@@ -87,7 +87,7 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // ── Top breathing room (more for new users with larger hero) ──
-                Spacer(modifier = Modifier.weight(if (!uiState.hasPlayer) 0.10f else 0.06f))
+                Spacer(modifier = Modifier.weight(if (!uiState.hasPlayer) 0.14f else 0.10f))
 
                 // ── Welcome Hero or Compact Player Card ──────
                 if (!uiState.hasPlayer) {
@@ -102,7 +102,7 @@ fun HomeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(0.07f))
+                Spacer(modifier = Modifier.weight(0.10f))
 
                 // ── JUMP IN Button ────────────────────────────
                 EntranceFadeSlide(entranceStarted, delayMs = 300) {
@@ -112,14 +112,14 @@ fun HomeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(0.07f))
+                Spacer(modifier = Modifier.weight(0.10f))
 
                 // ── Level Progression Preview ─────────────────
                 EntranceFadeSlide(entranceStarted, delayMs = 500) {
                     ProgressionPreview(previewTiers = uiState.tiers)
                 }
 
-                Spacer(modifier = Modifier.weight(0.05f))
+                Spacer(modifier = Modifier.weight(0.08f))
 
                 // ── Quick Stats (only for existing players) ──
                 if (uiState.hasPlayer) {
@@ -130,7 +130,7 @@ fun HomeScreen(
                             levelsTotal = uiState.levelsTotal
                         )
                     }
-                    Spacer(modifier = Modifier.weight(0.04f))
+                    Spacer(modifier = Modifier.weight(0.06f))
                 }
 
                 // ── Secondary Nav Row ─────────────────────────
@@ -143,7 +143,7 @@ fun HomeScreen(
                 }
 
                 // ── Bottom breathing room ─────────────────────
-                Spacer(modifier = Modifier.weight(0.10f))
+                Spacer(modifier = Modifier.weight(0.14f))
             }
 
             // Bottom Navigation Bar
@@ -386,49 +386,45 @@ private fun TierPreviewRow(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(animProgress)
-            .padding(vertical = 3.dp),
+            .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Tier icon
+        // Tier icon (smaller)
         Box(
             modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(6.dp))
+                .size(24.dp)
+                .clip(RoundedCornerShape(5.dp))
                 .background(Color(tier.color).copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(tier.icon, fontSize = 14.sp)
+            Text(tier.icon, fontSize = 12.sp)
         }
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = tier.name.uppercase(),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = Color(tier.color),
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(5.dp))
                 Text(
                     text = tier.levelRange,
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextDisabled
+                    color = TextDisabled,
+                    fontSize = 10.sp
                 )
             }
-            Text(
-                text = tier.description,
-                style = MaterialTheme.typography.labelSmall,
-                color = TextMuted,
-                lineHeight = 14.sp
-            )
+            // Description removed for tighter layout
         }
         // Arrow connector (except last)
         if (!isLast) {
             Text(
                 text = "▸",
                 color = TextDisabled.copy(alpha = 0.4f),
-                fontSize = 10.sp,
-                modifier = Modifier.padding(start = 4.dp)
+                fontSize = 9.sp,
+                modifier = Modifier.padding(start = 2.dp)
             )
         }
     }

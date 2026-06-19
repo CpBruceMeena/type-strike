@@ -133,6 +133,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                     navController.navigate(Screen.Map.route) {
                         popUpTo(Screen.Home.route)
                     }
+                },
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -162,6 +165,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                     navController.navigate(Screen.Map.route) {
                         popUpTo(Screen.Home.route)
                     }
+                },
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }

@@ -94,6 +94,9 @@ Unlock new keyboard appearances by clearing levels:
 ## Roadmap
 
 ### ✅ Shipped (Latest)
+- Daily challenge streak multipliers — rewards scale from 1.0×–2.0× based on consecutive daily completions, with flame visual badge and reward animation
+- Back navigation on all screens — every non-root page has a stack-based back button (←) for intuitive navigation
+- Home page layout improvements — tier preview now shows only relevant tiers for your progress, with larger spacers and compact tier rows for a spacious feel
 - Background music — looping ambient electronic track in E minor (130 BPM), starts on gameplay countdown, stops on level complete/failed
 - Sound design — programmatic PCM-16 audio engine: 4 key click types (Blue/Brown/Red/Linear), correct chime, error buzz, combo arpeggio, victory fanfare, level failed tone, countdown beep + GO sweep
 - Backspace key (⌫) on keyboard — undo mistakes to maintain accuracy for 3-star runs
@@ -124,9 +127,7 @@ Unlock new keyboard appearances by clearing levels:
 - Achievements system (18 achievements, 5 categories)
 
 ### 🔥 Coming Next
-- Sound design (key clicks, shatter SFX, music)
-- Daily challenges
-- Leaderboards
+- Leaderboards & competitive play
 
 ---
 

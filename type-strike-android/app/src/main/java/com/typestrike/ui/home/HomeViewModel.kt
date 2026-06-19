@@ -92,6 +92,7 @@ class HomeViewModel @Inject constructor(
                     val xpForNext = Progression.xpForNextLevel(currentLevel)
                     val xpProgress = Progression.xpProgress(player.xp, currentLevel)
 
+                    val filteredTiers = filterTiersForPlayer(summary.levelsCleared)
                     _uiState.value = HomeUiState(
                         isLoading = false,
                         hasPlayer = true,
@@ -106,17 +107,19 @@ class HomeViewModel @Inject constructor(
                         levelsTotal = summary.levelsTotal,
                         nextLevelId = (summary.levelsCleared + 1).coerceAtLeast(1),
                         streakCount = summary.streakCount,
+                        tiers = filteredTiers,
                         entranceStarted = false
                     )
                 },
                 onFailure = { error ->
                     // New user — no player exists yet. This is NOT an error.
-                    // Show the welcoming home page with progression preview.
+                    // Show the welcoming home page with all tiers as orientation preview.
                     _uiState.value = HomeUiState(
                         isLoading = false,
                         hasPlayer = false,
                         hasError = false,
                         nextLevelId = 1,
+                        tiers = TIER_PREVIEWS,
                         entranceStarted = false
                     )
                 }
@@ -143,4 +146,24 @@ class HomeViewModel @Inject constructor(
     }
 
     fun getNextLevelId(): Int = _uiState.value.nextLevelId
+
+    /**
+     * Filters the tier preview list to show only the player's current tier
+     * and the next one (or two), reducing visual clutter on the home page.
+     * New players (0 levels cleared) see all tiers as an orientation preview.
+     */
+    private fun filterTiersForPlayer(levelsCleared: Int): List<TierPreview> {
+        if (levelsCleared <= 0) return TIER_PREVIEWS
+
+        val currentIndex = when {
+            levelsCleared <= 25 -> 0
+            levelsCleared <= 50 -> 1
+            levelsCleared <= 75 -> 2
+            levelsCleared <= 100 -> 3
+            else -> 4
+        }
+
+        // Show current tier + next 2 tiers (or to end if fewer remain)
+        return TIER_PREVIEWS.drop(currentIndex).take(3)
+    }
 }

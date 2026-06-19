@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -35,6 +36,13 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	today := time.Now()
 
+	// Read player streak for the response
+	player, _ := h.repo.Player.GetByID(ctx, playerID)
+	streakCount := 0
+	if player != nil {
+		streakCount = player.StreakCount
+	}
+
 	// Try to fetch existing challenges for today
 	challenges, err := h.repo.DailyChallenge.GetChallengesForDate(ctx, playerID, today)
 	if err != nil {
@@ -46,17 +54,18 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 	// If challenges exist for today, return them
 	if len(challenges) > 0 {
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"challenges": challenges,
-			"date":       today.Format("2006-01-02"),
+			"challenges":         challenges,
+			"date":               today.Format("2006-01-02"),
+			"streak_count":       streakCount,
+			"streak_multiplier":  computeStreakMultiplier(streakCount),
 		})
 		return
 	}
 
 	// Generate new challenges for today
 	// Get player's levels cleared count for appropriate challenge difficulty
-	player, err := h.repo.Player.GetByID(ctx, playerID)
 	levelsCleared := 0
-	if err == nil && player != nil {
+	if player != nil {
 		progress, err := h.repo.LevelProgress.GetAllForPlayer(ctx, playerID)
 		if err == nil {
 			for _, p := range progress {
@@ -102,8 +111,10 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"challenges": challenges,
-		"date":       today.Format("2006-01-02"),
+		"challenges":         challenges,
+		"date":               today.Format("2006-01-02"),
+		"streak_count":       streakCount,
+		"streak_multiplier":  computeStreakMultiplier(streakCount),
 	})
 }
 
@@ -116,12 +127,14 @@ type submitResultRequest struct {
 	Accuracy float64 `json:"accuracy"`
 }
 type submitResultResponse struct {
-	Challenge      models.DailyChallenge `json:"challenge"`
-	RewardAwarded  bool                  `json:"reward_awarded"`
-	RewardXP       int                   `json:"reward_xp"`
-	RewardStars    int                   `json:"reward_stars"`
-	JustCompleted  bool                  `json:"just_completed"`
-	Message        string                `json:"message,omitempty"`
+	Challenge        models.DailyChallenge `json:"challenge"`
+	RewardAwarded    bool                  `json:"reward_awarded"`
+	RewardXP         int                   `json:"reward_xp"`
+	RewardStars      int                   `json:"reward_stars"`
+	JustCompleted    bool                  `json:"just_completed"`
+	Message          string                `json:"message,omitempty"`
+	StreakCount      int                   `json:"streak_count"`
+	StreakMultiplier float64               `json:"streak_multiplier"`
 }
 
 func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Request) {
@@ -167,25 +180,45 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Read player's current streak for multiplier
+	player, _ := h.repo.Player.GetByID(ctx, playerID)
+	streakCount := 0
+	if player != nil {
+		streakCount = player.StreakCount
+	}
+	multiplier := computeStreakMultiplier(streakCount)
+
 	resp := submitResultResponse{
-		Challenge:     *updated,
-		RewardAwarded: false,
-		JustCompleted: false,
+		Challenge:        *updated,
+		RewardAwarded:    false,
+		JustCompleted:    false,
+		StreakCount:      streakCount,
+		StreakMultiplier: multiplier,
 	}
 
 	// If the challenge was just completed (wasn't completed before, but is now)
 	if !wasAlreadyCompleted && updated.Completed {
 		resp.JustCompleted = true
 		resp.RewardAwarded = true
-		resp.RewardXP = updated.RewardXP
-		resp.RewardStars = updated.RewardStars
+
+		// Apply streak multiplier to base rewards
+		baseXP := updated.RewardXP
+		baseStars := updated.RewardStars
+		rewardedXP := int(float64(baseXP) * multiplier)
+		rewardedStars := int(math.Ceil(float64(baseStars) * multiplier))
+		resp.RewardXP = rewardedXP
+		resp.RewardStars = rewardedStars
 		resp.Message = "Challenge completed! Rewards awarded."
 
-		// Award XP and stars
-		if err := h.repo.DailyChallenge.AwardChallengeReward(ctx, playerID, updated.RewardXP, updated.RewardStars); err != nil {
+		// Award XP and stars (with streak bonus applied)
+		if err := h.repo.DailyChallenge.AwardChallengeReward(ctx, playerID, rewardedXP, rewardedStars); err != nil {
 			log.Printf("failed to award challenge reward: %v", err)
-			// Don't fail the request — the progress was already saved
 			resp.Message = "Challenge completed but reward delivery failed. Please try again."
+		}
+
+		// Update streak after completing a challenge
+		if _, err := h.repo.Player.UpdateStreak(ctx, playerID); err != nil {
+			log.Printf("failed to update streak on challenge complete: %v", err)
 		}
 	} else if updated.Completed {
 		resp.Message = "Already completed! Better luck next time."
@@ -194,4 +227,22 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// computeStreakMultiplier calculates the reward multiplier based on streak count.
+// Formula: 1.0 + (streak - 1) * 0.1, clamped to [1.0, 2.0]
+// First day (streak=0 or 1): no bonus (1.0x)
+// 2-day streak: 1.1x
+// 5-day streak: 1.4x
+// 10-day streak: 1.9x
+// 11+ day streak: 2.0x (max)
+func computeStreakMultiplier(streakCount int) float64 {
+	switch {
+	case streakCount <= 1:
+		return 1.0
+	case streakCount >= 11:
+		return 2.0
+	default:
+		return 1.0 + float64(streakCount-1)*0.1
+	}
 }
