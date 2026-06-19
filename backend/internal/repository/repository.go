@@ -14,6 +14,7 @@ type Repositories struct {
 	Settings        *SettingsRepository
 	Analytics       *AnalyticsRepository
 	DailyChallenge  *DailyChallengeRepository
+	Leaderboard     *LeaderboardRepository
 }
 
 // NewRepositories creates all repository instances from a single connection pool.
@@ -25,6 +26,7 @@ func NewRepositories(pool *pgxpool.Pool) *Repositories {
 		Settings:        NewSettingsRepository(pool),
 		Analytics:       NewAnalyticsRepository(pool),
 		DailyChallenge:  NewDailyChallengeRepository(pool),
+		Leaderboard:     NewLeaderboardRepository(pool),
 	}
 }
 

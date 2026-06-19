@@ -2,8 +2,14 @@ package com.typestrike.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.typestrike.data.model.DailyChallenge
+import com.typestrike.data.model.LevelCompleteResponse
+import com.typestrike.data.repository.DailyChallengeRepository
 import com.typestrike.data.repository.LevelRepository
 import com.typestrike.data.repository.PlayerRepository
+import com.typestrike.ui.util.Achievement
+import com.typestrike.ui.util.AchievementInput
+import com.typestrike.ui.util.AchievementUtil
 import com.typestrike.ui.util.Progression
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -15,15 +21,26 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
+ * Summary of today's daily challenges shown on the home card.
+ */
+data class DailyChallengeSummary(
+    val total: Int = 3,
+    val completed: Int = 0,
+    val streakCount: Int = 0,
+    val streakMultiplier: Double = 1.0,
+    val hasIncomplete: Boolean = false,
+    val todaysBestWpm: Int = 0
+)
+
+/**
  * UI state for the Home / Dashboard screen.
- * New-user friendly: gracefully handles the case where no player exists yet.
  */
 data class HomeUiState(
     val isLoading: Boolean = true,
     val hasPlayer: Boolean = false,
     val hasError: Boolean = false,
     val errorMessage: String? = null,
-    // Player data (only populated when hasPlayer is true)
+    // Player data
     val playerLevel: Int = 1,
     val playerTitle: String = "RECRUIT",
     val totalStars: Int = 0,
@@ -37,36 +54,19 @@ data class HomeUiState(
     val nextLevelId: Int = 1,
     // Streak
     val streakCount: Int = 0,
-    // Tiers for the progression preview
-    val tiers: List<TierPreview> = TIER_PREVIEWS,
+    // Daily challenge summary for home card
+    val dailyChallengeSummary: DailyChallengeSummary = DailyChallengeSummary(),
+    // Achievement spotlight for home card
+    val spotlightAchievement: Achievement? = null,
     // Animation
     val entranceStarted: Boolean = false
 )
 
-/** Preview data for a tier shown on the home page. */
-data class TierPreview(
-    val name: String,
-    val icon: String,
-    val color: Long,
-    val levelRange: String,
-    val description: String
-)
-
-private val TIER_PREVIEWS = listOf(
-    TierPreview("Ember", "🔥", 0xFFFF5020, "Levels 1–25", "Short, simple sentences — build your rhythm"),
-    TierPreview("Igneous", "🌋", 0xFFFFAA44, "Levels 26–50", "Medium length, capital letters, some numbers"),
-    TierPreview("Magma Core", "⚡", 0xFFCC44FF, "Levels 51–75", "Complex text, special chars, mixed case"),
-    TierPreview("Obsidian", "🖤", 0xFF8866DD, "Levels 76–100", "Code-like syntax, edge case characters"),
-    TierPreview("Beyond", "∞", 0xFFAA66FF, "Levels 101+", "Endless challenge — keep climbing!"),
-)
-
-/**
- * ViewModel for the Home/Dashboard screen.
- * Designed for new users: shows a welcoming hub with level progression preview.
- */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val playerRepository: PlayerRepository
+    private val playerRepository: PlayerRepository,
+    private val dailyChallengeRepository: DailyChallengeRepository,
+    private val levelRepository: LevelRepository
 ) : ViewModel() {
 
     companion object {
@@ -84,46 +84,76 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = HomeUiState(isLoading = true)
 
-            val result = playerRepository.getSummary(PLAYER_ID)
-            result.fold(
-                onSuccess = { summary ->
-                    val player = summary.player
-                    val currentLevel = player.level
-                    val xpForNext = Progression.xpForNextLevel(currentLevel)
-                    val xpProgress = Progression.xpProgress(player.xp, currentLevel)
+            val (summaryResult, challengesResult, progressResult) = coroutineScope {
+                val s = async { playerRepository.getSummary(PLAYER_ID) }
+                val c = async { dailyChallengeRepository.getChallenges(PLAYER_ID) }
+                val p = async { levelRepository.getAllPlayerProgress(PLAYER_ID) }
+                Triple(s.await(), c.await(), p.await())
+            }
 
-                    val filteredTiers = filterTiersForPlayer(summary.levelsCleared)
-                    _uiState.value = HomeUiState(
-                        isLoading = false,
-                        hasPlayer = true,
-                        playerLevel = currentLevel,
-                        playerTitle = player.title.ifBlank { "RECRUIT" },
-                        totalStars = player.totalStars,
-                        xp = player.xp,
-                        xpForNext = xpForNext,
-                        xpProgress = xpProgress,
-                        todaysBestWpm = summary.todaysBestWpm,
-                        levelsCleared = summary.levelsCleared,
-                        levelsTotal = summary.levelsTotal,
-                        nextLevelId = (summary.levelsCleared + 1).coerceAtLeast(1),
-                        streakCount = summary.streakCount,
-                        tiers = filteredTiers,
-                        entranceStarted = false
-                    )
-                },
-                onFailure = { error ->
-                    // New user — no player exists yet. This is NOT an error.
-                    // Show the welcoming home page with all tiers as orientation preview.
-                    _uiState.value = HomeUiState(
-                        isLoading = false,
-                        hasPlayer = false,
-                        hasError = false,
-                        nextLevelId = 1,
-                        tiers = TIER_PREVIEWS,
-                        entranceStarted = false
-                    )
-                }
-            )
+            val summary = summaryResult.getOrNull()
+            val challenges = challengesResult.getOrNull()?.challenges ?: emptyList()
+            val progress = progressResult.getOrNull() ?: emptyList()
+
+            if (summary != null) {
+                val player = summary.player
+                val currentLevel = player.level
+                val xpForNext = Progression.xpForNextLevel(currentLevel)
+                val xpProgress = Progression.xpProgress(player.xp, currentLevel)
+
+                // Daily challenge summary
+                val completedChallenges = challenges.count { it.completed }
+                val dcSummary = DailyChallengeSummary(
+                    total = challenges.size.coerceAtLeast(1),
+                    completed = completedChallenges,
+                    streakCount = challengesResult.getOrNull()?.streakCount ?: 0,
+                    streakMultiplier = challengesResult.getOrNull()?.streakMultiplier ?: 1.0,
+                    hasIncomplete = challenges.any { !it.completed },
+                    todaysBestWpm = summary.todaysBestWpm
+                )
+
+                // Compute spotlight achievement
+                val completedTiers = AchievementUtil.computeCompletedTiers(progress)
+                val input = AchievementInput(
+                    playerLevel = currentLevel,
+                    totalStars = player.totalStars,
+                    levelsCleared = summary.levelsCleared,
+                    progress = progress,
+                    totalAttempts = progress.sumOf { it.attempts },
+                    threeStarLevels = progress.count { it.stars >= 3 },
+                    completedTiers = completedTiers
+                )
+                val achievements = AchievementUtil.computeAchievements(input)
+                val spotlight = AchievementUtil.findSpotlightAchievement(achievements)
+
+                _uiState.value = HomeUiState(
+                    isLoading = false,
+                    hasPlayer = true,
+                    playerLevel = currentLevel,
+                    playerTitle = player.title.ifBlank { "RECRUIT" },
+                    totalStars = player.totalStars,
+                    xp = player.xp,
+                    xpForNext = xpForNext,
+                    xpProgress = xpProgress,
+                    todaysBestWpm = summary.todaysBestWpm,
+                    levelsCleared = summary.levelsCleared,
+                    levelsTotal = summary.levelsTotal,
+                    nextLevelId = (summary.levelsCleared + 1).coerceAtLeast(1),
+                    streakCount = player.streakCount,
+                    dailyChallengeSummary = dcSummary,
+                    spotlightAchievement = spotlight,
+                    entranceStarted = false
+                )
+            } else {
+                // New user — no player exists yet.
+                _uiState.value = HomeUiState(
+                    isLoading = false,
+                    hasPlayer = false,
+                    hasError = false,
+                    nextLevelId = 1,
+                    entranceStarted = false
+                )
+            }
         }
     }
 
@@ -135,9 +165,6 @@ class HomeViewModel @Inject constructor(
         loadDashboard()
     }
 
-    /**
-     * Dynamic sub-label for the JUMP IN button based on player state.
-     */
     fun jumpInLabel(): String = when {
         !_uiState.value.hasPlayer -> "Start your journey — Level 1"
         _uiState.value.levelsCleared == 0 -> "Start with Level 1"
@@ -146,24 +173,4 @@ class HomeViewModel @Inject constructor(
     }
 
     fun getNextLevelId(): Int = _uiState.value.nextLevelId
-
-    /**
-     * Filters the tier preview list to show only the player's current tier
-     * and the next one (or two), reducing visual clutter on the home page.
-     * New players (0 levels cleared) see all tiers as an orientation preview.
-     */
-    private fun filterTiersForPlayer(levelsCleared: Int): List<TierPreview> {
-        if (levelsCleared <= 0) return TIER_PREVIEWS
-
-        val currentIndex = when {
-            levelsCleared <= 25 -> 0
-            levelsCleared <= 50 -> 1
-            levelsCleared <= 75 -> 2
-            levelsCleared <= 100 -> 3
-            else -> 4
-        }
-
-        // Show current tier + next 2 tiers (or to end if fewer remain)
-        return TIER_PREVIEWS.drop(currentIndex).take(3)
-    }
 }

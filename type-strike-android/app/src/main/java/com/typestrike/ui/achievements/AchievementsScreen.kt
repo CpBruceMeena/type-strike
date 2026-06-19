@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.typestrike.ui.effects.*
+import com.typestrike.ui.util.Achievement
 import com.typestrike.ui.theme.*
 import kotlinx.coroutines.delay
 

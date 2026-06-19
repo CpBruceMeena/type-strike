@@ -79,6 +79,20 @@ interface TypeStrikeApi {
         @Body request: SubmitChallengeRequest
     ): Response<SubmitChallengeResponse>
 
+    // ── Leaderboard Endpoints ───────────────────────────────
+
+    @GET("api/v1/leaderboard")
+    suspend fun getLeaderboardTop(@Query("limit") limit: Int = 50): Response<LeaderboardResponse>
+
+    @GET("api/v1/leaderboard/daily")
+    suspend fun getDailyLeaderboardTop(@Query("limit") limit: Int = 50): Response<LeaderboardResponse>
+
+    @GET("api/v1/leaderboard/{playerId}")
+    suspend fun getPlayerRank(@Path("playerId") playerId: Int): Response<PlayerRankResponse>
+
+    @POST("api/v1/leaderboard/sync")
+    suspend fun syncLeaderboard(@Body request: SyncLeaderboardRequest): Response<Map<String, Any>>
+
     // ── Settings Endpoints ──────────────────────────────────
 
     @GET("api/v1/players/{playerId}/settings")

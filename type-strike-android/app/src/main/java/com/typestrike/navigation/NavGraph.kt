@@ -17,6 +17,7 @@ import com.typestrike.ui.splash.SplashScreen
 import com.typestrike.ui.stats.StatsScreen
 import com.typestrike.ui.achievements.AchievementsScreen
 import com.typestrike.ui.dailychallenges.DailyChallengesScreen
+import com.typestrike.ui.leaderboard.LeaderboardScreen
 
 
 @Composable
@@ -56,6 +57,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 },
                 onNavigateToDailyChallenges = {
                     navController.navigate(Screen.DailyChallenges.route)
+                },
+                onNavigateToLeaderboard = {
+                    navController.navigate(Screen.Leaderboard.route)
                 }
             )
         }
@@ -207,6 +211,18 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 },
                 onPlayChallenge = { levelId ->
                     navController.navigate(Screen.Gameplay.createRoute(levelId))
+                }
+            )
+        }
+
+        // Leaderboard
+        composable(Screen.Leaderboard.route) {
+            LeaderboardScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onViewPlayer = { playerId ->
+                    // For now just pop back — future: navigate to player profile
                 }
             )
         }

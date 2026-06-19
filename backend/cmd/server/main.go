@@ -45,6 +45,7 @@ func main() {
 	analyticsHandler := handler.NewAnalyticsHandler(repos)
 	levelDataHandler := handler.NewLevelDataHandler(repos)
 	dailyChallengeHandler := handler.NewDailyChallengeHandler(repos)
+	leaderboardHandler := handler.NewLeaderboardHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -106,6 +107,14 @@ func main() {
 			r.Post("/events", analyticsHandler.RecordEvent)
 			r.Get("/players/{playerId}/daily-stats", analyticsHandler.GetDailyStats)
 			r.Post("/players/{playerId}/daily-stats", analyticsHandler.UpdateDailyStats)
+		})
+
+		// Leaderboard (global + daily rankings)
+		r.Route("/leaderboard", func(r chi.Router) {
+			r.Get("/", leaderboardHandler.GetTop)
+			r.Get("/daily", leaderboardHandler.GetDailyTop)
+			r.Get("/{playerId}", leaderboardHandler.GetPlayerRank)
+			r.Post("/sync", leaderboardHandler.Sync)
 		})
 	})
 
