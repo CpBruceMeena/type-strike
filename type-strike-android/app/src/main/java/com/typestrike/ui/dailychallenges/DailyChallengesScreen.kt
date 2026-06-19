@@ -98,7 +98,8 @@ fun DailyChallengesScreen(
                 else -> ChallengeList(
                     challenges = uiState.challenges,
                     entranceStarted = entranceStarted,
-                    onPlayChallenge = onPlayChallenge
+                    onPlayChallenge = onPlayChallenge,
+                    streakMultiplier = uiState.streakMultiplier
                 )
             }
         }
@@ -162,8 +163,9 @@ private fun StreakBadge(
         }
 
         Text(
-            text = if (streakCount >= 1) "\uD83D\uDD25" else "\uD83D\uDD25",
-            fontSize = 14.sp
+            text = "\uD83D\uDD25",
+            fontSize = 14.sp,
+            modifier = Modifier.alpha(if (streakCount >= 1) 1f else 0.35f)
         )
         Spacer(modifier = Modifier.width(3.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -315,7 +317,8 @@ private fun DailyChallengesHeader(
 private fun ChallengeList(
     challenges: List<DailyChallenge>,
     entranceStarted: Boolean,
-    onPlayChallenge: (Int) -> Unit
+    onPlayChallenge: (Int) -> Unit,
+    streakMultiplier: Double = 1.0
 ) {
     val scrollState = rememberScrollState()
 
@@ -340,6 +343,7 @@ private fun ChallengeList(
                 ChallengeCard(
                     challenge = challenge,
                     index = index,
+                    streakMultiplier = streakMultiplier,
                     onClick = {
                         if (!challenge.completed) {
                             onPlayChallenge(challenge.levelId)
@@ -361,6 +365,7 @@ private fun ChallengeList(
 private fun ChallengeCard(
     challenge: DailyChallenge,
     index: Int,
+    streakMultiplier: Double = 1.0,
     onClick: () -> Unit
 ) {
     val isCompleted = challenge.completed
@@ -482,12 +487,32 @@ private fun ChallengeCard(
                                 faded = isCompleted
                             )
                         }
-                        // Reward
+                        // Reward (boosted by streak multiplier)
+                        val boostedXp = (challenge.rewardXp * streakMultiplier).toInt()
+                        val boostedStars = kotlin.math.ceil(challenge.rewardStars * streakMultiplier).toInt()
                         TargetPill(
-                            label = "+${challenge.rewardXp} XP \u2605+${challenge.rewardStars}",
+                            label = "+${boostedXp} XP \u2605+${boostedStars}",
                             color = MoltenGold,
                             faded = isCompleted
                         )
+                        // Streak multiplier badge
+                        if (streakMultiplier > 1.0 && !isCompleted) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MagmaRed.copy(alpha = 0.12f))
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "\uD83D\uDD25 ×${String.format("%.1f", streakMultiplier)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MagmaRed,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 8.sp
+                                )
+                            }
+                        }
                     }
 
                     // Progress indicator for attempts
@@ -645,17 +670,17 @@ private fun RewardAnimation(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                    if (xp > 0) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "+$xp",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MagmaRed,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text("XP", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                        if (xp > 0) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "+$xp",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = MagmaRed,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text("XP", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                            }
                         }
-                    }
                         if (stars > 0) {
                             if (xp > 0) Spacer(modifier = Modifier.width(32.dp))
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {

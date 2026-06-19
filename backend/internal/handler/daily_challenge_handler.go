@@ -221,7 +221,7 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 			log.Printf("failed to update streak on challenge complete: %v", err)
 		}
 	} else if updated.Completed {
-		resp.Message = "Already completed! Better luck next time."
+		resp.Message = "Already completed today! Great consistency."
 	} else {
 		resp.Message = "Keep trying — you can do it!"
 	}

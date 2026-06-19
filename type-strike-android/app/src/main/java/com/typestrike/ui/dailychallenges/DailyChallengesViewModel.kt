@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.ceil
 import javax.inject.Inject
 
 /**
@@ -41,6 +42,27 @@ class DailyChallengesViewModel @Inject constructor(
 
     companion object {
         private const val PLAYER_ID = 1
+
+        /**
+         * Applies the streak multiplier to base XP (truncated, matching backend).
+         */
+        private fun boostedXp(baseXp: Int, multiplier: Double): Int =
+            (baseXp * multiplier).toInt()
+
+        /**
+         * Applies the streak multiplier to base stars (ceil, matching backend).
+         */
+        private fun boostedStars(baseStars: Int, multiplier: Double): Int =
+            ceil(baseStars * multiplier).toInt()
+
+        /**
+         * Computes the total boosted rewards across all completed challenges.
+         */
+        private fun totalBoostedXp(completed: List<DailyChallenge>, multiplier: Double): Int =
+            completed.sumOf { boostedXp(it.rewardXp, multiplier) }
+
+        private fun totalBoostedStars(completed: List<DailyChallenge>, multiplier: Double): Int =
+            completed.sumOf { boostedStars(it.rewardStars, multiplier) }
     }
 
     private val _uiState = MutableStateFlow(DailyChallengesUiState())
@@ -58,15 +80,17 @@ class DailyChallengesViewModel @Inject constructor(
             result.fold(
                 onSuccess = { response ->
                     val challenges = response.challenges
+                    val completed = challenges.filter { it.completed }
+                    val multiplier = response.streakMultiplier
                     _uiState.value = DailyChallengesUiState(
                         isLoading = false,
                         challenges = challenges,
                         challengeDate = response.date,
-                        totalCompleted = challenges.count { it.completed },
-                        totalRewardXp = challenges.filter { it.completed }.sumOf { it.rewardXp },
-                        totalRewardStars = challenges.filter { it.completed }.sumOf { it.rewardStars },
+                        totalCompleted = completed.size,
+                        totalRewardXp = totalBoostedXp(completed, multiplier),
+                        totalRewardStars = totalBoostedStars(completed, multiplier),
                         streakCount = response.streakCount,
-                        streakMultiplier = response.streakMultiplier,
+                        streakMultiplier = multiplier,
                         entranceStarted = true
                     )
                 },
@@ -108,13 +132,17 @@ class DailyChallengesViewModel @Inject constructor(
                         if (it.id == challengeId) response.challenge else it
                     }
                     val justCompleted = response.justCompleted
+                    val multiplier = response.streakMultiplier
+                    val completed = updated.filter { it.completed }
+                    val boostedXpTotal = totalBoostedXp(completed, multiplier)
+                    val boostedStarsTotal = totalBoostedStars(completed, multiplier)
                     _uiState.value = _uiState.value.copy(
                         challenges = updated,
-                        totalCompleted = updated.count { it.completed },
-                        totalRewardXp = updated.filter { it.completed }.sumOf { it.rewardXp },
-                        totalRewardStars = updated.filter { it.completed }.sumOf { it.rewardStars },
+                        totalCompleted = completed.size,
+                        totalRewardXp = boostedXpTotal,
+                        totalRewardStars = boostedStarsTotal,
                         streakCount = response.streakCount,
-                        streakMultiplier = response.streakMultiplier,
+                        streakMultiplier = multiplier,
                         lastCompletedChallengeId = if (justCompleted) challengeId else null,
                         lastRewardXp = if (justCompleted) response.rewardXp else 0,
                         lastRewardStars = if (justCompleted) response.rewardStars else 0,
