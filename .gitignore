@@ -60,3 +60,11 @@ type-strike-wireframe.html
 
 # ── Backend build artifacts ──────────────────────────
 backend/scripts/seed_levels
+
+# ── Website (Next.js) ────────────────────────────────
+type-strike-web/.next/
+type-strike-web/out/
+
+# ── Root run.sh artifacts ────────────────────────────
+.frontend.pid
+.frontend.log
