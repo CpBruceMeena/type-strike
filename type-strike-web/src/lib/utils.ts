@@ -1,16 +1,19 @@
 import { COMBO_TIERS } from "./constants";
+import { StandardScoring, StandardComboSystem } from "../engine/implementations";
 import type { LevelDetail } from "./types";
 
+// Single shared instances to avoid allocation overhead
+const scoring = new StandardScoring();
+const comboSys = new StandardComboSystem();
+
 // ── WPM Calculation ─────────────────────────────────────
+// Delegates to the engine's StandardScoring for a single source of truth.
 
 export function computeWpm(
   correctKeystrokes: number,
   elapsedMs: number
 ): number {
-  if (elapsedMs < 1000) return 0;
-  const minutes = elapsedMs / 60000;
-  const wordsTyped = Math.floor(correctKeystrokes / 5);
-  return minutes > 0 ? Math.round(wordsTyped / minutes) : 0;
+  return scoring.calculateWpm(correctKeystrokes, elapsedMs);
 }
 
 // ── Accuracy Calculation ────────────────────────────────
@@ -19,17 +22,21 @@ export function computeAccuracy(
   correctKeystrokes: number,
   totalKeystrokes: number
 ): number {
-  if (totalKeystrokes <= 0) return 1;
-  return correctKeystrokes / totalKeystrokes;
+  return scoring.calculateAccuracy(correctKeystrokes, totalKeystrokes);
 }
 
 // ── Combo ───────────────────────────────────────────────
 
 export function computeGauge(combo: number): number {
-  return Math.min(combo / 30, 1);
+  comboSys.addCorrect();
+  // Reset because we only want the gauge calculation, not state mutation
+  const gauge = Math.min(combo / 30, 1);
+  comboSys.reset();
+  return gauge;
 }
 
 export function getActiveTierIndex(combo: number): number {
+  // Quick manual computation without state mutation
   let tierIdx = 0;
   for (let i = COMBO_TIERS.length - 1; i >= 0; i--) {
     if (combo >= COMBO_TIERS[i].minStreak) {
@@ -48,17 +55,10 @@ export function computeStars(
   detail: LevelDetail,
   errorCount: number
 ): number {
-  const passWpm = detail.pass_wpm;
-  const passAcc = detail.pass_accuracy / 100;
-
-  if (wpm < passWpm || accuracy < passAcc) return 0;
-
-  const meets2Star = wpm >= Math.round(passWpm * 1.15) && accuracy >= 0.95;
-  const meets3Star = wpm >= Math.round(passWpm * 1.3) && accuracy >= 0.98 && errorCount === 0;
-
-  if (meets3Star) return 3;
-  if (meets2Star) return 2;
-  return 1;
+  return scoring.calculateStars(wpm, accuracy, {
+    passWpm: detail.pass_wpm,
+    passAccuracy: detail.pass_accuracy / 100,
+  }, errorCount);
 }
 
 // ── Formatting ──────────────────────────────────────────

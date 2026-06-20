@@ -23,6 +23,7 @@ import type {
   GameHistoryResponse,
   ContestInfo,
   ContestLeaderboardResponse,
+  TimedLeaderboardResponse,
   PlayerExtendedStats,
 } from "./types";
 
@@ -242,6 +243,16 @@ export const api = {
   ): Promise<ContestLeaderboardResponse> {
     return request<ContestLeaderboardResponse>(
       `api/v1/contest/leaderboard?contest_id=${contestId}&limit=${limit}`
+    );
+  },
+
+  // ── Web-specific: Timed Leaderboard ────────────────
+  getTimedLeaderboard(
+    mode: string,
+    limit = 50
+  ): Promise<TimedLeaderboardResponse> {
+    return request<TimedLeaderboardResponse>(
+      `api/v1/leaderboard/timed?mode=${mode}&limit=${limit}`
     );
   },
 

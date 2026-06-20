@@ -196,6 +196,8 @@ export interface GameCompleteRequest {
   accuracy: number;
   correct_keystrokes: number;
   total_keystrokes: number;
+  error_count: number;
+  consistency: number;
   max_combo: number;
   completed: boolean;
 }
@@ -252,7 +254,25 @@ export interface ContestLeaderboardEntry {
 
 export interface ContestLeaderboardResponse {
   entries: ContestLeaderboardEntry[];
+  total_count: number;
   player_entry?: ContestLeaderboardEntry;
+}
+
+// ── Web-specific: Timed Leaderboard ─────────────────────
+
+export interface TimedLeaderboardEntry {
+  player_id: number;
+  player_name: string;
+  mode: string;
+  best_wpm: number;
+  best_accuracy: number;
+  achieved_at: string;
+  rank: number;
+}
+
+export interface TimedLeaderboardResponse {
+  entries: TimedLeaderboardEntry[];
+  total_count: number;
 }
 
 // ── Web-specific: Player Extended Stats ─────────────────
@@ -279,7 +299,7 @@ export interface PlayerExtendedStats {
 
 // ── Game State (web UI) ─────────────────────────────────
 
-export type GameState = "loading" | "countdown" | "typing" | "mistake" | "stalled" | "complete" | "failed";
+export type GameState = "idle" | "loading" | "countdown" | "typing" | "mistake" | "stalled" | "complete" | "failed";
 
 export interface ComboTier {
   minStreak: number;
@@ -290,6 +310,7 @@ export interface ComboTier {
 
 export interface CharResult {
   charIndex: number;
+  char?: string;
   isCorrect: boolean;
   isTyped: boolean;
 }

@@ -46,6 +46,8 @@ func main() {
 	levelDataHandler := handler.NewLevelDataHandler(repos)
 	dailyChallengeHandler := handler.NewDailyChallengeHandler(repos)
 	leaderboardHandler := handler.NewLeaderboardHandler(repos)
+	gameHandler := handler.NewGameHandler(repos)
+	contestHandler := handler.NewContestHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -113,8 +115,22 @@ func main() {
 		r.Route("/leaderboard", func(r chi.Router) {
 			r.Get("/", leaderboardHandler.GetTop)
 			r.Get("/daily", leaderboardHandler.GetDailyTop)
+			r.Get("/timed", gameHandler.GetTimedLeaderboard)
 			r.Get("/{playerId}", leaderboardHandler.GetPlayerRank)
 			r.Post("/sync", leaderboardHandler.Sync)
+		})
+
+		// Game Sessions (timed modes, contest, level games from web)
+		r.Route("/games", func(r chi.Router) {
+			r.Post("/start", gameHandler.Start)
+			r.Post("/{gameId}/complete", gameHandler.Complete)
+			r.Get("/history", gameHandler.GetHistory)
+		})
+
+		// Contest (daily competition)
+		r.Route("/contest", func(r chi.Router) {
+			r.Get("/current", contestHandler.GetCurrent)
+			r.Get("/leaderboard", contestHandler.GetLeaderboard)
 		})
 	})
 

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ── Type Strike Theme Tokens ──────────────────────────── */
+/* ── Type Strike Design System Tokens ──────────────────── */
 :root {
   /* Backgrounds */
   --bg-primary: #0a0a10;
@@ -15,6 +15,10 @@
   --accent-gold: #ffcc00;
   --accent-purple: #cc44ff;
 
+  /* High-octane accents */
+  --electric-cyan: #00f0ff;
+  --plasma-purple: #8844ff;
+
   /* Text */
   --text-white: #ffffff;
   --text-body: #cccccc;
@@ -25,6 +29,23 @@
   /* States */
   --error-red: #ff2200;
   --success-green: #22ff44;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(20, 20, 32, 0.85);
+  --glass-bg-light: rgba(30, 30, 48, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
+  --glass-shadow: rgba(0, 0, 0, 0.4);
+
+  /* Rim Lighting */
+  --rim-light-top: rgba(255, 255, 255, 0.06);
+  --rim-light-bottom: rgba(0, 0, 0, 0.6);
+
+  /* Volumetric Glow */
+  --glow-magma: 0 0 30px rgba(255, 80, 32, 0.3);
+  --glow-cyan: 0 0 30px rgba(0, 240, 255, 0.25);
+  --glow-gold: 0 0 30px rgba(255, 204, 0, 0.25);
+  --glow-purple: 0 0 30px rgba(136, 68, 255, 0.25);
 
   /* Effects */
   --scrim-black: rgba(0, 0, 0, 0.5);
@@ -40,6 +61,8 @@
   --color-accent-primary-dark: var(--accent-primary-dark);
   --color-accent-gold: var(--accent-gold);
   --color-accent-purple: var(--accent-purple);
+  --color-electric-cyan: var(--electric-cyan);
+  --color-plasma-purple: var(--plasma-purple);
   --color-text-white: var(--text-white);
   --color-text-body: var(--text-body);
   --color-text-label: var(--text-label);
@@ -74,22 +97,46 @@ body {
 }
 
 /* ── Scrollbar ─────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ── Selection ─────────────────────────────────────────── */
 ::selection {
   background: var(--accent-primary);
   color: var(--text-white);
 }
+
+/* ── Animations ────────────────────────────────────────── */
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: var(--glow-magma); }
+  50% { box-shadow: 0 0 40px rgba(255, 80, 32, 0.5); }
+}
+
+@keyframes float-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-40px); opacity: 0; }
+}
+
+@keyframes scale-bounce {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.animate-shake { animation: shake-x 0.12s ease-in-out; }
+.animate-pulse-glow { animation: pulse-glow 1.5s ease-in-out infinite; }
+.animate-float-up { animation: float-up 0.8s ease-out forwards; }
+.animate-scale-bounce { animation: scale-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }

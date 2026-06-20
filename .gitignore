@@ -68,3 +68,4 @@ type-strike-web/out/
 # ── Root run.sh artifacts ────────────────────────────
 .frontend.pid
 .frontend.log
+backend/server.pid
