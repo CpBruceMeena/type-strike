@@ -33,6 +33,7 @@ out/
 .DS_Store
 Thumbs.db
 *.log
+*.pid
 .env
 .env.local
 backend/data/
@@ -76,3 +77,12 @@ Thumbs.db
 
 # ── Backend build artifacts ──────────────────────────
 backend/scripts/seed_levels
+
+# ── Website (Next.js) ────────────────────────────────
+type-strike-web/.next/
+type-strike-web/out/
+
+# ── Process & lock files ──────────────────────────────
+*.pid
+*.lock
+server.pid

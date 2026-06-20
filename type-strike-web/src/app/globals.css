@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+/* ── Type Strike Design System Tokens ──────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-primary: #0a0a10;
+  --bg-surface: #1a1a28;
+  --bg-surface-dark: #141420;
+  --bg-card: #12121e;
+  --border: #2a2a3a;
+
+  /* Accent / Primary */
+  --accent-primary: #ff5020;
+  --accent-primary-dark: #cc3300;
+  --accent-gold: #ffcc00;
+  --accent-purple: #cc44ff;
+
+  /* High-octane accents */
+  --electric-cyan: #00f0ff;
+  --plasma-purple: #8844ff;
+
+  /* Text */
+  --text-white: #ffffff;
+  --text-body: #cccccc;
+  --text-label: #888888;
+  --text-muted: #666666;
+  --text-disabled: #555555;
+
+  /* States */
+  --error-red: #ff2200;
+  --success-green: #22ff44;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(20, 20, 32, 0.85);
+  --glass-bg-light: rgba(30, 30, 48, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
+  --glass-shadow: rgba(0, 0, 0, 0.4);
+
+  /* Rim Lighting */
+  --rim-light-top: rgba(255, 255, 255, 0.06);
+  --rim-light-bottom: rgba(0, 0, 0, 0.6);
+
+  /* Volumetric Glow */
+  --glow-magma: 0 0 30px rgba(255, 80, 32, 0.3);
+  --glow-cyan: 0 0 30px rgba(0, 240, 255, 0.25);
+  --glow-gold: 0 0 30px rgba(255, 204, 0, 0.25);
+  --glow-purple: 0 0 30px rgba(136, 68, 255, 0.25);
+
+  /* Effects */
+  --scrim-black: rgba(0, 0, 0, 0.5);
+}
+
+@theme inline {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-dark: var(--bg-surface-dark);
+  --color-bg-card: var(--bg-card);
+  --color-border: var(--border);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-primary-dark: var(--accent-primary-dark);
+  --color-accent-gold: var(--accent-gold);
+  --color-accent-purple: var(--accent-purple);
+  --color-electric-cyan: var(--electric-cyan);
+  --color-plasma-purple: var(--plasma-purple);
+  --color-text-white: var(--text-white);
+  --color-text-body: var(--text-body);
+  --color-text-label: var(--text-label);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  --color-error-red: var(--error-red);
+  --color-success-green: var(--success-green);
+  --color-scrim-black: var(--scrim-black);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ── Base Styles ──────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-body);
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Selection ─────────────────────────────────────────── */
+::selection {
+  background: var(--accent-primary);
+  color: var(--text-white);
+}
+
+/* ── Animations ────────────────────────────────────────── */
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: var(--glow-magma); }
+  50% { box-shadow: 0 0 40px rgba(255, 80, 32, 0.5); }
+}
+
+@keyframes float-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-40px); opacity: 0; }
+}
+
+@keyframes scale-bounce {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-shake { animation: shake-x 0.12s ease-in-out; }
+.animate-pulse-glow { animation: pulse-glow 1.5s ease-in-out infinite; }
+.animate-float-up { animation: float-up 0.8s ease-out forwards; }
+.animate-scale-bounce { animation: scale-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }

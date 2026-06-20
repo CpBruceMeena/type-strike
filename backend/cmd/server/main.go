@@ -16,6 +16,7 @@ import (
 	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 func main() {
@@ -46,9 +47,21 @@ func main() {
 	levelDataHandler := handler.NewLevelDataHandler(repos)
 	dailyChallengeHandler := handler.NewDailyChallengeHandler(repos)
 	leaderboardHandler := handler.NewLeaderboardHandler(repos)
+	gameHandler := handler.NewGameHandler(repos)
+	contestHandler := handler.NewContestHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
+
+	// CORS — allow all origins for local dev
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	// Middleware
 	r.Use(chimiddleware.RequestID)
@@ -113,8 +126,22 @@ func main() {
 		r.Route("/leaderboard", func(r chi.Router) {
 			r.Get("/", leaderboardHandler.GetTop)
 			r.Get("/daily", leaderboardHandler.GetDailyTop)
+			r.Get("/timed", gameHandler.GetTimedLeaderboard)
 			r.Get("/{playerId}", leaderboardHandler.GetPlayerRank)
 			r.Post("/sync", leaderboardHandler.Sync)
+		})
+
+		// Game Sessions (timed modes, contest, level games from web)
+		r.Route("/games", func(r chi.Router) {
+			r.Post("/start", gameHandler.Start)
+			r.Post("/{gameId}/complete", gameHandler.Complete)
+			r.Get("/history", gameHandler.GetHistory)
+		})
+
+		// Contest (daily competition)
+		r.Route("/contest", func(r chi.Router) {
+			r.Get("/current", contestHandler.GetCurrent)
+			r.Get("/leaderboard", contestHandler.GetLeaderboard)
 		})
 	})
 
