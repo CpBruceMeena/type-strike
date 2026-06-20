@@ -90,7 +90,12 @@ fun MapScreen(
     // Pull to refresh
     val isRefreshing = uiState.isRefreshing
 
-    Box(modifier = Modifier.fillMaxSize().background(Background)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+            .systemBarsPadding()
+    ) {
         // Particle background (always visible, even during errors)
         MapParticleField(
             config = particleConfig,

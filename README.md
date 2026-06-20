@@ -94,6 +94,10 @@ Unlock new keyboard appearances by clearing levels:
 ## Roadmap
 
 ### ✅ Shipped (Latest)
+- **Keyboard overhaul** — dual-mode keyboard (Letters/Symbols) with mode toggle (?123/ABC), shift key (⇧), and enter key (⏎); backspace and shift promoted to prominent special keys with accent styling
+- **Mistake handling redesign** — mistyped characters now advance to the next position instead of blocking; combo resets on error, game completes if the mistake hits the paragraph end
+- **Home screen navigation redesign** — replaced bottom nav bar + quick action chips with a vertical column of large, card-based navigation buttons (Play, Daily Challenges, Achievements, Stats), each with icon, description, and arrow indicator
+- **Map screen polish** — added system bars padding for proper edge-to-edge rendering on modern Android devices
 - Daily challenge streak multipliers — rewards scale from 1.0×–2.0× based on consecutive daily completions, with flame visual badge and reward animation
 - Back navigation on all screens — every non-root page has a stack-based back button (←) for intuitive navigation
 - Home page layout improvements — tier preview now shows only relevant tiers for your progress, with larger spacers and compact tier rows for a spacious feel
