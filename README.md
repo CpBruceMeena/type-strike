@@ -8,11 +8,11 @@
   <strong>Type with fury. Strike with fire.</strong>
 </p>
 
-type-strike is a mobile typing game that turns every word into an explosive arcade battle. No flat typing tests — just visceral feedback, liquid-fueled combos, and a journey through 100+ levels of fire and fury.
+type-strike is a typing game ecosystem — **mobile** and **web** — that turns every word into an explosive arcade battle. No flat typing tests. Just visceral feedback, liquid-fueled combos, and a journey through 100+ levels of fire and fury.
 
 ---
 
-## The Core Loop
+## 🎮 The Core Loop
 
 | Step | What Happens |
 |------|-------------|
@@ -26,9 +26,108 @@ type-strike is a mobile typing game that turns every word into an explosive arca
 
 ---
 
-## Features
+## 📱 Platform Overview
 
-- **100+ levels** across 4 ascending tiers: Ember → Igneous → Magma Core → Obsidian
+### Android App (`type-strike-android/`)
+Native Android app built with **Kotlin + Jetpack Compose** and Material 3 dark theme.
+
+### Website (`type-strike-web/`)
+Web companion built with **Next.js (React + TypeScript)** — same theme, same game modes, plus new **timed modes** and **daily contest**.
+
+| Feature | Mobile | Web |
+|---------|--------|-----|
+| 100+ level progression | ✅ | ✅ |
+| Gameplay arena with custom keyboard | ✅ | ✅ |
+| Combo gauge / kinetic text | ✅ | ✅ |
+| Victory / Failed screens | ✅ | ✅ |
+| Embark map | ✅ | ✅ |
+| Daily challenges | ✅ | ✅ |
+| Leaderboard (global + daily) | ✅ | ✅ |
+| Achievements | ✅ | ✅ |
+| Stats | ✅ | ✅ |
+| Settings | ✅ | ✅ |
+| **1 Min / 3 Min / 5 Min timed modes** | ❌ | 🆕 |
+| **Daily contest (ranked)** | ❌ | 🆕 |
+| **Harder paragraphs (symbols, code, capitals)** | ❌ | 🆕 |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Go** 1.21+ (backend)
+- **Node.js** 18+ (website)
+- **PostgreSQL** 14+ (database)
+- **lsof** (port management)
+
+### Quick Start (Both Servers)
+
+```bash
+./run.sh start              # Start both backend + frontend
+./run.sh start --seed       # Start with level seeding
+./run.sh stop               # Stop both servers
+./run.sh status             # Check running status
+./run.sh logs               # View all logs
+./run.sh logs backend       # Follow backend logs only
+./run.sh logs frontend      # Follow frontend logs only
+./run.sh build              # Build frontend for production
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SERVER_PORT` | `8080` | Backend Go server port |
+| `FRONTEND_PORT` | `3000` | Next.js dev server port |
+| `DATABASE_URL` | `postgresql://postgres:password@localhost:5432/typestrike?sslmode=disable` | PostgreSQL connection |
+
+### Manual Start
+
+**Backend:**
+```bash
+cd backend
+./run.sh start --seed
+```
+
+**Website:**
+```bash
+cd type-strike-web
+NEXT_PUBLIC_API_URL=http://localhost:8080 npm run dev
+```
+
+---
+
+## 🏗️ Project Structure
+
+```
+type-strike/
+├── run.sh                     # Unified server manager (root)
+├── backend/                   # Go backend (API server)
+│   ├── cmd/server/main.go     # Entry point
+│   ├── internal/              # Handlers, repositories, models
+│   ├── migrations/            # SQL migrations
+│   └── run.sh                 # Backend-specific server manager
+│
+├── type-strike-android/       # Android app
+│   └── app/src/main/java/     # Kotlin + Jetpack Compose
+│
+├── type-strike-web/           # Next.js website
+│   └── src/
+│       ├── app/               # App Router pages
+│       ├── components/        # React components
+│       ├── lib/               # Types, API client, utils
+│       └── hooks/             # Custom React hooks
+│
+└── docs/
+    ├── logo.png               # Project logo
+    └── website-design.md      # Website design document
+```
+
+---
+
+## 🔥 Features
+
+- **100+ levels** across 4 ascending tiers: Ember → Igneous → Magma Core → Obsidian → Beyond
 - **🔥 Countdown start** — 3-2-1-GO animation before each level builds anticipation
 - **Plasma combo engine** — 6 combo tiers (Igniting → Burning → Critical Combo → Max Frenzy → Ignition Speed) with escalating visual effects
 - **Per-word result tracking** — every word scored with correct/error tracking and color-coded feedback
@@ -46,12 +145,14 @@ type-strike is a mobile typing game that turns every word into an explosive arca
 - **Level failed overlay** — cracked "LEVEL BREACHED" badge, requirement breakdown, partial XP
 - **Custom launcher icon** — bold geometric "T" with flame accents on obsidian background
 - **Dark arcade aesthetic** — obsidian, magma red, molten gold, and neon purple
+- **Web timed modes** — 1-minute sprint, 3-minute endurance, 5-minute marathon
+- **Web contest mode** — daily ranked competition with expert-level paragraphs
 
 ---
 
-## The Visual Identity
+## 🎨 The Visual Identity
 
-```
+```css
 SURFACE      OBSIDIAN       #0A0A10
 ACCENT       MAGMA RED      #FF5020
 GOLD         MOLTEN GOLD    #FFCC00
@@ -65,7 +166,7 @@ Glass panels, metallic brackets, crystalline shards, and liquid fire — every s
 
 ---
 
-## The Journey
+## 🗺️ The Journey
 
 | Tier | Levels | Vibe |
 |------|--------|------|
@@ -73,10 +174,11 @@ Glass panels, metallic brackets, crystalline shards, and liquid fire — every s
 | **IGNEOUS 🌋** | 26–50 | Forged in volcanic fire |
 | **MAGMA CORE 🔴** | 51–75 | The planet's burning heart |
 | **OBSIDIAN ⚫** | 76–100 | Only the fastest survive |
+| **BEYOND 🌟** | 101+ | Unlimited dynamically-generated levels |
 
 ---
 
-## Keyboard Themes
+## ⌨️ Keyboard Themes
 
 Unlock new keyboard appearances by clearing levels:
 
@@ -91,56 +193,46 @@ Unlock new keyboard appearances by clearing levels:
 
 ---
 
-## Roadmap
+## 🛣️ Roadmap
 
-### ✅ Shipped (Latest)
-- **Keyboard overhaul** — dual-mode keyboard (Letters/Symbols) with mode toggle (?123/ABC), shift key (⇧), and enter key (⏎); backspace and shift promoted to prominent special keys with accent styling
-- **Mistake handling redesign** — mistyped characters now advance to the next position instead of blocking; combo resets on error, game completes if the mistake hits the paragraph end
-- **Home screen navigation redesign** — replaced bottom nav bar + quick action chips with a vertical column of large, card-based navigation buttons (Play, Daily Challenges, Achievements, Stats), each with icon, description, and arrow indicator
-- **Map screen polish** — added system bars padding for proper edge-to-edge rendering on modern Android devices
-- Daily challenge streak multipliers — rewards scale from 1.0×–2.0× based on consecutive daily completions, with flame visual badge and reward animation
-- Back navigation on all screens — every non-root page has a stack-based back button (←) for intuitive navigation
-- Home page layout improvements — tier preview now shows only relevant tiers for your progress, with larger spacers and compact tier rows for a spacious feel
-- Background music — looping ambient electronic track in E minor (130 BPM), starts on gameplay countdown, stops on level complete/failed
-- Sound design — programmatic PCM-16 audio engine: 4 key click types (Blue/Brown/Red/Linear), correct chime, error buzz, combo arpeggio, victory fanfare, level failed tone, countdown beep + GO sweep
-- Backspace key (⌫) on keyboard — undo mistakes to maintain accuracy for 3-star runs
-- Keyboard completeness — all ASCII paragraph characters now have keys, unlimited beyond-level-100 support
-- Countdown overlay with START button and 3-2-1-GO animation
-- Haptic feedback system (key press, error, word complete, combo milestone, trophy slam, level failed)
-- 6 unlockable keyboard themes with settings UI
-- Per-word result tracking with character-level color coding
-- All-words scrollable panel with auto-scroll
-- Combo tier system (6 tiers with escalating effects)
-- Native keyboard support (toggle in settings)
-- Star calculation (1–3 stars based on WPM, accuracy, error count)
-- Home dashboard redesign with player identity card, XP bar, quick stats, bottom nav
-- Achievements navigation and settings keyboard theme selector
-- Custom vector launcher icon with flame accents
-
-### ✅ Shipped (MVP)
-- Home dashboard with player identity, stats, and activity feed
-- Full 100-level map with tier fracture zones and particle effects
-- Gameplay arena with word panel, combo gauge, custom keyboard
-- Victory assessment with trophy shards and XP arc bar
-- Level failed overlay with partial XP and retry
-- Configurable settings (keyboard, sound, haptics, visuals, accessibility)
+### ✅ Shipped
+- Full 100-level progression with 4 tiers + infinite Beyond levels
+- Gameplay arena with character-by-character typing
+- Combo engine (6 tiers) with kinetic text feedback
+- Custom keyboard (letters/symbols modes, shift, backspace, number row)
+- Native keyboard support option
+- Victory / Failed screens with star calculation
+- Home dashboard with player identity, stats, and bottom nav
+- Embark map with tier fracture zones and particle effects
+- 18 achievements across 5 categories
+- Daily challenges with streak multipliers
+- Leaderboards (global + daily)
+- Stats screen with performance data
+- Settings (keyboard, sound, haptics, visuals, accessibility)
 - Particle system with device-aware quality tiers
-- Staggered entrance animations across all screens
-- Splash screen with logo reveal animation
-- Stats screen with performance charts and WPM progression
-- Achievements system (18 achievements, 5 categories)
+- Haptic feedback system (7 distinct patterns)
+- Sound engine (programmatic PCM-16 audio)
+- Background music (ambient electronic)
+- Splash screen with logo reveal
+- **Website foundation** — Next.js project with theme, API client, 14 page shells
+- **Unified `run.sh`** — single command to run both backend and frontend
+- **Timed modes** (1min / 3min / 5min) and **daily contest** — designed, pending backend
 
 ### 🔥 Coming Next
-- Leaderboards & competitive play
+- Backend game sessions, contests, and extended stats endpoints
+- Website gameplay implementation (paragraph display, custom keyboard, timer)
+- Contest mode leaderboard
+- Cross-platform account sync
+- Real-time multiplayer races
 
 ---
 
-## Built for Mobile
+## Built for Speed
 
 Two thumbs. One goal. Every keystroke is a weapon.
 
-type-strike is designed from the ground up for mobile — thumb-optimized keyboard zones, edge-to-edge dark UI, and haptic feedback that makes each letter feel like a strike.
+type-strike is designed from the ground up — **mobile-first** with thumb-optimized keyboard zones, edge-to-edge dark UI, and haptic feedback that makes each letter feel like a strike. The **web companion** extends the experience with timed challenges and competitive play.
 
 ---
 
-*"A hyper-stylized competitive typing game that turns every word into an explosive arcade battle."*
+*"Type with fury. Strike with fire."*

@@ -102,10 +102,12 @@ preflight() {
 
 cmd_start() {
   local DO_SEED=false
+  local DO_FORCE=false
 
   for arg in "$@"; do
     case "$arg" in
       --seed) DO_SEED=true ;;
+      --force) DO_FORCE=true ;;
     esac
   done
 
@@ -123,13 +125,13 @@ cmd_start() {
     info "Starting Go backend on port $SERVER_PORT..."
     cd "$BACKEND_DIR"
 
-    # Pass through --seed flag
     local seed_flag=""
+    local force_flag=""
     $DO_SEED && seed_flag="--seed"
+    $DO_FORCE && force_flag="--force"
 
-    # Use the backend's own run.sh if available, otherwise build & run directly
     if [ -f "./run.sh" ]; then
-      bash ./run.sh start $seed_flag --force
+      bash ./run.sh start $seed_flag $force_flag
     else
       go build -o server ./cmd/server/ 2>/dev/null || true
       nohup go run ./cmd/server/ > server.log 2>&1 &
@@ -137,6 +139,18 @@ cmd_start() {
       echo "$pid" > "$BACKEND_PID_FILE"
       ok "Backend started (PID $pid) — http://localhost:$SERVER_PORT"
     fi
+
+    # Wait for backend to be ready
+    for i in $(seq 1 10); do
+      if curl -sf "http://localhost:$SERVER_PORT/health" >/dev/null 2>&1; then
+        ok "Backend ready (http://localhost:$SERVER_PORT)"
+        break
+      fi
+      if [ "$i" -eq 10 ]; then
+        warn "Backend may still be starting up..."
+      fi
+      sleep 1
+    done
 
     cd "$SCRIPT_DIR"
   fi
@@ -159,9 +173,20 @@ cmd_start() {
     local pid=$!
     echo "$pid" > "$FRONTEND_PID_FILE"
 
-    # Wait for it to start
-    sleep 3
-    ok "Frontend started (PID $pid) — http://localhost:$FRONTEND_PORT"
+    # Wait for frontend to be ready (poll the port)
+    local frontend_ready=false
+    for i in $(seq 1 15); do
+      if curl -sf "http://localhost:$FRONTEND_PORT" >/dev/null 2>&1; then
+        ok "Frontend ready (http://localhost:$FRONTEND_PORT)"
+        frontend_ready=true
+        break
+      fi
+      sleep 1
+    done
+    if [ "$frontend_ready" = false ]; then
+      warn "Frontend may still be starting up... check ./run.sh logs frontend"
+    fi
+
     cd "$SCRIPT_DIR"
   fi
 
