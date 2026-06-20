@@ -12,11 +12,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://typestrike.app";
+
 export const metadata: Metadata = {
   title: "Type Strike",
   description: "Type with fury. Strike with fire.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+  },
+  openGraph: {
+    title: "Type Strike",
+    description: "Type with fury. Strike with fire.",
+    siteName: "Type Strike",
+    type: "website",
+    url: BASE_URL,
+    images: [
+      {
+        url: `${BASE_URL}/api/og`,
+        width: 1200,
+        height: 630,
+        alt: "Type Strike — Type with fury. Strike with fire.",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Type Strike",
+    description: "Type with fury. Strike with fire.",
+    images: [`${BASE_URL}/api/og`],
   },
 };
 

@@ -10,10 +10,8 @@ export default function HomePage() {
 
   const modes = [
     { key: "levels", label: "LEVELS", desc: "100 levels of fire", icon: "🗺️", href: "/map", accent: "#FF5020" },
-    { key: "contest", label: "CONTEST", desc: "Daily competition", icon: "🏆", href: "/play/contest", accent: "#FFCC00" },
-    { key: "1min", label: "1 MIN", desc: "1-minute sprint", icon: "⏱️", href: "/play/1min", accent: "#FF6600" },
-    { key: "3min", label: "3 MIN", desc: "3-minute endurance", icon: "⏳", href: "/play/3min", accent: "#CC44FF" },
-    { key: "5min", label: "5 MIN", desc: "5-minute marathon", icon: "🔥", href: "/play/5min", accent: "#FF00AA" },
+    { key: "coder", label: "CODER", desc: "Code snippets & DSA", icon: "👨‍💻", href: "/play/coder", accent: "#00E5FF" },
+    { key: "contest", label: "CONTEST", desc: "1 • 3 • 5 min timed modes", icon: "⏱️", href: "/play/contest", accent: "#FFCC00" },
   ];
 
   return (
@@ -45,7 +43,7 @@ export default function HomePage() {
         </Button>
 
         {/* Mode Cards - responsive grid */}
-        <div className="grid w-full max-w-2xl grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid w-full max-w-sm grid-cols-3 gap-3">
           {modes.map((mode) => (
             <Card
               key={mode.key}

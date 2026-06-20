@@ -1,0 +1,78 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0a0a10"/>
+  
+  <!-- Background gradient glow -->
+  <ellipse cx="600" cy="315" rx="600" ry="315" fill="url(#bgGlow)" opacity="0.4"/>
+  
+  <!-- Decorative grid lines -->
+  <g opacity="0.05" stroke="#FF5020" stroke-width="1">
+    <line x1="0" y1="157" x2="1200" y2="157"/>
+    <line x1="0" y1="315" x2="1200" y2="315"/>
+    <line x1="0" y1="472" x2="1200" y2="472"/>
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+  </g>
+
+  <!-- Magma glow orb -->
+  <ellipse cx="350" cy="315" rx="300" ry="250" fill="url(#magmaGlow)" opacity="0.15"/>
+  <ellipse cx="850" cy="315" rx="250" ry="200" fill="url(#cyanGlow)" opacity="0.1"/>
+
+  <!-- Main title -->
+  <g filter="url(#glow)">
+    <text x="600" y="260" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="96" font-weight="900" letter-spacing="8" fill="#FF5020">
+      TYPE STRIKE
+    </text>
+  </g>
+
+  <!-- Tagline -->
+  <text x="600" y="340" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="600" letter-spacing="4" fill="#888888">
+    TYPE WITH FURY · STRIKE WITH FIRE
+  </text>
+
+  <!-- Decorative line -->
+  <line x1="380" y1="375" x2="820" y2="375" stroke="url(#lineGrad)" stroke-width="2"/>
+
+  <!-- Feature pills -->
+  <g font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" letter-spacing="2">
+    <rect x="250" y="415" width="160" height="36" rx="18" fill="rgba(255,80,32,0.12)" stroke="rgba(255,80,32,0.2)" stroke-width="1"/>
+    <text x="330" y="439" text-anchor="middle" fill="#FF5020">⚡ 100 LEVELS</text>
+
+    <rect x="440" y="415" width="140" height="36" rx="18" fill="rgba(204,68,255,0.12)" stroke="rgba(204,68,255,0.2)" stroke-width="1"/>
+    <text x="510" y="439" text-anchor="middle" fill="#CC44FF">🏆 CONTEST</text>
+
+    <rect x="610" y="415" width="160" height="36" rx="18" fill="rgba(255,204,0,0.12)" stroke="rgba(255,204,0,0.2)" stroke-width="1"/>
+    <text x="690" y="439" text-anchor="middle" fill="#FFCC00">🔥 TIMED MODES</text>
+
+    <rect x="800" y="415" width="150" height="36" rx="18" fill="rgba(0,240,255,0.12)" stroke="rgba(0,240,255,0.2)" stroke-width="1"/>
+    <text x="875" y="439" text-anchor="middle" fill="#00F0FF">🎯 ACCURACY</text>
+  </g>
+
+  <!-- Bottom URL -->
+  <text x="600" y="560" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" letter-spacing="3" fill="#666666">
+    typestrike.app
+  </text>
+
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A0A28"/>
+      <stop offset="100%" stop-color="#0A0A10"/>
+    </radialGradient>
+    <radialGradient id="magmaGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF5020"/>
+      <stop offset="100%" stop-color="#FF5020" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cyanGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00F0FF"/>
+      <stop offset="100%" stop-color="#00F0FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="50%" stop-color="rgba(255,255,255,0.15)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </linearGradient>
+    <filter id="glow">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#FF5020" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+</svg>

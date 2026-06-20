@@ -3,13 +3,15 @@
 interface CardProps {
   children: React.ReactNode;
   className?: string;
-  onClick?: () => void;
+  style?: React.CSSProperties;
+  onClick?: (e?: React.MouseEvent) => void;
   hoverable?: boolean;
 }
 
 export default function Card({
   children,
   className = "",
+  style,
   onClick,
   hoverable = false,
 }: CardProps) {
@@ -19,6 +21,7 @@ export default function Card({
   return (
     <div
       className={`${base} ${hover} ${className}`}
+      style={style}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}

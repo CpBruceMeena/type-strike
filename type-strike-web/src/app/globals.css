@@ -136,6 +136,11 @@ body {
   100% { transform: scale(1); }
 }
 
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 .animate-shake { animation: shake-x 0.12s ease-in-out; }
 .animate-pulse-glow { animation: pulse-glow 1.5s ease-in-out infinite; }
 .animate-float-up { animation: float-up 0.8s ease-out forwards; }

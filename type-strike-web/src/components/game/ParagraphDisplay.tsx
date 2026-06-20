@@ -48,7 +48,7 @@ export default function ParagraphDisplay({
     }
   }, [currentCharIndex, charResults, paragraph, trigger]);
 
-  // Auto-scroll to keep cursor visible
+  // Auto-scroll to keep cursor visible within the scrollable container
   useEffect(() => {
     if (cursorRef.current) {
       cursorRef.current.scrollIntoView({
@@ -58,12 +58,12 @@ export default function ParagraphDisplay({
     }
   }, [currentCharIndex]);
 
-  const isActive = gameState === "typing" || gameState === "stalled" || gameState === "mistake";
+  const isActive = gameState === "typing" || gameState === "mistake";
 
   return (
     <div
       ref={containerRef}
-      className="relative mx-auto w-full max-w-[440px] overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.06)] p-5"
+      className="relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.06)] p-5"
       style={{
         background: "rgba(15,15,25,0.7)",
         backdropFilter: "blur(16px)",
@@ -71,10 +71,10 @@ export default function ParagraphDisplay({
     >
       <div
         ref={scrollRef}
-        className="max-h-[280px] overflow-y-auto scrollbar-none"
+        className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none"
       >
         <p
-          className="select-none text-lg leading-[2] tracking-wide"
+          className="select-none text-lg leading-[1.75] tracking-wide whitespace-pre-wrap"
           style={{ fontFamily: "'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace" }}
         >
           {paragraph.split("").map((char, i) => {
@@ -109,14 +109,15 @@ export default function ParagraphDisplay({
                       : "none",
                 }}
               >
-                {char === " " ? "\u00A0" : char}
+                {char}
                 {isCurrent && isActive && (
                   <span
                     ref={cursorRef}
-                    className="absolute -bottom-0.5 left-0 h-0.5 w-full animate-pulse"
+                    className="absolute left-0 top-0 h-full w-[2.5px]"
                     style={{
                       background: "var(--accent-primary)",
-                      boxShadow: "0 0 8px rgba(255,80,32,0.6)",
+                      boxShadow: "0 0 10px rgba(255,80,32,0.9), 0 0 25px rgba(255,80,32,0.4)",
+                      animation: "cursor-blink 1s step-end infinite",
                     }}
                   />
                 )}
@@ -125,20 +126,6 @@ export default function ParagraphDisplay({
           })}
         </p>
       </div>
-
-      {/* Gradient fades at top/bottom of scrollable area */}
-      <div
-        className="pointer-events-none absolute left-0 right-0 top-0 h-6"
-        style={{
-          background: "linear-gradient(to bottom, rgba(15,15,25,1), transparent)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute bottom-0 left-0 right-0 h-6"
-        style={{
-          background: "linear-gradient(to top, rgba(15,15,25,1), transparent)",
-        }}
-      />
     </div>
   );
 }

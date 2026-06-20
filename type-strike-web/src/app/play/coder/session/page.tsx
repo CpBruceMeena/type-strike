@@ -1,38 +1,28 @@
 "use client";
 
-/**
- * Type Strike — useLevelGameplay Hook
- *
- * Dedicated hook for level-based gameplay (unlimited time).
- * Uses LevelTextProvider to fetch the level's paragraph,
- * NoTimer for unlimited time, and completeLevel for results.
- *
- * Game flow: idle → loading → countdown → typing → complete/failed
- */
-
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
-import { DEFAULT_PLAYER_ID } from "@/lib/constants";
+import { useEffect, useCallback, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { TypingEngine } from "@/engine/TypingEngine";
 import {
   KeyboardInputSource,
-  NoTimer,
+  CountdownTimer,
   StandardScoring,
   StandardComboSystem,
   TelemetryPipeline,
-  LevelTextProvider,
+  CoderTextProvider,
 } from "@/engine/implementations";
-import { computeStars } from "@/lib/utils";
-import type { GameplayUIState, GameState, LevelDetail } from "@/lib/types";
+import type { ITextProvider } from "@/engine/interfaces";
+import GameplayUI from "@/components/game/GameplayUI";
+import type { GameplayUIState, GameState } from "@/lib/types";
 import type { GameResult } from "@/engine/interfaces";
-
-// ── Initial State ──────────────────────────────────────
+import { DEFAULT_PLAYER_ID } from "@/lib/constants";
+import { computeXpEarned } from "@/lib/utils";
 
 function createInitialState(): GameplayUIState {
   return {
     gameState: "idle" as GameState,
-    mode: "level",
+    mode: "coder",
     levelId: null,
     levelName: "",
     tier: "",
@@ -58,38 +48,36 @@ function createInitialState(): GameplayUIState {
   };
 }
 
-// ── Hook ────────────────────────────────────────────────
-
-export function useLevelGameplay(levelId: number) {
+function CoderSessionContent() {
   const router = useRouter();
-  const [state, setState] = useState<GameplayUIState>(() => ({
-    ...createInitialState(),
-    levelId,
-  }));
-  const [levelDetail, setLevelDetail] = useState<LevelDetail | null>(null);
-  const levelDetailRef = useRef<LevelDetail | null>(null);
-  const engineRef = useRef<TypingEngine | null>(null);
-  const inputRef = useRef<KeyboardInputSource | null>(null);
-  const playerId = DEFAULT_PLAYER_ID;
+  const searchParams = useSearchParams();
+  const difficulty = searchParams.get("difficulty") ?? "easy";
 
-  // Data points for the consistency graph
+  const [state, setState] = useState<GameplayUIState>(createInitialState);
   const [dataPoints, setDataPoints] = useState<
     Array<{ wpm: number; raw: number; net: number; accuracy: number }>
   >([]);
 
-  // ── Start Game ───────────────────────────────────────
+  const engineRef = useRef<TypingEngine | null>(null);
+  const inputRef = useRef<KeyboardInputSource | null>(null);
+  const timerRef = useRef<CountdownTimer | null>(null);
+  const playerId = DEFAULT_PLAYER_ID;
+
+  // Duration based on difficulty
+  const durationMap: Record<string, number> = {
+    easy: 60,
+    medium: 90,
+    hard: 120,
+  };
+  const durationSec = durationMap[difficulty] ?? 60;
 
   const startGame = useCallback(async () => {
     setState((s) => ({ ...s, gameState: "loading" as GameState }));
 
     try {
-      // 1. Create text provider (fetches level paragraph)
-      const textProvider = new LevelTextProvider(levelId, playerId);
+      const timer = new CountdownTimer(durationSec);
+      const textProvider: ITextProvider = new CoderTextProvider(playerId, difficulty);
 
-      // 2. Create timer (no limit for level mode)
-      const timer = new NoTimer();
-
-      // 3. Create engine with all strategies
       const input = new KeyboardInputSource();
       const scoring = new StandardScoring();
       const comboSys = new StandardComboSystem();
@@ -102,26 +90,15 @@ export function useLevelGameplay(levelId: number) {
         textProvider,
         comboSys,
         telemetry,
-        "level"
+        "coder"
       );
 
-      // Store refs for cleanup
       inputRef.current = input;
+      timerRef.current = timer;
       engineRef.current = engine;
 
-      // 4. Initialize engine — loads paragraph
-      await engine.initialize(levelId);
+      await engine.initialize();
 
-      // Store level detail for star calculation (use ref to avoid stale closure in callbacks)
-      try {
-        const detail = await api.getLevelDetail(levelId, playerId);
-        levelDetailRef.current = detail;
-        setLevelDetail(detail);
-      } catch {
-        // Optional — star calc will just use defaults
-      }
-
-      // 5. Set up callbacks
       engine.onCharUpdateCallback((index, result) => {
         setState((s) => {
           const updatedResults = [...s.charResults];
@@ -131,7 +108,6 @@ export function useLevelGameplay(levelId: number) {
             isCorrect: result.isCorrect,
             isTyped: result.isTyped,
           };
-          // Move cursor to the next untyped position
           const nextIndex = result.isTyped ? index + 1 : index;
           return { ...s, charResults: updatedResults, currentCharIndex: nextIndex };
         });
@@ -146,16 +122,11 @@ export function useLevelGameplay(levelId: number) {
           gaugeProgress: stats.gauge,
           activeComboTierIndex: stats.tierIndex,
           elapsedMs: stats.elapsed,
-          timeRemaining: null, // No timer in level mode
+          timeRemaining: timer.isExpired() ? 0 : timer.getRemainingMs(),
         }));
 
         setDataPoints((prev) => {
-          const point = {
-            wpm: stats.wpm,
-            raw: stats.wpm,
-            net: Math.round(stats.wpm * stats.accuracy),
-            accuracy: stats.accuracy,
-          };
+          const point = { wpm: stats.wpm, raw: stats.wpm, net: Math.round(stats.wpm * stats.accuracy), accuracy: stats.accuracy };
           const last = prev[prev.length - 1];
           if (last && Math.abs(last.wpm - point.wpm) < 2) return prev;
           return [...prev.slice(-200), point];
@@ -165,9 +136,7 @@ export function useLevelGameplay(levelId: number) {
       engine.onKineticTextCallback((text) => {
         if (text) {
           setState((s) => ({ ...s, showKineticText: text }));
-          setTimeout(() => {
-            setState((s) => ({ ...s, showKineticText: null }));
-          }, 1800);
+          setTimeout(() => setState((s) => ({ ...s, showKineticText: null })), 1800);
         }
       });
 
@@ -175,7 +144,6 @@ export function useLevelGameplay(levelId: number) {
         handleGameComplete(result);
       });
 
-      // 6. Store paragraph for UI
       setState((s) => ({
         ...s,
         paragraph: engine.getText(),
@@ -188,15 +156,12 @@ export function useLevelGameplay(levelId: number) {
         gameState: "idle" as GameState,
       }));
 
-      // 7. Transition to countdown
       setState((s) => ({ ...s, gameState: "countdown" as GameState, countdownValue: 3 }));
     } catch (err) {
-      console.error("Failed to start level game:", err);
+      console.error("Failed to start coder game:", err);
       setState((s) => ({ ...s, gameState: "failed" as GameState }));
     }
-  }, [levelId, playerId]);
-
-  // ── Countdown Sequence ───────────────────────────────
+  }, [difficulty, playerId, durationSec]);
 
   const startCountdown = useCallback(async () => {
     const engine = engineRef.current;
@@ -215,70 +180,43 @@ export function useLevelGameplay(levelId: number) {
     inputRef.current?.attach();
   }, []);
 
-  // ── Handle Game Complete ─────────────────────────────
-
   const handleGameComplete = useCallback(
     async (result: GameResult) => {
-      // Calculate stars — read from ref to avoid stale closure
-      const detail = levelDetailRef.current;
-      let stars = 0;
-      if (detail) {
-        stars = computeStars(
-          result.wpm,
-          result.accuracy,
-          detail,
-          result.errorCount
-        );
-      }
+      const xp = computeXpEarned(result.wpm, result.accuracy, null);
 
-      // Submit to backend via completeLevel
-      try {
-        await api.completeLevel(playerId, levelId, {
-          wpm: result.wpm,
-          accuracy: result.accuracy,
-          stars,
-          completed: result.completed,
-        });
-      } catch (err) {
-        console.error("Failed to submit level result:", err);
-      }
-
-      // Update state
       setState((s) => ({
         ...s,
         gameState: (result.completed ? "complete" : "failed") as GameState,
         finalWpm: result.wpm,
         finalAccuracy: result.accuracy,
-        stars,
+        stars: 0,
         elapsedMs: result.elapsedMs,
-        totalKeystrokes: result.totalKeystrokes,
-        correctKeystrokes: result.correctKeystrokes,
         maxCombo: result.maxCombo,
       }));
 
-      // Navigate to result page
-      const xpEarned = result.xpEarned;
       const params = new URLSearchParams({
         wpm: String(result.wpm),
         accuracy: String(result.accuracy),
-        xp: String(xpEarned),
-        stars: String(stars),
-        mode: `level-${levelId}`,
+        xp: String(xp),
+        stars: "0",
+        mode: `coder_${difficulty}`,
       });
 
+      // Also try to submit to backend if available (non-blocking)
       setTimeout(() => {
         const dest = result.completed ? "/victory" : "/failed";
         router.push(`${dest}?${params.toString()}`);
       }, 1200);
 
-      // Cleanup
       engineRef.current?.destroy();
       inputRef.current?.destroy();
     },
-    [levelId, playerId, router]
+    [difficulty, router]
   );
 
-  // ── Cleanup on unmount ───────────────────────────────
+  useEffect(() => {
+    startGame();
+  }, [startGame]);
 
   useEffect(() => {
     return () => {
@@ -287,12 +225,29 @@ export function useLevelGameplay(levelId: number) {
     };
   }, []);
 
-  // ── Return ───────────────────────────────────────────
+  return (
+    <GameplayUI
+      state={state}
+      dataPoints={dataPoints}
+      onStartCountdown={startCountdown}
+    />
+  );
+}
 
-  return {
-    state,
-    dataPoints,
-    startGame,
-    startCountdown,
-  };
+export default function CoderSessionPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-transparent"
+          style={{ borderTopColor: "var(--electric-cyan)", borderRightColor: "var(--electric-cyan)" }}
+        />
+        <p className="text-xs tracking-[2px]" style={{ color: "var(--text-muted)" }}>
+          LOADING CODE ARENA…
+        </p>
+      </div>
+    }>
+      <CoderSessionContent />
+    </Suspense>
+  );
 }

@@ -20,7 +20,6 @@ import {
   StandardScoring,
   StandardComboSystem,
   TelemetryPipeline,
-  StallDetector,
 } from "@/engine/implementations";
 import type { ITextProvider } from "@/engine/interfaces";
 import { ContestTextProvider, FreePracticeTextProvider } from "@/engine/implementations";
@@ -66,7 +65,6 @@ export function useGameplay(mode: GameMode) {
   const engineRef = useRef<TypingEngine | null>(null);
   const inputRef = useRef<KeyboardInputSource | null>(null);
   const timerRef = useRef<CountdownTimer | null>(null);
-  const stallRef = useRef<StallDetector | null>(null);
   const gameIdRef = useRef<string | null>(null);
   const playerId = DEFAULT_PLAYER_ID;
 
@@ -131,7 +129,11 @@ export function useGameplay(mode: GameMode) {
             isCorrect: result.isCorrect,
             isTyped: result.isTyped,
           };
-          return { ...s, charResults: updatedResults };
+          // Move cursor to the next untyped position
+          // After typing: cursor moves to index + 1
+          // After backspace: cursor stays at index (result.isTyped = false)
+          const nextIndex = result.isTyped ? index + 1 : index;
+          return { ...s, charResults: updatedResults, currentCharIndex: nextIndex };
         });
       });
 
@@ -190,17 +192,7 @@ export function useGameplay(mode: GameMode) {
         gameState: "idle" as GameState,
       }));
 
-      // 9. Set up stall detector
-      const stall = new StallDetector();
-      stall.onStallCallback(() => {
-        setState((s) => ({ ...s, gameState: "stalled" as GameState }));
-      });
-      stall.onUnstallCallback(() => {
-        setState((s) => ({ ...s, gameState: "typing" as GameState }));
-      });
-      stallRef.current = stall;
-
-      // 10. Transition to countdown
+      // 9. Transition to countdown
       setState((s) => ({ ...s, gameState: "countdown" as GameState, countdownValue: 3 }));
     } catch (err) {
       console.error("Failed to start game:", err);
@@ -228,11 +220,6 @@ export function useGameplay(mode: GameMode) {
     engine.start();
     inputRef.current?.attach();
 
-    // Wire stall detector to engine input
-    stallRef.current?.registerActivity();
-    document.addEventListener("keydown", () => {
-      stallRef.current?.registerActivity();
-    });
   }, []);
 
   // ── Handle Game Complete ─────────────────────────────
@@ -306,7 +293,6 @@ export function useGameplay(mode: GameMode) {
     return () => {
       engineRef.current?.destroy();
       inputRef.current?.destroy();
-      stallRef.current?.destroy();
     };
   }, []);
 

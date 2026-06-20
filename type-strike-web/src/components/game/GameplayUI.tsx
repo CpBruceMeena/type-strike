@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import GlassPanel from "@/components/ui/GlassPanel";
 import LiveStats from "@/components/analytics/LiveStats";
 import ParagraphDisplay from "./ParagraphDisplay";
+
 import ComboGauge from "./ComboGauge";
 import CountdownOverlay from "./CountdownOverlay";
 import KineticText from "./KineticText";
@@ -62,9 +63,9 @@ export default function GameplayUI({
     );
   }
 
-  // ── Typing / Stalled gameplay ────────────────────────
-  const isActive = state.gameState === "typing" || state.gameState === "stalled";
-  if (!isActive && state.gameState !== "mistake") {
+  // ── Typing / Mistake gameplay ─────────────────────────
+  const isActive = state.gameState === "typing" || state.gameState === "mistake";
+  if (!isActive) {
     // Game is done, will redirect
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
@@ -149,56 +150,41 @@ export default function GameplayUI({
 
         {/* Stats sidebar - HUD panel on desktop */}
         <div className="md:w-[320px] lg:w-[380px] xl:w-[420px] flex flex-col gap-3 mt-3 md:mt-0">
-          {/* Quick stats row */}
-          <GlassPanel glow="magma" blur="sm" depth={2} className="px-4 py-3">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p
-                  className="text-2xl font-black tabular-nums md:text-3xl"
-                  style={{ color: "var(--accent-primary)" }}
-                >
-                  {state.liveWpm}
-                </p>
-                <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
-                  WPM
-                </p>
-              </div>
-              <div className="text-center">
-                <p
-                  className="text-2xl font-black tabular-nums md:text-3xl"
-                  style={{
-                    color: state.accuracy >= 0.95
-                      ? "var(--accent-gold)"
-                      : "var(--text-body)",
-                  }}
-                >
-                  {(state.accuracy * 100).toFixed(0)}%
-                </p>
-                <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
-                  ACC
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-black tabular-nums md:text-3xl" style={{ color: "var(--text-body)" }}>
-                  {state.currentCharIndex}
-                  <span className="text-sm ml-0.5 opacity-50">/{state.paragraph.length}</span>
-                </p>
-                <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
-                  CHARS
-                </p>
-              </div>
-            </div>
-          </GlassPanel>
+          {/* Combo gauge + Stats header row */}
+          <div className="grid grid-cols-2 gap-3">
+            <GlassPanel glow="magma" blur="sm" depth={1} className="px-4 py-3">
+              <ComboGauge
+                combo={state.combo}
+                maxCombo={state.maxCombo}
+                gaugeProgress={state.gaugeProgress}
+                activeTierIndex={state.activeComboTierIndex}
+              />
+            </GlassPanel>
 
-          {/* Combo gauge */}
-          <GlassPanel glow="magma" blur="sm" depth={1} className="px-4 py-3">
-            <ComboGauge
-              combo={state.combo}
-              maxCombo={state.maxCombo}
-              gaugeProgress={state.gaugeProgress}
-              activeTierIndex={state.activeComboTierIndex}
-            />
-          </GlassPanel>
+            {/* Quick time/char info */}
+            <GlassPanel glow="magma" blur="sm" depth={1} className="flex items-center justify-center px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="text-center">
+                  <p className="text-lg font-black tabular-nums" style={{ color: "var(--text-body)" }}>
+                    {state.currentCharIndex}
+                    <span className="text-[10px] ml-0.5 opacity-50">/{state.paragraph.length}</span>
+                  </p>
+                  <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
+                    CHARS
+                  </p>
+                </div>
+                <div className="h-8 w-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="text-center">
+                  <p className="text-lg font-black tabular-nums" style={{ color: "var(--electric-cyan)" }}>
+                    {state.liveWpm}
+                  </p>
+                  <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
+                    WPM
+                  </p>
+                </div>
+              </div>
+            </GlassPanel>
+          </div>
 
           {/* Live analytics - scrollable on mobile, fixed height on desktop */}
           <div className="flex-1 min-h-0 overflow-y-auto">
@@ -221,18 +207,6 @@ export default function GameplayUI({
 
       {/* Kinetic text overlay */}
       <KineticText text={state.showKineticText} />
-
-      {/* Stalled overlay */}
-      {state.gameState === "stalled" && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30">
-          <p
-            className="text-lg font-medium tracking-[2px] animate-pulse"
-            style={{ color: "rgba(200,200,200,0.5)" }}
-          >
-            Keep typing…
-          </p>
-        </div>
-      )}
     </div>
   );
 }

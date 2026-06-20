@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_TABS = [
   { label: "PLAY", href: "/home", accent: "#FF5020" },
+  { label: "CODER", href: "/play/coder", accent: "#00E5FF" },
   { label: "DAILY", href: "/daily-challenges", accent: "#FFCC00" },
   { label: "FEATS", href: "/achievements", accent: "#CC44FF" },
   { label: "STATS", href: "/stats", accent: "#888888" },
@@ -15,6 +16,7 @@ export default function BottomNav() {
 
   const getActive = (href: string): boolean => {
     if (href === "/home") return pathname === "/home" || pathname === "/map";
+    if (href === "/play/coder") return pathname.startsWith("/play/coder");
     if (href === "/daily-challenges") return pathname.startsWith("/daily-challenges");
     if (href === "/achievements") return pathname.startsWith("/achievements");
     if (href === "/stats") return pathname.startsWith("/stats");

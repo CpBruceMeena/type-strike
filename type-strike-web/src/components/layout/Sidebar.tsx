@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { label: "STRIKE", href: "/home", icon: "⚡", accent: "#FF5020" },
   { label: "MAP", href: "/map", icon: "🗺️", accent: "#FF6600" },
+  { label: "CODER", href: "/play/coder", icon: "👨‍💻", accent: "#00E5FF" },
   { label: "DAILY", href: "/daily-challenges", icon: "🎯", accent: "#FFCC00" },
   { label: "FEATS", href: "/achievements", icon: "🏅", accent: "#CC44FF" },
   { label: "LEADERBOARD", href: "/leaderboard", icon: "🏆", accent: "#8844FF" },
@@ -61,20 +62,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom section */}
-      <div className="px-3 pb-4">
-        <div className="mx-3 mb-3 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-        <Link
-          href="/settings"
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-bold tracking-[2px] text-text-muted transition-colors hover:text-text-body"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-          <span>SETTINGS</span>
-        </Link>
-      </div>
+      {/* Bottom section spacer */}
+      <div className="pb-4" />
     </aside>
   );
 }

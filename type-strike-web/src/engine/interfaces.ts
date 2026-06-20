@@ -11,7 +11,7 @@ import type { GameMode } from "@/lib/types";
 
 export interface TextBundle {
   content: string;
-  source: "level" | "contest" | "practice" | "enterprise";
+  source: "level" | "contest" | "practice" | "coder" | "enterprise";
   metadata: Record<string, unknown>;
 }
 

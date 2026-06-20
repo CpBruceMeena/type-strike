@@ -48,7 +48,9 @@ Web companion built with **Next.js (React + TypeScript)** — same theme, same g
 | Settings | ✅ | ✅ |
 | **1 Min / 3 Min / 5 Min timed modes** | ❌ | 🆕 |
 | **Daily contest (ranked)** | ❌ | 🆕 |
-| **Harder paragraphs (symbols, code, capitals)** | ❌ | 🆕 |
+| **Coder mode (code snippets & DSA)** | ❌ | 🆕 |
+| **Open Graph image generation** | ❌ | 🆕 |
+| **Achievement share cards (PNG)** | ❌ | 🆕 |
 
 ---
 
@@ -163,6 +165,9 @@ type-strike/
 - **Dark arcade aesthetic** — obsidian, magma red, molten gold, and neon purple
 - **Web timed modes** — 1-minute sprint, 3-minute endurance, 5-minute marathon
 - **Web contest mode** — daily ranked competition with expert-level paragraphs
+- **Web coder mode** — type real code snippets (algorithms, DSA, system design) organized by difficulty (easy/medium/hard)
+- **Open Graph image generation** — dynamic `/api/og` endpoint using `next/og` ImageResponse that generates 1200×630 PNG images for social sharing, with victory score cards and achievement cards
+- **Achievement PNG share cards** — capture achievement cards as PNG images using `html-to-image`, shareable via native share or downloadable
 
 ---
 
@@ -242,6 +247,7 @@ Unlock new keyboard appearances by clearing levels:
 - Cross-platform account sync
 - Real-time multiplayer races
 - Production CORS configuration
+- Share button on victory/failed pages
 
 ---
 

@@ -174,7 +174,7 @@ export interface BatchUpdateSettingsRequest {
 
 // ── Web-specific: Game Sessions ─────────────────────────
 
-export type GameMode = "level" | "timed_1min" | "timed_3min" | "timed_5min" | "contest";
+export type GameMode = "level" | "timed_1min" | "timed_3min" | "timed_5min" | "contest" | "coder";
 
 export interface GameStartRequest {
   player_id: number;

@@ -7,7 +7,7 @@ interface GlassPanelProps {
   depth?: 1 | 2 | 3;
   className?: string;
   as?: "div" | "section" | "article" | "button";
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 const BLUR_MAP = {

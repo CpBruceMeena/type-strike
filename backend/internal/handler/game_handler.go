@@ -336,13 +336,26 @@ func generateTimedParagraph(mode string) string {
 }
 
 func generateContestParagraph() string {
-	// Generate a unique expert-level paragraph per day using the day of year as seed
+	// Use different content each day based on day of year, cycling through different types
 	dayOfYear := time.Now().YearDay()
-	// Levels 76-100 are Obsidian tier (expert). Cycle through them based on day of year
+	weekOfYear := dayOfYear / 7
+
+	// Cycle through content types based on the week:
+	// Week 0: Fun facts, Week 1: Tech facts, Week 2: Short stories, Week 3: Science facts, Week 4: Coding
+	// This ensures contest content varies week to week
+	contentType := weekOfYear % 5
+
 	levelID := 76 + (dayOfYear % 25)
 	config := data.GetLevel(levelID)
 	if config != nil {
+		// Use the primary paragraph but add a header based on content type
+		contentLabels := []string{"Did you know? ", "In the world of technology, ", "", "Scientific fact: ", "Algorithm challenge: "}
+		label := contentLabels[contentType]
+		if label != "" {
+			return label + config.Paragraph
+		}
 		return config.Paragraph
 	}
-	return `Precision typing at maximum velocity defines the true master of the forge. Each keystroke must land with unerring accuracy as the molten core pulses with ancient power. The obsidian throne awaits those who can maintain 95% accuracy at speeds exceeding 80 words per minute through passages of fire and fury.`
+	// Fallback with a fun fact
+	return "The human brain processes images in as little as thirteen milliseconds, much faster than the one hundred milliseconds it takes to process text. This is why visual information is often easier to remember than written words."
 }
