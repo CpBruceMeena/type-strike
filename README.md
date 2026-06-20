@@ -94,9 +94,11 @@ Unlock new keyboard appearances by clearing levels:
 ## Roadmap
 
 ### ✅ Shipped (Latest)
+- **Entrance animations removed across all screens** — all staggered fade/slide/phase-gated content animations eliminated. Content renders instantly on every screen: SplashScreen, HomeScreen, MapScreen, VictoryScreen, LevelFailedScreen, DailyChallengesScreen, AchievementsScreen, LeaderboardScreen, StatsScreen, SettingsScreen, LevelPreviewScreen. Ambient effects (button glow pulses, orbiting particles, reward overlays) preserved.
+- **Home screen redesigned as game launcher** — Supercell-style, single-screen launcher: massive STRIKE button with drawn flame icon and pulsing glow, player crest badge, compact stat bubbles, daily challenge badge, bottom nav strip (PLAY/DAILY/FEATS/STATS). No scrolling, no emoji in navigation, no descriptive text.
+- **Splash screen simplified** — instant logo wordmark display, removed 6-phase letter-by-letter animation. 1.2s delay before navigating to home.
 - **Keyboard overhaul** — dual-mode keyboard (Letters/Symbols) with mode toggle (?123/ABC), shift key (⇧), and enter key (⏎); backspace and shift promoted to prominent special keys with accent styling
 - **Mistake handling redesign** — mistyped characters now advance to the next position instead of blocking; combo resets on error, game completes if the mistake hits the paragraph end
-- **Home screen navigation redesign** — replaced bottom nav bar + quick action chips with a vertical column of large, card-based navigation buttons (Play, Daily Challenges, Achievements, Stats), each with icon, description, and arrow indicator
 - **Map screen polish** — added system bars padding for proper edge-to-edge rendering on modern Android devices
 - Daily challenge streak multipliers — rewards scale from 1.0×–2.0× based on consecutive daily completions, with flame visual badge and reward animation
 - Back navigation on all screens — every non-root page has a stack-based back button (←) for intuitive navigation

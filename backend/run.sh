@@ -12,6 +12,7 @@
 # Options (used with start/restart):
 #   --seed                — (re)seed levels before starting
 #   --seed-only           — seed levels and exit (no server start)
+#   --force               — kill any process on SERVER_PORT before starting
 # ────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -37,7 +38,42 @@ ok()    { echo -e "${GREEN}✓${NC} $1"; }
 warn()  { echo -e "${YELLOW}⚠${NC} $1"; }
 err()   { echo -e "${RED}✗${NC} $1"; }
 
-# ── Migration & Seed (kept from original) ──────────────────
+# ── Port helpers ───────────────────────────────────────────
+# Get the PID of whatever is listening on SERVER_PORT (if any)
+port_pid() {
+  lsof -ti:"$SERVER_PORT" 2>/dev/null || echo ""
+}
+
+# Check if the port is free
+port_is_free() {
+  [ -z "$(port_pid)" ]
+}
+
+# Kill any process on SERVER_PORT
+kill_port() {
+  local pid
+  pid=$(port_pid)
+  if [ -n "$pid" ]; then
+    local name
+    name=$(ps -o comm= -p "$pid" 2>/dev/null || echo "unknown")
+    warn "Killing process on port $SERVER_PORT (PID $pid — $name)..."
+    kill "$pid" 2>/dev/null || true
+    local waited=0
+    while kill -0 "$pid" 2>/dev/null; do
+      sleep 1
+      waited=$((waited + 1))
+      if [ "$waited" -ge 5 ]; then
+        kill -9 "$pid" 2>/dev/null || true
+        break
+      fi
+    done
+    # Small cooldown so the port is released
+    sleep 1
+    ok "Port $SERVER_PORT freed"
+  fi
+}
+
+# ── Migration & Seed ───────────────────────────────────────
 run_migrations() {
   echo -e "${YELLOW}▶ Running database migrations...${NC}"
 
@@ -72,32 +108,58 @@ seed_levels() {
 preflight() {
   command -v go >/dev/null 2>&1 || { err "Go is not installed."; exit 1; }
   command -v psql >/dev/null 2>&1 || warn "psql not found — migrations won't auto-run."
+  command -v lsof >/dev/null 2>&1 || warn "lsof not found — port detection disabled"
 }
 
 # ── Start ───────────────────────────────────────────────────
 cmd_start() {
   local DO_SEED=false
   local SEED_ONLY=false
+  local DO_FORCE=false
 
   # Parse flags passed to start
   for arg in "$@"; do
     case "$arg" in
       --seed-only) SEED_ONLY=true; DO_SEED=true ;;
       --seed) DO_SEED=true ;;
+      --force) DO_FORCE=true ;;
     esac
   done
 
-  # Check if already running
+  # Clean up stale PID file first
   if [ -f "$PID_FILE" ]; then
     local existing_pid
     existing_pid=$(cat "$PID_FILE")
     if kill -0 "$existing_pid" 2>/dev/null; then
-      err "Server is already running (PID $existing_pid)."
-      info "  Use: ./run.sh restart  or  ./run.sh stop"
-      exit 1
+      if [ "$DO_FORCE" = true ]; then
+        warn "Server is already running (PID $existing_pid). Force-killing..."
+        kill_port
+        rm -f "$PID_FILE"
+      else
+        err "Server is already running (PID $existing_pid)."
+        info "  Use: ./run.sh restart  or  ./run.sh stop  or  ./run.sh start --force"
+        exit 1
+      fi
     else
       warn "Stale PID file found. Cleaning up..."
       rm -f "$PID_FILE"
+    fi
+  fi
+
+  # Check port availability — if something else is on our port, free it automatically
+  if ! port_is_free; then
+    local occupant_pid
+    occupant_pid=$(port_pid)
+    local occupant_name
+    occupant_name=$(ps -o comm= -p "$occupant_pid" 2>/dev/null || echo "unknown")
+    if [ "$DO_FORCE" = true ]; then
+      warn "Port $SERVER_PORT is occupied by PID $occupant_pid ($occupant_name). Freeing it..."
+      kill_port
+    else
+      warn "Port $SERVER_PORT is in use by PID $occupant_pid ($occupant_name)."
+      info "  Use --force to auto-kill and restart, or stop the other process first."
+      info "  Tip: SERVER_PORT=8081 ./run.sh start  to use a different port."
+      exit 1
     fi
   fi
 
@@ -140,24 +202,33 @@ cmd_start() {
 
 # ── Stop ────────────────────────────────────────────────────
 cmd_stop() {
-  if [ ! -f "$PID_FILE" ]; then
-    warn "No PID file found. Server is not running."
-    return
+  local pid=""
+
+  # Prefer PID file
+  if [ -f "$PID_FILE" ]; then
+    pid=$(cat "$PID_FILE")
   fi
 
-  local pid
-  pid=$(cat "$PID_FILE")
+  # Fallback: find any process on the configured port
+  if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+    local port_pid_val
+    port_pid_val=$(port_pid)
+    if [ -n "$port_pid_val" ]; then
+      warn "PID file missing/stale. Found process $port_pid_val on port $SERVER_PORT."
+      pid="$port_pid_val"
+    fi
+  fi
 
-  if ! kill -0 "$pid" 2>/dev/null; then
-    warn "Process $pid is not running. Cleaning up PID file."
+  if [ -z "$pid" ]; then
+    warn "No server process found on port $SERVER_PORT."
     rm -f "$PID_FILE"
     return
   fi
 
+  # Try graceful stop first
   info "Stopping server (PID $pid)..."
   kill "$pid" 2>/dev/null || true
 
-  # Wait for graceful shutdown (up to 10 seconds)
   local waited=0
   while kill -0 "$pid" 2>/dev/null; do
     sleep 1
@@ -182,28 +253,35 @@ cmd_restart() {
 
 # ── Status ──────────────────────────────────────────────────
 cmd_status() {
-  if [ ! -f "$PID_FILE" ]; then
-    warn "Server is not running (no PID file)"
+  local pid=""
+
+  if [ -f "$PID_FILE" ]; then
+    pid=$(cat "$PID_FILE")
+  fi
+
+  # If PID file process is not alive, try by port
+  if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+    local port_pid_val
+    port_pid_val=$(port_pid)
+    if [ -n "$port_pid_val" ]; then
+      pid="$port_pid_val"
+      warn "Server running but PID file missing/stale (found PID $pid on port $SERVER_PORT)"
+    fi
+  fi
+
+  if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+    warn "Server is not running"
     return 1
   fi
 
-  local pid
-  pid=$(cat "$PID_FILE")
-
-  if kill -0 "$pid" 2>/dev/null; then
-    local running_since
-    running_since=$(ps -o lstart= -p "$pid" 2>/dev/null || echo "unknown")
-    ok "Server is running (PID $pid, started $running_since)"
-    info "  Port:      ${SERVER_PORT}"
-    info "  Health:    http://localhost:${SERVER_PORT}/health"
-    info "  PID file:  ${PID_FILE}"
-    info "  Log file:  ${LOG_FILE}"
-    return 0
-  else
-    warn "PID file exists but process $pid is not running"
-    info "  Run ./run.sh clean to remove stale PID file"
-    return 1
-  fi
+  local running_since
+  running_since=$(ps -o lstart= -p "$pid" 2>/dev/null || echo "unknown")
+  ok "Server is running (PID $pid, started $running_since)"
+  info "  Port:      ${SERVER_PORT}"
+  info "  Health:    http://localhost:${SERVER_PORT}/health"
+  info "  PID file:  ${PID_FILE}"
+  info "  Log file:  ${LOG_FILE}"
+  return 0
 }
 
 # ── Clean ───────────────────────────────────────────────────
@@ -241,6 +319,7 @@ print_usage() {
   echo "  Options (for start/restart):"
   echo "    --seed             (Re)seed levels before starting"
   echo "    --seed-only        Seed levels and exit"
+  echo "    --force            Kill any existing process on the port"
   echo ""
   echo "  Environment:"
   echo "    SERVER_PORT        Server port (default: 8080)"

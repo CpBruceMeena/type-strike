@@ -62,7 +62,6 @@ fun AchievementsScreen(
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             AchievementsHeader(
                 onBack = onBack,
-                entranceStarted = uiState.entranceStarted,
                 totalUnlocked = uiState.totalUnlocked,
                 totalCount = uiState.totalCount
             )
@@ -74,8 +73,7 @@ fun AchievementsScreen(
                     onRetry = { viewModel.loadAchievements() }
                 )
                 else -> AchievementsContent(
-                    achievements = uiState.achievements,
-                    entranceStarted = uiState.entranceStarted
+                    achievements = uiState.achievements
                 )
             }
         }
@@ -87,14 +85,9 @@ fun AchievementsScreen(
 @Composable
 private fun AchievementsHeader(
     onBack: () -> Unit,
-    entranceStarted: Boolean,
     totalUnlocked: Int,
     totalCount: Int
 ) {
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-    ) {
         Column {
             Row(
                 modifier = Modifier
@@ -148,24 +141,14 @@ private fun AchievementsHeader(
             }
             Spacer(modifier = Modifier.height(4.dp))
         }
-    }
 }
 
 // ── Content ──────────────────────────────────────────────
 
 @Composable
 private fun AchievementsContent(
-    achievements: List<Achievement>,
-    entranceStarted: Boolean
+    achievements: List<Achievement>
 ) {
-    var sectionVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(entranceStarted) {
-        if (entranceStarted) {
-            delay(200)
-            sectionVisible = true
-        }
-    }
-
     // Group achievements by category
     val grouped = achievements.groupBy { it.category }
 
@@ -175,12 +158,7 @@ private fun AchievementsContent(
     ) {
         // Summary card at top
         item {
-            AnimatedVisibility(
-                visible = sectionVisible,
-                enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-            ) {
-                AchievementSummaryCard(achievements = achievements)
-            }
+            AchievementSummaryCard(achievements = achievements)
         }
 
         // Unlocked achievements section
@@ -188,26 +166,16 @@ private fun AchievementsContent(
         if (unlocked.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                AnimatedVisibility(
-                    visible = sectionVisible,
-                    enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-                ) {
-                    Text(
-                        text = "★ UNLOCKED",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MoltenGold,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 2.sp
-                    )
-                }
+                Text(
+                    text = "★ UNLOCKED",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MoltenGold,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                )
             }
             items(unlocked.take(3)) { achievement ->
-                AnimatedVisibility(
-                    visible = sectionVisible,
-                    enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-                ) {
-                    AchievementCard(achievement = achievement)
-                }
+                AchievementCard(achievement = achievement)
             }
             if (unlocked.size > 3) {
                 item {
@@ -225,28 +193,15 @@ private fun AchievementsContent(
         grouped.forEach { (category, catAchievements) ->
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                AnimatedVisibility(
-                    visible = sectionVisible,
-                    enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-                ) {
-                    CategoryHeader(
-                        name = category,
-                        unlocked = catAchievements.count { it.isUnlocked },
-                        total = catAchievements.size
-                    )
-                }
+                CategoryHeader(
+                    name = category,
+                    unlocked = catAchievements.count { it.isUnlocked },
+                    total = catAchievements.size
+                )
             }
 
             items(catAchievements) { achievement ->
-                AnimatedVisibility(
-                    visible = sectionVisible,
-                    enter = slideInVertically(
-                        animationSpec = tween(300),
-                        initialOffsetY = { it / 2 }
-                    ) + fadeIn(tween(200))
-                ) {
-                    AchievementCard(achievement = achievement)
-                }
+                AchievementCard(achievement = achievement)
             }
         }
 

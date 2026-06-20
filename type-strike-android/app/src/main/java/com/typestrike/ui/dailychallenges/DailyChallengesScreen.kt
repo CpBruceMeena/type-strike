@@ -57,13 +57,7 @@ fun DailyChallengesScreen(
     viewModel: DailyChallengesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var entranceStarted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        delay(100)
-        entranceStarted = true
-        viewModel.startEntrance()
-    }
 
     val particleConfig = remember {
         ParticleConfig.fromQuality(ParticleConfig.detect())
@@ -79,7 +73,6 @@ fun DailyChallengesScreen(
             // Header
             DailyChallengesHeader(
                 onBack = onBack,
-                entranceStarted = entranceStarted,
                 completed = uiState.totalCompleted,
                 total = uiState.challenges.size,
                 totalXp = uiState.totalRewardXp,
@@ -97,7 +90,6 @@ fun DailyChallengesScreen(
                 )
                 else -> ChallengeList(
                     challenges = uiState.challenges,
-                    entranceStarted = entranceStarted,
                     onPlayChallenge = onPlayChallenge,
                     streakMultiplier = uiState.streakMultiplier
                 )
@@ -192,7 +184,6 @@ private fun StreakBadge(
 @Composable
 private fun DailyChallengesHeader(
     onBack: () -> Unit,
-    entranceStarted: Boolean,
     completed: Int,
     total: Int,
     totalXp: Int,
@@ -201,10 +192,6 @@ private fun DailyChallengesHeader(
     streakCount: Int = 0,
     streakMultiplier: Double = 1.0
 ) {
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-    ) {
         Column {
             Row(
                 modifier = Modifier
@@ -308,7 +295,6 @@ private fun DailyChallengesHeader(
 
             Spacer(modifier = Modifier.height(4.dp))
         }
-    }
 }
 
 // ── Challenge List ───────────────────────────────────────
@@ -316,7 +302,6 @@ private fun DailyChallengesHeader(
 @Composable
 private fun ChallengeList(
     challenges: List<DailyChallenge>,
-    entranceStarted: Boolean,
     onPlayChallenge: (Int) -> Unit,
     streakMultiplier: Double = 1.0
 ) {
@@ -331,26 +316,16 @@ private fun ChallengeList(
         Spacer(modifier = Modifier.height(8.dp))
 
         challenges.forEachIndexed { index, challenge ->
-            val delayMs = 200 + index * 200
-
-            AnimatedVisibility(
-                visible = entranceStarted,
-                enter = slideInVertically(
-                    animationSpec = tween(400, delayMillis = delayMs),
-                    initialOffsetY = { it / 2 }
-                ) + fadeIn(tween(300, delayMillis = delayMs))
-            ) {
-                ChallengeCard(
-                    challenge = challenge,
-                    index = index,
-                    streakMultiplier = streakMultiplier,
-                    onClick = {
-                        if (!challenge.completed) {
-                            onPlayChallenge(challenge.levelId)
-                        }
+            ChallengeCard(
+                challenge = challenge,
+                index = index,
+                streakMultiplier = streakMultiplier,
+                onClick = {
+                    if (!challenge.completed) {
+                        onPlayChallenge(challenge.levelId)
                     }
-                )
-            }
+                }
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
         }
