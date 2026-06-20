@@ -330,11 +330,11 @@ private fun MapLevelList(
             val tier = tierForLevel(level.id)
             if (tier.key != lastTier) {
                 lastTier = tier.key
-                        TierFractureZone(
-                            tier = tier,
-                            entranceStarted = entranceStarted,
-                            burstParticleCount = particleConfig.burstParticleCount
-                        )
+                TierFractureZone(
+                    tier = tier,
+                    entranceStarted = entranceStarted,
+                    burstParticleCount = particleConfig.burstParticleCount
+                )
             }
 
             LevelNodeItem(
