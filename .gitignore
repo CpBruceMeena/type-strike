@@ -54,10 +54,26 @@ type-strike-wireframe.html
 *.png
 !type-strike-android/app/src/main/res/**/*.png
 !type-strike-android/app/src/main/res/drawable/**/*.png
+screenshot_*.png
 
 # ── Android Keystore (DO NOT COMMIT) ───────────────────
 *.keystore
 *.jks
+*.key
+
+# ── Release builds ────────────────────────────────────
+*.apk
+*.aab
+release/
+
+# ── Editor / OS ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.bak
+*.bak
 
 # ── Backend build artifacts ──────────────────────────
 backend/scripts/seed_levels

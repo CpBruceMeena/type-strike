@@ -55,10 +55,7 @@ fun LevelFailedScreen(
         HapticUtil.levelFailed(view)
     }
 
-    // Tap-to-skip
-    val tapToSkip = Modifier.clickable {
-        if (!uiState.animComplete) viewModel.skipToEnd()
-    }
+
 
     val particleConfig = remember {
         ParticleConfig.fromQuality(ParticleConfig.detect())
@@ -68,12 +65,10 @@ fun LevelFailedScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Background.copy(alpha = 0.95f))
-            .then(tapToSkip)
     ) {
         when {
             uiState.isLoading -> LevelFailedLoading()
             else -> {
-                // Particle background (subdued)
                 MapParticleField(
                     config = particleConfig.copy(
                         opacity = 0.2f,
@@ -83,7 +78,6 @@ fun LevelFailedScreen(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Red-tinted overlay
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -91,12 +85,8 @@ fun LevelFailedScreen(
                         .background(ErrorRed)
                 )
 
-                // Corner brackets (red-tinted)
-                if (uiState.animPhase >= 1) {
-                    FailedCornerBrackets(uiState.animPhase)
-                }
+                FailedCornerBrackets()
 
-                // ── Content ───────────────────────────
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -105,7 +95,6 @@ fun LevelFailedScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // ── Back button (always visible, replaces top spacer) ──
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Start
@@ -117,121 +106,78 @@ fun LevelFailedScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // ── LEVEL BREACHED Badge ──────────
-                    if (uiState.animPhase >= 2) {
-                        LevelBreachedBadge(animPhase = uiState.animPhase)
-                    }
+                    LevelBreachedBadge()
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Level name subtitle
-                    AnimatedVisibility(
-                        visible = uiState.animPhase >= 2,
-                        enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 2 }
-                    ) {
-                        Text(
-                            text = uiState.levelName.uppercase(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextMuted,
-                            letterSpacing = 3.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    Text(
+                        text = uiState.levelName.uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextMuted,
+                        letterSpacing = 3.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // ── Requirements Not Met ──────────
-                    if (uiState.animPhase >= 3) {
-                        RequirementsLabel(
-                            wpm = uiState.finalWpm,
-                            accuracy = uiState.finalAccuracy,
-                            passWpm = uiState.passWpm,
-                            passAccuracy = uiState.passAccuracy,
-                            animPhase = uiState.animPhase
-                        )
-                    }
+                    RequirementsLabel(
+                        wpm = uiState.finalWpm,
+                        accuracy = uiState.finalAccuracy,
+                        passWpm = uiState.passWpm,
+                        passAccuracy = uiState.passAccuracy
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // ── Metrics (red-tinted) ──────────
-                    if (uiState.animPhase >= 4) {
-                        FailedMetrics(
-                            wpm = uiState.finalWpm,
-                            accuracy = uiState.finalAccuracy,
-                            animPhase = uiState.animPhase
-                        )
-                    }
+                    FailedMetrics(
+                        wpm = uiState.finalWpm,
+                        accuracy = uiState.finalAccuracy
+                    )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // ── Partial XP ────────────────────
-                    if (uiState.animPhase >= 5) {
-                        PartialXpBadge(
-                            xpEarned = uiState.partialXp,
-                            animPhase = uiState.animPhase
-                        )
-                    }
+                    PartialXpBadge(
+                        xpEarned = uiState.partialXp
+                    )
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // ── Action Buttons ────────────────
-                    AnimatedVisibility(
-                        visible = uiState.animPhase >= 6 || uiState.animComplete,
-                        enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
+                        Button(
+                            onClick = { onRetry(levelId) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
                         ) {
-                            // RETRY button
-                            Button(
-                                onClick = { onRetry(levelId) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
-                            ) {
-                                Text(
-                                    text = "💀  RETRY",
-                                    color = TextWhite,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 2.sp
-                                )
-                            }
+                            Text(
+                                text = "💀  RETRY",
+                                color = TextWhite,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 2.sp
+                            )
+                        }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                            // Back to Map
-                            TextButton(
-                                onClick = onBackToMap,
-                                modifier = Modifier.height(40.dp)
-                            ) {
-                                Text(
-                                    text = "BACK TO MAP",
-                                    color = TextLabel,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    letterSpacing = 1.sp
-                                )
-                            }
+                        TextButton(
+                            onClick = onBackToMap,
+                            modifier = Modifier.height(40.dp)
+                        ) {
+                            Text(
+                                text = "BACK TO MAP",
+                                color = TextLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                letterSpacing = 1.sp
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                // Tap hint
-                AnimatedVisibility(
-                    visible = !uiState.animComplete && uiState.animPhase >= 2,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)
-                ) {
-                    Text(
-                        text = "Tap to skip",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextDisabled.copy(alpha = 0.5f)
-                    )
                 }
             }
         }
@@ -241,14 +187,8 @@ fun LevelFailedScreen(
 // ── Failed Corner Brackets ───────────────────────────────
 
 @Composable
-private fun FailedCornerBrackets(animPhase: Int) {
-    val bracketAlpha by animateFloatAsState(
-        targetValue = if (animPhase >= 1) 1f else 0f,
-        animationSpec = tween(400),
-        label = "failedBracketAlpha"
-    )
-
-    Canvas(modifier = Modifier.fillMaxSize().alpha(bracketAlpha)) {
+private fun FailedCornerBrackets() {
+    Canvas(modifier = Modifier.fillMaxSize()) {
         val strokeW = 3.dp.toPx()
         val length = 60.dp.toPx()
         val offset = 16.dp.toPx()
@@ -273,35 +213,19 @@ private fun FailedCornerBrackets(animPhase: Int) {
 // ── LEVEL BREACHED Badge ─────────────────────────────────
 
 @Composable
-private fun LevelBreachedBadge(animPhase: Int) {
-    val badgeScale by animateFloatAsState(
-        targetValue = if (animPhase >= 2) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f),
-        label = "breachedBadgeScale"
-    )
-
-    // Jagged crack offset for broken text effect
-    val crackOffset by animateFloatAsState(
-        targetValue = if (animPhase >= 2) 0f else 20f,
-        animationSpec = tween(600, easing = FastOutSlowInEasing),
-        label = "crackOffset"
-    )
-
+private fun LevelBreachedBadge() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Cracked line above
-        if (animPhase >= 2) {
-            Canvas(modifier = Modifier.width(180.dp).height(12.dp).alpha(0.5f)) {
-                val path = Path().apply {
-                    moveTo(0f, size.height / 2f)
-                    lineTo(size.width * 0.3f, size.height * 0.2f)
-                    lineTo(size.width * 0.45f, size.height * 0.6f)
-                    lineTo(size.width * 0.6f, size.height * 0.3f)
-                    lineTo(size.width * 0.8f, size.height * 0.5f)
-                    lineTo(size.width, size.height * 0.4f)
-                }
-                drawPath(path, ErrorRed.copy(alpha = 0.6f), style = Stroke(2f))
-                drawPath(path, ErrorRed.copy(alpha = 0.2f), style = Stroke(6f, cap = StrokeCap.Round))
+        Canvas(modifier = Modifier.width(180.dp).height(12.dp).alpha(0.5f)) {
+            val path = Path().apply {
+                moveTo(0f, size.height / 2f)
+                lineTo(size.width * 0.3f, size.height * 0.2f)
+                lineTo(size.width * 0.45f, size.height * 0.6f)
+                lineTo(size.width * 0.6f, size.height * 0.3f)
+                lineTo(size.width * 0.8f, size.height * 0.5f)
+                lineTo(size.width, size.height * 0.4f)
             }
+            drawPath(path, ErrorRed.copy(alpha = 0.6f), style = Stroke(2f))
+            drawPath(path, ErrorRed.copy(alpha = 0.2f), style = Stroke(6f, cap = StrokeCap.Round))
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -313,10 +237,7 @@ private fun LevelBreachedBadge(animPhase: Int) {
             fontWeight = FontWeight.Bold,
             letterSpacing = 6.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier
-                .scale(badgeScale)
-                .offset(x = crackOffset.dp)
-                .shadow(8.dp, RoundedCornerShape(0.dp), ambientColor = ErrorRed, spotColor = ErrorRed)
+            modifier = Modifier.shadow(8.dp, RoundedCornerShape(0.dp), ambientColor = ErrorRed, spotColor = ErrorRed)
         )
         Text(
             text = "BREACHED",
@@ -325,10 +246,7 @@ private fun LevelBreachedBadge(animPhase: Int) {
             fontWeight = FontWeight.Bold,
             letterSpacing = 4.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier
-                .scale(badgeScale)
-                .offset(x = (-crackOffset * 0.5f).dp)
-                .shadow(12.dp, RoundedCornerShape(0.dp), ambientColor = ErrorRed, spotColor = ErrorRed)
+            modifier = Modifier.shadow(12.dp, RoundedCornerShape(0.dp), ambientColor = ErrorRed, spotColor = ErrorRed)
         )
     }
 }
@@ -340,15 +258,8 @@ private fun RequirementsLabel(
     wpm: Int,
     accuracy: Int,
     passWpm: Int,
-    passAccuracy: Int,
-    animPhase: Int
+    passAccuracy: Int
 ) {
-    val visible by animateFloatAsState(
-        targetValue = if (animPhase >= 3) 1f else 0f,
-        animationSpec = tween(400),
-        label = "reqLabelVisible"
-    )
-
     // Determine which requirement(s) weren't met
     val wpmMet = wpm >= passWpm
     val accMet = accuracy >= passAccuracy
@@ -362,8 +273,7 @@ private fun RequirementsLabel(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .alpha(visible),
+            .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceDark.copy(alpha = 0.6f)),
         border = BorderStroke(1.dp, ErrorRed.copy(alpha = 0.15f))
@@ -447,19 +357,11 @@ private fun RequirementPill(
 @Composable
 private fun FailedMetrics(
     wpm: Int,
-    accuracy: Int,
-    animPhase: Int
+    accuracy: Int
 ) {
-    val metricsVisible by animateFloatAsState(
-        targetValue = if (animPhase >= 4) 1f else 0f,
-        animationSpec = tween(500),
-        label = "failedMetricsVisible"
-    )
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(metricsVisible)
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
@@ -518,16 +420,7 @@ private fun FailedMetricCard(
 // ── Partial XP Badge ─────────────────────────────────────
 
 @Composable
-private fun PartialXpBadge(
-    xpEarned: Int,
-    animPhase: Int
-) {
-    val visible by animateFloatAsState(
-        targetValue = if (animPhase >= 5) 1f else 0f,
-        animationSpec = tween(400),
-        label = "xpBadgeVisible"
-    )
-
+private fun PartialXpBadge(xpEarned: Int) {
     val pulse by rememberInfiniteTransition(label = "xpPulse").animateFloat(
         initialValue = 0.15f,
         targetValue = 0.3f,
@@ -543,7 +436,6 @@ private fun PartialXpBadge(
             .clip(RoundedCornerShape(20.dp))
             .background(ErrorRed.copy(alpha = pulse))
             .padding(horizontal = 20.dp, vertical = 10.dp)
-            .alpha(visible)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(

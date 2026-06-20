@@ -17,7 +17,7 @@ android {
         versionName = "1.0.0"
 
         // Go backend URL — override via BuildConfig
-        buildConfigField("String", "BASE_URL", "\"https://d7a0-2402-e280-226b-1cc-dd5b-76b4-b559-85e0.ngrok-free.app\"")
+        buildConfigField("String", "BASE_URL", "\"https://helpful-supposedly-moose.ngrok-free.app\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

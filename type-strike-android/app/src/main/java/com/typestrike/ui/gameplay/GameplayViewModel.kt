@@ -220,8 +220,16 @@ class GameplayViewModel @Inject constructor(
 
     fun onKeyPress(char: Char) {
         val state = _uiState.value
-        if (state.gameState != GameState.TYPING) return
-        if (mistakeJob?.isActive == true) return
+
+        // Un-stall on any input — the "Keep typing…" overlay should dismiss on tap
+        if (state.gameState == GameState.STALLED) {
+            _uiState.value = state.copy(gameState = GameState.TYPING)
+            lastInputTimeMs = System.currentTimeMillis()
+            startStallTimer()
+        }
+
+        // Only process keystrokes during active typing (allow STALLED to un-stall above)
+        if (state.gameState != GameState.TYPING && state.gameState != GameState.STALLED) return
         if (state.currentCharIndex >= state.paragraph.length) return
 
         val expectedChar = state.paragraph[state.currentCharIndex]
@@ -284,6 +292,7 @@ class GameplayViewModel @Inject constructor(
             finishGame(newState)
         } else {
             _uiState.value = newState
+            updateWpmAndAccuracy(newState)  // Overwrites with WPM if >= 1s elapsed
             lastInputTimeMs = System.currentTimeMillis()
             startStallTimer()
         }
@@ -295,7 +304,8 @@ class GameplayViewModel @Inject constructor(
         // Play error sound
         soundManager.playError(_soundVolume)
 
-        // Mark current char as wrong and advance to next
+        // Mark current char as wrong and ADVANCE the cursor.
+        // The user can continue typing forward — wrong chars are shown in red.
         val newIndex = state.currentCharIndex + 1
         val updatedResults = state.charResults.toMutableList()
         updatedResults[state.currentCharIndex] = CharResult(
@@ -315,10 +325,13 @@ class GameplayViewModel @Inject constructor(
             gaugeProgress = 0f
         )
         updateWpmAndAccuracy(newState)
-        _uiState.value = newState
 
         if (isComplete) {
             finishGame(newState)
+        } else {
+            _uiState.value = newState
+            lastInputTimeMs = System.currentTimeMillis()
+            startStallTimer()
         }
     }
 
