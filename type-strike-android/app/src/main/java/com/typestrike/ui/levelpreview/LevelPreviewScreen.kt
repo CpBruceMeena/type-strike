@@ -159,8 +159,7 @@ private fun LevelPreviewContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .navigationBarsPadding()
+            .systemBarsPadding()
             .padding(bottom = 16.dp)
     ) {
         // ── Header ──────────────────────────────────────

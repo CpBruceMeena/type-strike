@@ -1,6 +1,5 @@
 package com.typestrike.ui.home
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -55,13 +54,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var entranceStarted by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(100)
-        entranceStarted = true
-        viewModel.startEntrance()
-    }
-
     val particleConfig = remember {
         ParticleConfig.fromQuality(ParticleConfig.detect())
     }
@@ -80,16 +72,12 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .statusBarsPadding()
-                .navigationBarsPadding()
         ) {
-            // ── Top bar with animated logo ────────────
-            EntranceFadeSlide(entranceStarted, delayMs = 0) {
-                HomeTopBar(
-                    onSettingsClick = onNavigateToSettings,
-                    streakCount = uiState.streakCount
-                )
-            }
+            // ── Top bar ──────────────────────────────
+            HomeTopBar(
+                onSettingsClick = onNavigateToSettings,
+                streakCount = uiState.streakCount
+            )
 
             // ── Dashboard content (scrollable, no weight-based gaps) ───
             Column(
@@ -103,63 +91,55 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // ── Welcome Hero or Enhanced Player Card ──
-                EntranceFadeSlide(entranceStarted, delayMs = 120) {
-                    if (!uiState.hasPlayer) {
-                        WelcomeHero()
-                    } else {
-                        EnhancedPlayerCard(
-                            level = uiState.playerLevel,
-                            title = uiState.playerTitle,
-                            totalStars = uiState.totalStars,
-                            xp = uiState.xp,
-                            xpForNext = uiState.xpForNext,
-                            xpProgress = uiState.xpProgress
-                        )
-                    }
+                if (!uiState.hasPlayer) {
+                    WelcomeHero()
+                } else {
+                    EnhancedPlayerCard(
+                        level = uiState.playerLevel,
+                        title = uiState.playerTitle,
+                        totalStars = uiState.totalStars,
+                        xp = uiState.xp,
+                        xpForNext = uiState.xpForNext,
+                        xpProgress = uiState.xpProgress
+                    )
                 }
 
                 // ── Quick Stats Row ────────────────────
                 if (uiState.hasPlayer) {
-                    EntranceFadeSlide(entranceStarted, delayMs = 200) {
-                        QuickStatRow(
-                            bestWpm = uiState.todaysBestWpm,
-                            totalStars = uiState.totalStars,
-                            streakCount = uiState.streakCount,
-                            levelsCleared = uiState.levelsCleared
-                        )
-                    }
-                }
-
-                // ── JUMP IN Button ────────────────────
-                EntranceFadeSlide(entranceStarted, delayMs = 300) {
-                    JumpInButton(
-                        subLabel = viewModel.jumpInLabel(),
-                        onClick = { onJumpIn(viewModel.getNextLevelId()) }
+                    QuickStatRow(
+                        bestWpm = uiState.todaysBestWpm,
+                        totalStars = uiState.totalStars,
+                        streakCount = uiState.streakCount,
+                        levelsCleared = uiState.levelsCleared
                     )
                 }
 
+                // ── JUMP IN Button ────────────────────
+                JumpInButton(
+                    subLabel = viewModel.jumpInLabel(),
+                    onClick = { onJumpIn(viewModel.getNextLevelId()) }
+                )
+
                 // ── Two-column: Daily + Achievement side by side ──
                 if (uiState.hasPlayer) {
-                    EntranceFadeSlide(entranceStarted, delayMs = 500) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // Daily Challenge mini card
-                            DailyChallengeMiniCard(
-                                summary = uiState.dailyChallengeSummary,
-                                onClick = onNavigateToDailyChallenges,
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Daily Challenge mini card
+                        DailyChallengeMiniCard(
+                            summary = uiState.dailyChallengeSummary,
+                            onClick = onNavigateToDailyChallenges,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Achievement spotlight mini card
+                        if (uiState.spotlightAchievement != null) {
+                            AchievementMiniCard(
+                                achievement = uiState.spotlightAchievement!!,
+                                onClick = onNavigateToAchievements,
                                 modifier = Modifier.weight(1f)
                             )
-
-                            // Achievement spotlight mini card
-                            if (uiState.spotlightAchievement != null) {
-                                AchievementMiniCard(
-                                    achievement = uiState.spotlightAchievement!!,
-                                    onClick = onNavigateToAchievements,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
                         }
                     }
                 }
@@ -168,16 +148,14 @@ fun HomeScreen(
             }
 
             // Bottom Navigation Buttons (vertical column)
-            EntranceFadeSlide(entranceStarted, delayMs = 850) {
-                HomeNavButtons(
-                    onPlay = onPlay,
-                    onDailyChallenges = onNavigateToDailyChallenges,
-                    onAchievements = onNavigateToAchievements,
-                    onStats = onNavigateToStats
-                )
-            }
+            HomeNavButtons(
+                onPlay = onPlay,
+                onDailyChallenges = onNavigateToDailyChallenges,
+                onAchievements = onNavigateToAchievements,
+                onStats = onNavigateToStats
+            )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
@@ -917,39 +895,3 @@ private fun NavButtonLarge(
     }
 }
 
-// ── Entrance Animation ───────────────────────────────────
-
-@Composable
-@OptIn(ExperimentalAnimationApi::class)
-private fun EntranceFadeSlide(
-    visible: Boolean,
-    delayMs: Int,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    val state = remember { MutableTransitionState(false) }
-    LaunchedEffect(visible) {
-        state.targetState = visible
-    }
-    AnimatedContent(
-        targetState = state.targetState,
-        transitionSpec = {
-            val d = delayMs.toLong()
-            val enter = slideInVertically(
-                animationSpec = tween(500, delayMillis = d.toInt(), easing = FastOutSlowInEasing),
-                initialOffsetY = { it / 2 }
-            ) + fadeIn(animationSpec = tween(300, delayMillis = d.toInt()))
-            val exit = slideOutVertically(
-                animationSpec = tween(300),
-                targetOffsetY = { it / 2 }
-            ) + fadeOut(tween(200))
-            enter togetherWith exit
-        },
-        modifier = modifier,
-        label = "entrance_$delayMs"
-    ) { targetState ->
-        if (targetState) {
-            content()
-        }
-    }
-}

@@ -78,8 +78,7 @@ fun SplashScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
+                .systemBarsPadding()
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
