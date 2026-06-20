@@ -304,8 +304,9 @@ class GameplayViewModel @Inject constructor(
         // Play error sound
         soundManager.playError(_soundVolume)
 
-        // Mark current char as wrong — but DON'T advance the cursor.
-        // The user must type the correct character to advance.
+        // Mark current char as wrong and ADVANCE the cursor.
+        // The user can continue typing forward — wrong chars are shown in red.
+        val newIndex = state.currentCharIndex + 1
         val updatedResults = state.charResults.toMutableList()
         updatedResults[state.currentCharIndex] = CharResult(
             charIndex = state.currentCharIndex,
@@ -313,19 +314,25 @@ class GameplayViewModel @Inject constructor(
             isTyped = true
         )
 
+        val isComplete = newIndex >= state.paragraph.length
+
         val newState = state.copy(
-            gameState = GameState.TYPING,
-            currentCharIndex = state.currentCharIndex,  // Stay on the same character
+            gameState = if (isComplete) GameState.COMPLETE else GameState.TYPING,
+            currentCharIndex = newIndex,
             charResults = updatedResults,
             totalKeystrokes = state.totalKeystrokes + 1,
             combo = 0,
             gaugeProgress = 0f
         )
         updateWpmAndAccuracy(newState)
-        _uiState.value = newState
 
-        lastInputTimeMs = System.currentTimeMillis()
-        startStallTimer()
+        if (isComplete) {
+            finishGame(newState)
+        } else {
+            _uiState.value = newState
+            lastInputTimeMs = System.currentTimeMillis()
+            startStallTimer()
+        }
     }
 
     // ── Stall Detection ──────────────────────────────────

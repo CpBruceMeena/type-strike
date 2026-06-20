@@ -687,10 +687,12 @@ private fun LettersLayout(
     )
 
     // ZXCV row — with shift on left and backspace on right
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
+        modifier = Modifier.padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(KEY_SPACING.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -719,6 +721,7 @@ private fun LettersLayout(
             width = 42.dp,
             onClick = onBackspace
         )
+    }
     }
 
     // Bottom row: mode switch + punctuation + space + punctuation + enter
@@ -749,10 +752,12 @@ private fun SymbolsLayout(
 
     // Symbol rows
     SYMBOL_ROWS.forEachIndexed { rowIndex, row ->
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
+            modifier = Modifier.padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(KEY_SPACING.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -785,6 +790,7 @@ private fun SymbolsLayout(
                 )
             }
         }
+        }
     }
 
     // Bottom row: ABC, comma, SPACE, period, enter
@@ -803,24 +809,27 @@ private fun NumberRow(
     pressedKey: MutableState<Char?>,
     onKeyPress: (Char) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(KEY_SPACING.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
-        NUMBER_ROW.forEach { char ->
-            KeyboardKey(
-                char = char,
-                keyWidth = KEY_WIDTH.dp,
-                keyHeight = (KEY_HEIGHT - 2).dp,
-                isPressed = pressedKey.value == char,
-                onClick = {
-                    pressedKey.value = char
-                    onKeyPress(char)
-                }
-            )
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(KEY_SPACING.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NUMBER_ROW.forEach { char ->
+                KeyboardKey(
+                    char = char,
+                    keyWidth = KEY_WIDTH.dp,
+                    keyHeight = (KEY_HEIGHT - 2).dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(char)
+                    }
+                )
+            }
         }
     }
 }
@@ -835,26 +844,29 @@ private fun LetterRow(
     pressedKey: MutableState<Char?>,
     onKeyPress: (Char) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(KEY_SPACING.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
-        chars.forEach { char ->
-            val displayChar = if (isShifted) char.uppercaseChar() else char
-            KeyboardKey(
-                char = displayChar,
-                keyWidth = KEY_WIDTH.dp,
-                keyHeight = KEY_HEIGHT.dp,
-                isPressed = pressedKey.value == char,
-                onClick = {
-                    pressedKey.value = char
-                    onKeyPress(displayChar)
-                    dismissShift()
-                }
-            )
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(KEY_SPACING.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            chars.forEach { char ->
+                val displayChar = if (isShifted) char.uppercaseChar() else char
+                KeyboardKey(
+                    char = displayChar,
+                    keyWidth = KEY_WIDTH.dp,
+                    keyHeight = KEY_HEIGHT.dp,
+                    isPressed = pressedKey.value == char,
+                    onClick = {
+                        pressedKey.value = char
+                        onKeyPress(displayChar)
+                        dismissShift()
+                    }
+                )
+            }
         }
     }
 }
