@@ -8,8 +8,9 @@ export default function PlayLayout({
   return (
     <>
       <ParticleField />
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[480px] flex-col">
-        <main className="flex-1">{children}</main>
+      {/* Full-bleed gameplay arena */}
+      <div className="relative z-10 flex h-dvh flex-col">
+        <main className="flex flex-1 flex-col">{children}</main>
       </div>
     </>
   );

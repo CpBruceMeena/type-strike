@@ -18,14 +18,14 @@ export default function LeaderboardPage() {
       <TopBar showBack title="LEADERBOARD" />
 
       {/* Tabs */}
-      <div className="flex gap-1 px-4 py-2">
+      <div className="flex gap-2 px-4 py-3 md:px-6">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`rounded-lg px-4 py-1.5 text-[10px] font-bold tracking-[2px] transition-colors ${
+            className={`rounded-lg px-5 py-2 text-xs font-bold tracking-[2px] transition-all ${
               activeTab === tab.key
-                ? "text-text-white"
+                ? "text-text-white shadow-sm"
                 : "text-text-muted hover:text-text-label"
             }`}
             style={
@@ -40,20 +40,22 @@ export default function LeaderboardPage() {
       </div>
 
       {/* List */}
-      <div className="flex-1 space-y-1 px-4 pb-3">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Card key={i} className="flex items-center gap-3 py-2">
-            <span className="w-5 text-center text-xs font-bold text-text-muted">#{i + 1}</span>
-            <div className="h-8 w-8 rounded-full bg-bg-surface-dark flex items-center justify-center">
-              <span className="text-[10px] font-bold text-text-label">—</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-[11px] font-bold text-text-white">Player {i + 1}</p>
-              <p className="text-[9px] text-text-muted">Level 1</p>
-            </div>
-            <span className="text-xs font-bold text-accent-gold">— WPM</span>
-          </Card>
-        ))}
+      <div className="flex-1 px-4 pb-4 md:px-6 md:pb-6">
+        <div className="mx-auto w-full max-w-3xl space-y-1.5">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Card key={i} className="flex items-center gap-4 py-3">
+              <span className="w-6 text-center text-sm font-bold text-text-muted">#{i + 1}</span>
+              <div className="h-10 w-10 rounded-full bg-bg-surface-dark flex items-center justify-center">
+                <span className="text-xs font-bold text-text-label">—</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-text-white">Player {i + 1}</p>
+                <p className="text-[10px] text-text-muted">Level 1</p>
+              </div>
+              <span className="text-sm font-bold text-accent-gold">— WPM</span>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

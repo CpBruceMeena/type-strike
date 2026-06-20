@@ -8,14 +8,16 @@ export default function AchievementsPage() {
     <div className="flex flex-1 flex-col">
       <TopBar showBack title="FEATS" />
 
-      <div className="flex-1 px-4 py-3">
-        <div className="grid grid-cols-2 gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Card key={i} className="text-center opacity-40">
-              <span className="text-2xl">🔒</span>
-              <p className="mt-1 text-[9px] font-semibold text-text-muted">LOCKED</p>
-            </Card>
-          ))}
+      <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 18 }, (_, i) => (
+              <Card key={i} className="text-center p-4 opacity-30 hover:opacity-40 transition-opacity">
+                <span className="text-3xl">🔒</span>
+                <p className="mt-2 text-[10px] font-semibold text-text-muted">LOCKED</p>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </div>

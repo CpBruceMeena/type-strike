@@ -16,32 +16,32 @@ function FailedContent() {
   const mode = searchParams.get("mode") ?? "";
 
   return (
-    <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[480px] flex-col items-center justify-center px-5">
+    <div className="relative z-10 flex min-h-dvh w-full flex-col items-center justify-center px-6">
       {/* Failed icon */}
-      <div className="mb-2 text-6xl">💥</div>
+      <div className="mb-3 text-7xl">💥</div>
 
       <h1
-        className="mb-1 text-3xl font-black tracking-[6px]"
+        className="mb-1 text-4xl font-black tracking-[8px] md:text-5xl"
         style={{ color: "var(--error-red)", textShadow: "0 0 40px rgba(255,34,0,0.3)" }}
       >
         FAILED
       </h1>
-      <p className="mb-6 text-xs" style={{ color: "var(--text-label)" }}>
+      <p className="mb-8 text-sm" style={{ color: "var(--text-label)" }}>
         Not quite there. Keep pushing!
       </p>
 
       {/* Stats */}
-      <GlassPanel glow="magma" blur="sm" depth={2} className="mb-6 w-full p-4">
-        <div className="grid grid-cols-2 gap-3">
+      <GlassPanel glow="magma" blur="md" depth={2} className="mb-8 w-full max-w-md p-6">
+        <div className="grid grid-cols-2 gap-4">
           {[
             { label: "WPM", value: wpm, color: "var(--accent-primary)" },
             { label: "ACC", value: typeof accuracy === "string" ? `${(parseFloat(accuracy) * 100).toFixed(0)}%` : accuracy, color: "var(--text-body)" },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl bg-black/20 p-3 text-center">
-              <p className="text-xl font-black tabular-nums" style={{ color: stat.color }}>
+            <div key={stat.label} className="rounded-xl bg-black/20 p-4 text-center">
+              <p className="text-2xl font-black tabular-nums md:text-3xl" style={{ color: stat.color }}>
                 {stat.value}
               </p>
-              <p className="mt-0.5 text-[8px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
+              <p className="mt-1 text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
                 {stat.label}
               </p>
             </div>
@@ -49,27 +49,29 @@ function FailedContent() {
         </div>
 
         {xp !== "0" && (
-          <div className="mt-2 text-center">
-            <p className="text-sm font-black tabular-nums" style={{ color: "var(--electric-cyan)" }}>
+          <div className="mt-3 text-center">
+            <p className="text-base font-black tabular-nums" style={{ color: "var(--electric-cyan)" }}>
               +{xp} XP
             </p>
           </div>
         )}
 
-        <div className="mt-3 rounded-lg bg-black/20 p-3 text-center">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        <div className="mt-4 rounded-lg bg-black/20 p-4 text-center">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             💡 Tip: Focus on accuracy first, speed will follow. Try to maintain 95%+ accuracy.
           </p>
         </div>
       </GlassPanel>
 
       {/* Actions */}
-      <Button variant="primary" size="lg" fullWidth className="mb-2" onClick={() => router.back()}>
-        RETRY
-      </Button>
-      <Button variant="ghost" size="sm" onClick={() => router.push("/home")}>
-        HOME
-      </Button>
+      <div className="flex gap-3">
+        <Button variant="primary" size="lg" onClick={() => router.back()}>
+          RETRY
+        </Button>
+        <Button variant="ghost" size="lg" onClick={() => router.push("/home")}>
+          HOME
+        </Button>
+      </div>
     </div>
   );
 }

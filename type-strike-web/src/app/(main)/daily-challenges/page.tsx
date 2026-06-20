@@ -14,32 +14,38 @@ export default function DailyChallengesPage() {
     <div className="flex flex-1 flex-col">
       <TopBar showBack title="DAILY" />
 
-      <div className="flex-1 space-y-2 px-4 py-3">
-        {/* Streak Badge */}
-        <Card className="flex items-center gap-2 bg-accent-gold/5">
-          <span className="text-lg">🔥</span>
-          <div>
-            <p className="text-[10px] font-bold tracking-[1px] text-text-white">STREAK</p>
-            <p className="text-[9px] text-text-muted">0 days — 1.0x multiplier</p>
-          </div>
-        </Card>
-
-        {/* Challenge Cards */}
-        {challenges.map((c, i) => (
-          <Card key={i} hoverable className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-bg-surface-dark">
-              <span className="text-base">{c.icon}</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-[11px] font-bold text-text-white">{c.name}</p>
-              <p className="text-[9px] text-text-muted">Target: {c.target}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-bold text-accent-gold">{c.reward}</p>
-              <p className="text-[8px] text-text-muted">0 WPM</p>
+      <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
+        <div className="mx-auto w-full max-w-2xl space-y-4">
+          {/* Streak Badge */}
+          <Card className="flex items-center gap-3 bg-accent-gold/5 p-4">
+            <span className="text-xl">🔥</span>
+            <div>
+              <p className="text-xs font-bold tracking-[1px] text-text-white">STREAK</p>
+              <p className="text-[11px] text-text-muted">0 days — 1.0x multiplier</p>
             </div>
           </Card>
-        ))}
+
+          {/* Challenge Cards */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {challenges.map((c, i) => (
+              <Card key={i} hoverable className="flex flex-col gap-3 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-bg-surface-dark">
+                    <span className="text-lg">{c.icon}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-text-white">{c.name}</p>
+                    <p className="text-[10px] text-text-muted">Target: {c.target}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                  <span className="text-xs font-bold text-accent-gold">{c.reward}</span>
+                  <span className="text-[10px] text-text-muted">0 WPM</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

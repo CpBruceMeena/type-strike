@@ -20,21 +20,20 @@ export default function HomePage() {
     <div className="flex flex-1 flex-col">
       <TopBar streakCount={0} />
 
-      <div className="flex flex-1 flex-col items-center justify-center px-5">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 md:px-8">
         {/* Player Crest */}
-        <div className="mb-6 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-accent-primary to-accent-primary-dark shadow-lg shadow-accent-primary/30">
-            <span className="text-2xl font-black text-text-white">1</span>
+        <div className="mb-6 text-center md:mb-8">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-accent-primary to-accent-primary-dark shadow-lg shadow-accent-primary/30 md:h-24 md:w-24">
+            <span className="text-3xl font-black text-text-white md:text-4xl">1</span>
           </div>
-          <p className="mt-2 text-[11px] font-bold tracking-[4px] text-text-body">RECRUIT</p>
+          <p className="mt-2 text-xs font-bold tracking-[4px] text-text-body md:text-sm">RECRUIT</p>
         </div>
 
         {/* Hero Button */}
         <Button
           variant="primary"
           size="xl"
-          fullWidth
-          className="mb-5"
+          className="mb-8 w-full max-w-sm"
           onClick={() => router.push("/map")}
         >
           <span className="flex items-center gap-3">
@@ -45,8 +44,8 @@ export default function HomePage() {
           </span>
         </Button>
 
-        {/* Mode Cards */}
-        <div className="grid w-full grid-cols-2 gap-2.5">
+        {/* Mode Cards - responsive grid */}
+        <div className="grid w-full max-w-2xl grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           {modes.map((mode) => (
             <Card
               key={mode.key}
@@ -54,11 +53,11 @@ export default function HomePage() {
               onClick={() => router.push(mode.href)}
               className="text-center"
             >
-              <span className="text-lg">{mode.icon}</span>
-              <p className="mt-1 text-[10px] font-bold tracking-[1.5px]" style={{ color: mode.accent }}>
+              <span className="text-xl md:text-2xl">{mode.icon}</span>
+              <p className="mt-1 text-xs font-bold tracking-[1.5px]" style={{ color: mode.accent }}>
                 {mode.label}
               </p>
-              <p className="text-[9px] text-text-muted">{mode.desc}</p>
+              <p className="text-[10px] text-text-muted">{mode.desc}</p>
             </Card>
           ))}
         </div>
@@ -67,16 +66,16 @@ export default function HomePage() {
         <Card
           hoverable
           onClick={() => router.push("/daily-challenges")}
-          className="mt-4 w-full"
+          className="mt-6 w-full max-w-sm"
         >
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-gold/15">
-              <span className="text-xs">🎯</span>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent-gold/15">
+              <span className="text-sm">🎯</span>
             </div>
             <div className="flex-1">
-              <p className="text-[10px] font-bold tracking-[1px] text-text-white">DAILY CHALLENGES</p>
+              <p className="text-xs font-bold tracking-[1px] text-text-white">DAILY CHALLENGES</p>
             </div>
-            <span className="text-base font-bold text-text-disabled">→</span>
+            <span className="text-lg font-bold text-text-disabled">→</span>
           </div>
         </Card>
       </div>

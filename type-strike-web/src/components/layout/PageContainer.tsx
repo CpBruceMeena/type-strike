@@ -12,7 +12,7 @@ export default function PageContainer({
   withParticles = false,
 }: PageContainerProps) {
   return (
-    <div className={`relative mx-auto flex min-h-dvh w-full max-w-[480px] flex-col ${className}`}>
+    <div className={`relative flex min-h-dvh w-full flex-col ${className}`}>
       {children}
     </div>
   );

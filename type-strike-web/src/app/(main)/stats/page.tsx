@@ -15,33 +15,37 @@ export default function StatsPage() {
     <div className="flex flex-1 flex-col">
       <TopBar showBack title="STATS" />
 
-      <div className="flex-1 px-4 py-3">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="text-center">
-              <p className="text-lg font-black text-text-white">{stat.value}</p>
-              <p
-                className="mt-0.5 text-[8px] font-bold tracking-[1.5px]"
-                style={{ color: stat.accent }}
-              >
-                {stat.label}
-              </p>
+      <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
+        <div className="mx-auto w-full max-w-3xl space-y-4">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {stats.map((stat) => (
+              <Card key={stat.label} className="text-center p-4">
+                <p className="text-2xl font-black text-text-white md:text-3xl">{stat.value}</p>
+                <p
+                  className="mt-1 text-[9px] font-bold tracking-[1.5px]"
+                  style={{ color: stat.accent }}
+                >
+                  {stat.label}
+                </p>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Level Progress */}
+            <Card className="p-4">
+              <p className="text-[9px] font-semibold tracking-[1.5px] text-text-muted">LEVEL PROGRESS</p>
+              <p className="mt-2 text-lg font-bold text-text-white md:text-xl">0 / 100</p>
             </Card>
-          ))}
+
+            {/* Activity */}
+            <Card className="p-4">
+              <p className="text-[9px] font-semibold tracking-[1.5px] text-text-muted">RECENT ACTIVITY</p>
+              <p className="mt-2 text-sm text-text-muted">No activity yet. Start typing!</p>
+            </Card>
+          </div>
         </div>
-
-        {/* Level Progress */}
-        <Card className="mt-3">
-          <p className="text-[9px] font-semibold tracking-[1.5px] text-text-muted">LEVEL PROGRESS</p>
-          <p className="mt-2 text-sm font-bold text-text-white">0 / 100</p>
-        </Card>
-
-        {/* Activity */}
-        <Card className="mt-3">
-          <p className="text-[9px] font-semibold tracking-[1.5px] text-text-muted">RECENT ACTIVITY</p>
-          <p className="mt-2 text-[11px] text-text-muted">No activity yet. Start typing!</p>
-        </Card>
       </div>
     </div>
   );

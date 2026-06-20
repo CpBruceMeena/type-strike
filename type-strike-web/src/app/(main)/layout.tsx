@@ -1,3 +1,4 @@
+import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import ParticleField from "@/components/effects/ParticleField";
 
@@ -9,9 +10,22 @@ export default function MainLayout({
   return (
     <>
       <ParticleField />
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[480px] flex-col">
-        <main className="flex-1">{children}</main>
-        <BottomNav />
+      <div className="relative z-10 flex min-h-dvh">
+        {/* Desktop sidebar */}
+        <Sidebar />
+
+        {/* Main content area */}
+        <div className="flex flex-1 flex-col min-w-0">
+          <main className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-6xl px-4 py-4 md:px-6 lg:px-8">
+              {children}
+            </div>
+          </main>
+          {/* Mobile bottom nav */}
+          <div className="md:hidden">
+            <BottomNav />
+          </div>
+        </div>
       </div>
     </>
   );
