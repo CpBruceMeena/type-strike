@@ -1,6 +1,5 @@
 package com.typestrike.ui.levelpreview
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -84,7 +83,7 @@ fun LevelPreviewScreen(
         confirmValueChange = { true }
     )
 
-    // Animate dismiss
+    // Auto-dismiss on error
     LaunchedEffect(uiState.isLoading) {
         if (!uiState.isLoading && uiState.hasError) {
             delay(2000)
@@ -123,7 +122,7 @@ fun LevelPreviewScreen(
     }
 }
 
-// ── Content ──────────────────────────────────────────────
+// ── Content (no staggered animations — everything visible immediately) ──
 
 @Composable
 private fun LevelPreviewContent(
@@ -134,17 +133,7 @@ private fun LevelPreviewContent(
     val shardCount = filledShards(detail.difficulty)
     val hasBestScore = detail.playerStars != null
 
-    // Staggered entrance animation
-    var animPhase by remember { mutableIntStateOf(0) }
-    LaunchedEffect(Unit) {
-        delay(100); animPhase = 1  // Header
-        delay(100); animPhase = 2  // Difficulty
-        delay(100); animPhase = 3  // Metrics
-        delay(100); animPhase = 4  // Words
-        delay(100); animPhase = 5  // Button
-    }
-
-    // STRIKE button glow
+    // STRIKE button glow pulse
     val infiniteTransition = rememberInfiniteTransition(label = "strikeGlow")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.15f,
@@ -163,134 +152,143 @@ private fun LevelPreviewContent(
             .padding(bottom = 16.dp)
     ) {
         // ── Header ──────────────────────────────────────
-        AnimatedVisibility(
-            visible = animPhase >= 1,
-            enter = fadeIn(tween(200))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
+            Text(
+                text = detail.name.uppercase(),
+                style = MaterialTheme.typography.headlineSmall,
+                color = TextWhite,
+                fontWeight = FontWeight.Bold
+            )
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(tier.bgColor)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = detail.name.uppercase(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = TextWhite,
+                    text = "${tier.label} ${tier.icon}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = tier.color,
                     fontWeight = FontWeight.Bold
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(tier.bgColor)
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "${tier.label} ${tier.icon}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = tier.color,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
         }
 
         // ── Difficulty Indicator ────────────────────────
-        AnimatedVisibility(
-            visible = animPhase >= 2,
-            enter = fadeIn(tween(200))
+        Row(
+            modifier = Modifier
+                .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Shards
-                repeat(5) { i ->
-                    val isFilled = i < shardCount
-                    val shardDelay = i * 80
-
-                    AnimatedVisibility(
-                        visible = animPhase >= 2,
-                        enter = fadeIn(tween(200, delayMillis = shardDelay))
-                    ) {
-                        Canvas(modifier = Modifier.size(14.dp).padding(2.dp)) {
-                            val diamondPath = Path().apply {
-                                moveTo(size.width / 2, 0f)
-                                lineTo(size.width, size.height / 2)
-                                lineTo(size.width / 2, size.height)
-                                lineTo(0f, size.height / 2)
-                                close()
-                            }
-                            drawPath(
-                                path = diamondPath,
-                                color = if (isFilled) MagmaRed else SurfaceBorder
-                            )
-                            if (isFilled) {
-                                drawPath(
-                                    path = diamondPath,
-                                    color = MagmaRed.copy(alpha = 0.3f),
-                                    style = Stroke(width = 1f)
-                                )
-                            }
-                            // Glow on filled shards
-                            if (isFilled) {
-                                drawCircle(
-                                    color = MagmaRed.copy(alpha = 0.15f),
-                                    radius = size.width * 0.6f,
-                                    center = Offset(size.width / 2, size.height / 2)
-                                )
-                            }
-                        }
+            // Shards
+            repeat(5) { i ->
+                val isFilled = i < shardCount
+                Canvas(modifier = Modifier.size(14.dp).padding(2.dp)) {
+                    val diamondPath = Path().apply {
+                        moveTo(size.width / 2, 0f)
+                        lineTo(size.width, size.height / 2)
+                        lineTo(size.width / 2, size.height)
+                        lineTo(0f, size.height / 2)
+                        close()
                     }
-                    Spacer(modifier = Modifier.width(6.dp))
+                    drawPath(
+                        path = diamondPath,
+                        color = if (isFilled) MagmaRed else SurfaceBorder
+                    )
+                    if (isFilled) {
+                        drawPath(
+                            path = diamondPath,
+                            color = MagmaRed.copy(alpha = 0.3f),
+                            style = Stroke(width = 1f)
+                        )
+                    }
+                    if (isFilled) {
+                        drawCircle(
+                            color = MagmaRed.copy(alpha = 0.15f),
+                            radius = size.width * 0.6f,
+                            center = Offset(size.width / 2, size.height / 2)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Difficulty: ${difficultyLabel(detail.difficulty)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextMuted
-                )
+                Spacer(modifier = Modifier.width(6.dp))
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Difficulty: ${difficultyLabel(detail.difficulty)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextMuted
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // ── Metrics Section ─────────────────────────────
-        AnimatedVisibility(
-            visible = animPhase >= 3,
-            enter = slideInVertically(
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                initialOffsetY = { it / 2 }
-            ) + fadeIn(tween(300))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(SurfaceDark.copy(alpha = 0.5f))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(SurfaceDark.copy(alpha = 0.5f))
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Column {
-                    // Pass Row
+            Column {
+                // Pass Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "PASS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(42.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${detail.passWpm} WPM",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MagmaRed,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = " · ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SurfaceBorder
+                    )
+                    Text(
+                        text = "${detail.passAccuracy}% ACC",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MagmaRed,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Best Row (only if player has played this level)
+                if (hasBestScore) {
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "PASS",
+                            text = "BEST",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextMuted,
+                            color = MoltenGold,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.width(42.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "${detail.passWpm} WPM",
+                            text = "${detail.playerBestWpm ?: 0} WPM",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MagmaRed,
+                            color = MoltenGold,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -299,54 +297,19 @@ private fun LevelPreviewContent(
                             color = SurfaceBorder
                         )
                         Text(
-                            text = "${detail.passAccuracy}% ACC",
+                            text = "${(detail.playerBestAcc ?: 0f).toInt()}% ACC",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MagmaRed,
+                            color = MoltenGold,
                             fontWeight = FontWeight.Bold
                         )
-                    }
-
-                    // Best Row (only if player has played this level)
-                    if (hasBestScore) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "BEST",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MoltenGold,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.width(42.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "${detail.playerBestWpm ?: 0} WPM",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MoltenGold,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = " · ",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = SurfaceBorder
-                            )
-                            Text(
-                                text = "${(detail.playerBestAcc ?: 0f).toInt()}% ACC",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MoltenGold,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            val stars = detail.playerStars ?: 0
-                            Text(
-                                text = if (stars > 0) starsString(stars) else "",
-                                color = MoltenGold,
-                                fontSize = 14.sp,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        val stars = detail.playerStars ?: 0
+                        Text(
+                            text = if (stars > 0) starsString(stars) else "",
+                            color = MoltenGold,
+                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
@@ -355,90 +318,76 @@ private fun LevelPreviewContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Paragraph Preview ───────────────────────────
-        AnimatedVisibility(
-            visible = animPhase >= 4,
-            enter = fadeIn(tween(300))
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 20.dp)
-            ) {
-                // Short preview of the paragraph
-                val previewText = detail.paragraph
-                    .take(120)
-                    .replaceFirstChar { it.uppercase() }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("📜", fontSize = 12.sp, color = TextDisabled)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Surface.copy(alpha = 0.3f))
-                            .border(1.dp, SurfaceBorder, RoundedCornerShape(8.dp))
-                            .height(48.dp)
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "\"$previewText…\"",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextLabel,
-                            maxLines = 2
-                        )
-                    }
+            val previewText = detail.paragraph
+                .take(120)
+                .replaceFirstChar { it.uppercase() }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("📜", fontSize = 12.sp, color = TextDisabled)
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Surface.copy(alpha = 0.3f))
+                        .border(1.dp, SurfaceBorder, RoundedCornerShape(8.dp))
+                        .height(48.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "\"$previewText…\"",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextLabel,
+                        maxLines = 2
+                    )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "${detail.paragraph.length} characters · mixed case, numbers, punctuation",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextDisabled,
-                    modifier = Modifier.padding(start = 24.dp)
-                )
             }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${detail.paragraph.length} characters · mixed case, numbers, punctuation",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextDisabled,
+                modifier = Modifier.padding(start = 24.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── STRIKE Button ───────────────────────────────
-        AnimatedVisibility(
-            visible = animPhase >= 5,
-            enter = slideInVertically(
-                animationSpec = tween(400, easing = FastOutSlowInEasing),
-                initialOffsetY = { it / 2 }
-            ) + fadeIn(tween(300))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
         ) {
+            // Glow layer behind button
             Box(
                 modifier = Modifier
+                    .matchParentSize()
+                    .padding(horizontal = 4.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .alpha(glowAlpha)
+                    .background(MagmaRed)
+            )
+            // Button
+            Button(
+                onClick = onStrike,
+                modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MagmaRed)
             ) {
-                // Glow layer behind button
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .padding(horizontal = 4.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .alpha(glowAlpha)
-                        .background(MagmaRed)
+                Text(
+                    text = "🔥  STRIKE",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
                 )
-                // Button
-                Button(
-                    onClick = onStrike,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MagmaRed)
-                ) {
-                    Text(
-                        text = "🔥  STRIKE",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 2.sp
-                    )
-                }
             }
         }
 

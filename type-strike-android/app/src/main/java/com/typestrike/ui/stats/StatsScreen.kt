@@ -58,8 +58,7 @@ fun StatsScreen(
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             // Header
             StatsHeader(
-                onBack = onBack,
-                entranceStarted = uiState.entranceStarted
+                onBack = onBack
             )
 
             when {
@@ -69,8 +68,7 @@ fun StatsScreen(
                     onRetry = { viewModel.loadStats() }
                 )
                 else -> StatsContent(
-                    uiState = uiState,
-                    entranceStarted = uiState.entranceStarted
+                    uiState = uiState
                 )
             }
         }
@@ -80,30 +78,25 @@ fun StatsScreen(
 // ── Header ───────────────────────────────────────────────
 
 @Composable
-private fun StatsHeader(onBack: () -> Unit, entranceStarted: Boolean) {
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(tween(300)) + fadeIn(tween(200))
+private fun StatsHeader(onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
-                Text("←", color = TextBody, fontSize = 22.sp)
-            }
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "STATISTICS",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextWhite,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 3.sp
-            )
+        TextButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+            Text("←", color = TextBody, fontSize = 22.sp)
         }
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "STATISTICS",
+            style = MaterialTheme.typography.titleMedium,
+            color = TextWhite,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 3.sp
+        )
     }
 }
 
@@ -111,21 +104,9 @@ private fun StatsHeader(onBack: () -> Unit, entranceStarted: Boolean) {
 
 @Composable
 private fun StatsContent(
-    uiState: StatsUiState,
-    entranceStarted: Boolean
+    uiState: StatsUiState
 ) {
     val scrollState = rememberScrollState()
-    var sectionVisible by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(entranceStarted) {
-        if (entranceStarted) {
-            delay(100); sectionVisible = 1  // Player card
-            delay(200); sectionVisible = 2  // Stats grid
-            delay(200); sectionVisible = 3  // Tier breakdown
-            delay(200); sectionVisible = 4  // WPM chart
-            delay(200); sectionVisible = 5  // Activity
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -136,66 +117,41 @@ private fun StatsContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         // ── Player Identity Card ─────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 1,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            StatsPlayerCard(
-                level = uiState.playerLevel,
-                title = uiState.playerTitle,
-                stars = uiState.playerStars,
-                xp = uiState.playerXp
-            )
-        }
+        StatsPlayerCard(
+            level = uiState.playerLevel,
+            title = uiState.playerTitle,
+            stars = uiState.playerStars,
+            xp = uiState.playerXp
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Stats Grid ───────────────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 2,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            StatsGrid(
-                todaysBestWpm = uiState.todaysBestWpm,
-                levelsCleared = uiState.levelsCleared,
-                levelsTotal = uiState.levelsTotal,
-                totalAttempts = uiState.totalAttempts,
-                bestWpmOverall = uiState.bestWpmOverall,
-                averageAccuracy = uiState.averageAccuracy
-            )
-        }
+        StatsGrid(
+            todaysBestWpm = uiState.todaysBestWpm,
+            levelsCleared = uiState.levelsCleared,
+            levelsTotal = uiState.levelsTotal,
+            totalAttempts = uiState.totalAttempts,
+            bestWpmOverall = uiState.bestWpmOverall,
+            averageAccuracy = uiState.averageAccuracy
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Tier Breakdown ───────────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 3,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            TierBreakdownSection(tierStats = uiState.tierStats)
-        }
+        TierBreakdownSection(tierStats = uiState.tierStats)
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── WPM Progression Chart ────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 4,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            WpmChartSection(datapoints = uiState.wpmProgression)
-        }
+        WpmChartSection(datapoints = uiState.wpmProgression)
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Recent Activity ──────────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 5,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            StatsActivitySection(
-                activities = uiState.recentActivity
-            )
-        }
+        StatsActivitySection(
+            activities = uiState.recentActivity
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
     }

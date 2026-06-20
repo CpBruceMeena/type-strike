@@ -80,14 +80,6 @@ fun MapScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    // Entrance animation
-    var entranceStarted by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(100)
-        entranceStarted = true
-    }
-
-    // Pull to refresh
     val isRefreshing = uiState.isRefreshing
 
     Box(
@@ -109,14 +101,14 @@ fun MapScreen(
             playerStars = uiState.playerStars,
             onSettingsClick = onNavigateToSettings,
             onBackClick = onNavigateBack,
-            entranceStarted = entranceStarted
+            entranceStarted = true
         )
 
         // Main content area
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 100.dp)  // Below header
+                .padding(top = 100.dp)
         ) {
             when {
                 uiState.isLoading && uiState.levels.isEmpty() -> MapLoadingState()
@@ -131,7 +123,7 @@ fun MapScreen(
                         MapLevelList(
                             levels = uiState.levels,
                             listState = listState,
-                            entranceStarted = entranceStarted,
+                            entranceStarted = true,
                             particleConfig = particleConfig,
                             onLevelTap = onLevelTap
                         )
@@ -212,11 +204,7 @@ private fun MapHeader(
     onBackClick: () -> Unit,
     entranceStarted: Boolean
 ) {
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(animationSpec = tween(400)) + fadeIn(tween(300))
-    ) {
-        Surface(
+    Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Background,
             shadowElevation = 4.dp,
@@ -300,7 +288,6 @@ private fun MapHeader(
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }
-    }
 }
 
 // ── Map Level List ───────────────────────────────────────
@@ -360,14 +347,7 @@ private fun TierFractureZone(
     entranceStarted: Boolean,
     burstParticleCount: Int = 12
 ) {
-    // Animated fracture progress (draws from left to right)
-    val fractureProgress by animateFloatAsState(
-        targetValue = if (entranceStarted) 1f else 0f,
-        animationSpec = tween(800, easing = FastOutSlowInEasing),
-        label = "fractureProgress_${tier.key}"
-    )
-
-    // Glow intensity pulsing
+    // Glow intensity pulsing (ambient animation)
     val infiniteTransition = rememberInfiniteTransition(label = "tierGlow_${tier.key}")
     val glowPulse by infiniteTransition.animateFloat(
         initialValue = 0.3f,
@@ -377,199 +357,107 @@ private fun TierFractureZone(
             repeatMode = RepeatMode.Reverse
         ),
         label = "glowPulse_${tier.key}"
-    )                // Burst particles for tier transition
-    var burstTriggered by remember { mutableStateOf(false) }
-
-    LaunchedEffect(entranceStarted) {
-        if (entranceStarted) {
-            delay(200)
-            burstTriggered = true
-        }
-    }
-
-    val burstProgress by animateFloatAsState(
-        targetValue = if (burstTriggered) 1f else 0f,
-        animationSpec = tween(2000, easing = FastOutSlowInEasing),
-        label = "burstProgress_${tier.key}"
     )
 
-    // Staggered visibility for label and description
-    val labelVisible by animateFloatAsState(
-        targetValue = if (entranceStarted) 1f else 0f,
-        animationSpec = tween(400, delayMillis = 300),
-        label = "labelVisible_${tier.key}"
-    )
-    val descVisible by animateFloatAsState(
-        targetValue = if (entranceStarted) 1f else 0f,
-        animationSpec = tween(400, delayMillis = 500),
-        label = "descVisible_${tier.key}"
-    )
-
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = fadeIn(tween(100))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 20.dp)
     ) {
-        Column(
+        // Fracture line (static — no entrance animation)
+        Box(modifier = Modifier.fillMaxWidth().height(24.dp)) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val segments = 10
+                val segWidth = size.width / segments
+                val path = Path()
+                val randomSeed = tier.key.hashCode()
+                val rng = Random(randomSeed)
+
+                var x = 0f
+                var y = size.height / 2f
+                path.moveTo(x, y)
+                for (i in 0..segments) {
+                    x += segWidth
+                    y = size.height / 2f + (if (i % 2 == 0) -10f else 10f) +
+                        (rng.nextFloat() * 8f - 4f)
+                    path.lineTo(x, y)
+                }
+
+                // Glowing fracture line
+                drawPath(
+                    path = path,
+                    color = tier.color.copy(alpha = 0.6f * glowPulse),
+                    style = Stroke(width = 2.5f, cap = StrokeCap.Round)
+                )
+
+                // Glow trail behind the line
+                drawPath(
+                    path = path,
+                    color = tier.color.copy(alpha = 0.15f * glowPulse),
+                    style = Stroke(width = 8f, cap = StrokeCap.Round)
+                )
+
+                // Segment dots
+                for (i in 0..segments) {
+                    val dotX = (i.toFloat() / segments) * size.width
+                    if (dotX > 0f) {
+                        val dotY = size.height / 2f + (if (i % 2 == 0) -5f else 5f)
+                        val dotAlpha = 0.2f + 0.3f * glowPulse
+                        drawCircle(
+                            color = tier.color.copy(alpha = dotAlpha),
+                            radius = 2.5f,
+                            center = Offset(dotX, dotY)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = tier.icon, fontSize = 18.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = tier.label,
+                style = MaterialTheme.typography.headlineMedium,
+                color = tier.color,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 3.sp
+            )
+        }
+
+        Text(
+            text = tier.description.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = tier.color.copy(alpha = 0.7f),
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(start = 34.dp)
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 20.dp)
-        ) {
-            // Fracture line with animated drawing
-            Box(modifier = Modifier.fillMaxWidth().height(24.dp)) {
-                // Particle burst overlay
-                if (burstTriggered) {
-                    val burstParticles = remember {
-                        List(burstParticleCount) {
-                            BurstParticle(
-                                x = 0.5f,
-                                y = 0.5f,
-                                velX = (Random.nextFloat() - 0.5f) * 2f,
-                                velY = (Random.nextFloat() - 0.5f) * 2f,
-                                life = 0.6f + Random.nextFloat() * 0.8f,
-                                size = 1f + Random.nextFloat() * 3f,
-                                color = tier.color
-                            )
-                        }
-                    }
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        burstParticles.forEach { p ->
-                            val progress = burstProgress / p.life
-                            if (progress < 1f) {
-                                val px = (p.x + p.velX * progress * 0.3f) * size.width
-                                val py = (p.y + p.velY * progress * 0.3f) * size.height
-                                val pAlpha = (1f - progress) * 0.6f
-                                drawCircle(
-                                    color = p.color.copy(alpha = pAlpha),
-                                    radius = p.size * (1f - progress * 0.5f),
-                                    center = Offset(px, py)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val segments = 10
-                    val segWidth = size.width / segments
-                    val path = Path()
-                    val randomSeed = tier.key.hashCode()
-                    val rng = Random(randomSeed)
-
-                    var x = 0f
-                    var y = size.height / 2f
-                    path.moveTo(x, y)
-                    for (i in 0..segments) {
-                        x += segWidth
-                        y = size.height / 2f + (if (i % 2 == 0) -10f else 10f) +
-                                (rng.nextFloat() * 8f - 4f)
-                        // Only draw up to the fractureProgress
-                        val drawToX = x * fractureProgress
-                        val clampedX = if (i == segments) x else drawToX
-                        path.lineTo(clampedX, y)
-                    }
-
-                    // Glowing fracture line
-                    drawPath(
-                        path = path,
-                        color = tier.color.copy(alpha = 0.6f * glowPulse),
-                        style = Stroke(width = 2.5f, cap = StrokeCap.Round)
-                    )
-
-                    // Glow trail behind the line
-                    drawPath(
-                        path = path,
-                        color = tier.color.copy(alpha = 0.15f * glowPulse),
-                        style = Stroke(width = 8f, cap = StrokeCap.Round)
-                    )
-
-                    // Segment dots
-                    for (i in 0..segments) {
-                        val dotX = (i.toFloat() / segments) * size.width * fractureProgress
-                        if (dotX > 0f) {
-                            val dotY = size.height / 2f + (if (i % 2 == 0) -5f else 5f)
-                            val dotAlpha = (0.2f + 0.3f * glowPulse) * fractureProgress
-                            drawCircle(
-                                color = tier.color.copy(alpha = dotAlpha),
-                                radius = 2.5f,
-                                center = Offset(dotX, dotY)
-                            )
-                        }
-                    }
-
-                    // Leading edge glow (bright point at the end of the drawing line)
-                    if (fractureProgress > 0f && fractureProgress < 1f) {
-                        val edgeX = size.width * fractureProgress
-                        val edgeY = size.height / 2f
-                        drawCircle(
-                            color = tier.color.copy(alpha = 0.8f),
-                            radius = 4f,
-                            center = Offset(edgeX, edgeY)
+                .height(1.dp)
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            tier.color.copy(alpha = 0.3f),
+                            tier.color.copy(alpha = 0.05f),
+                            Color.Transparent
                         )
-                        drawCircle(
-                            color = tier.color.copy(alpha = 0.3f),
-                            radius = 8f,
-                            center = Offset(edgeX, edgeY)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Tier label with staggered animation
-            val labelScale by animateFloatAsState(
-                targetValue = if (labelVisible > 0f) 1f else 0.8f,
-                animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
-                label = "labelScale_${tier.key}"
-            )
-
-            Row(
-                modifier = Modifier.alpha(labelVisible).scale(labelScale),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = tier.icon, fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = tier.label,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = tier.color,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 3.sp
+                    )
                 )
-            }
-
-            Text(
-                text = tier.description.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = tier.color.copy(alpha = 0.6f + 0.3f * descVisible),
-                letterSpacing = 1.sp,
-                modifier = Modifier
-                    .padding(start = 34.dp)
-                    .alpha(descVisible)
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                tier.color.copy(alpha = 0.3f),
-                                tier.color.copy(alpha = 0.05f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.3f * labelVisible)
-                    .height(1.dp)
-                    .background(tier.color.copy(alpha = 0.15f))
-            )
-        }
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.3f)
+                .height(1.dp)
+                .background(tier.color.copy(alpha = 0.15f))
+        )
     }
 }
 
@@ -596,8 +484,6 @@ private fun LevelNodeItem(
     sparkleEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    val delayMs = (50 + index * 12).coerceAtMost(600)
-
     // Visual state
     val isCompleted = level.completed
     val isUnlocked = level.isUnlocked
@@ -666,14 +552,7 @@ private fun LevelNodeItem(
         }
     }
 
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(
-            animationSpec = tween(400, delayMillis = delayMs),
-            initialOffsetY = { it / 2 }
-        ) + fadeIn(tween(300, delayMillis = delayMs))
-    ) {
-        Row(
+    Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 4.dp)
@@ -870,7 +749,6 @@ private fun LevelNodeItem(
                 )
             }
         }
-    }
 }
 
 // ── Orbit Particles Canvas ───────────────────────────────

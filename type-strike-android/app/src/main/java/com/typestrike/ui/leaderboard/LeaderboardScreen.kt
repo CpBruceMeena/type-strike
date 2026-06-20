@@ -48,15 +48,13 @@ fun LeaderboardScreen(
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             // Header
             LeaderboardHeader(
-                onBack = onBack,
-                entranceStarted = uiState.entranceStarted
+                onBack = onBack
             )
 
             // Tab row
             LeaderboardTabRow(
                 activeTab = uiState.activeTab,
-                onTabSelected = { viewModel.switchTab(it) },
-                entranceStarted = uiState.entranceStarted
+                onTabSelected = { viewModel.switchTab(it) }
             )
 
             // Content
@@ -72,8 +70,7 @@ fun LeaderboardScreen(
                     totalCount = if (uiState.activeTab == LeaderboardTab.GLOBAL)
                         uiState.globalTotalCount else uiState.dailyTotalCount,
                     playerRank = uiState.playerRank,
-                    isDaily = uiState.activeTab == LeaderboardTab.DAILY,
-                    entranceStarted = uiState.entranceStarted
+                    isDaily = uiState.activeTab == LeaderboardTab.DAILY
                 )
             }
         }
@@ -84,13 +81,8 @@ fun LeaderboardScreen(
 
 @Composable
 private fun LeaderboardHeader(
-    onBack: () -> Unit,
-    entranceStarted: Boolean
+    onBack: () -> Unit
 ) {
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -110,7 +102,6 @@ private fun LeaderboardHeader(
                 letterSpacing = 3.sp
             )
         }
-    }
 }
 
 // ── Tab Row ──────────────────────────────────────────────
@@ -118,13 +109,8 @@ private fun LeaderboardHeader(
 @Composable
 private fun LeaderboardTabRow(
     activeTab: LeaderboardTab,
-    onTabSelected: (LeaderboardTab) -> Unit,
-    entranceStarted: Boolean
+    onTabSelected: (LeaderboardTab) -> Unit
 ) {
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -144,7 +130,6 @@ private fun LeaderboardTabRow(
                 modifier = Modifier.weight(1f)
             )
         }
-    }
 }
 
 @Composable
@@ -181,16 +166,9 @@ private fun LeaderboardContent(
     entries: List<LeaderboardEntry>,
     totalCount: Int,
     playerRank: com.typestrike.data.model.PlayerRankResponse?,
-    isDaily: Boolean,
-    entranceStarted: Boolean
+    isDaily: Boolean
 ) {
-    var listVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(entranceStarted) {
-        if (entranceStarted) {
-            delay(200)
-            listVisible = true
-        }
-    }
+
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -199,12 +177,7 @@ private fun LeaderboardContent(
         // Player's rank card (if available)
         if (playerRank != null && !isDaily) {
             item {
-                AnimatedVisibility(
-                    visible = listVisible,
-                    enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-                ) {
-                    PlayerRankCard(playerRank = playerRank)
-                }
+                PlayerRankCard(playerRank = playerRank)
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }
@@ -212,10 +185,6 @@ private fun LeaderboardContent(
         // Daily header note
         if (isDaily) {
             item {
-                AnimatedVisibility(
-                    visible = listVisible,
-                    enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-                ) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
@@ -250,17 +219,12 @@ private fun LeaderboardContent(
                             )
                         }
                     }
-                }
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }
 
         // Header row
         item {
-            AnimatedVisibility(
-                visible = listVisible,
-                enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -293,22 +257,13 @@ private fun LeaderboardContent(
                     )
                 }
             }
-        }
 
         // Entries
         itemsIndexed(entries) { index, entry ->
-            AnimatedVisibility(
-                visible = listVisible,
-                enter = slideInVertically(
-                    animationSpec = tween(300 + index * 30),
-                    initialOffsetY = { it / 2 }
-                ) + fadeIn(tween(300))
-            ) {
-                LeaderboardRow(
-                    entry = entry,
-                    isPlayer = entry.playerId == 1
-                )
-            }
+            LeaderboardRow(
+                entry = entry,
+                isPlayer = entry.playerId == 1
+            )
         }
 
         // Empty state

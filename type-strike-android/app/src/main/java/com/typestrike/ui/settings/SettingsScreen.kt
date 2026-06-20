@@ -64,11 +64,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Entrance animation
-    var entranceStarted by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        entranceStarted = true
-    }
+
 
     val particleConfig = remember {
         ParticleConfig.fromQuality(ParticleConfig.detect())
@@ -91,7 +87,7 @@ fun SettingsScreen(
                 .statusBarsPadding()
         ) {
             // Header
-            SettingsHeader(onBack = onBack, entranceStarted = entranceStarted)
+            SettingsHeader(onBack = onBack)
 
             // Content
             when {
@@ -102,8 +98,7 @@ fun SettingsScreen(
                 )
                 else -> SettingsContent(
                     uiState = uiState,
-                    viewModel = viewModel,
-                    entranceStarted = entranceStarted
+                    viewModel = viewModel
                 )
             }
         }
@@ -114,32 +109,26 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsHeader(
-    onBack: () -> Unit,
-    entranceStarted: Boolean
+    onBack: () -> Unit
 ) {
-    AnimatedVisibility(
-        visible = entranceStarted,
-        enter = slideInVertically(tween(300)) + fadeIn(tween(200))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
-                Text("←", color = TextBody, fontSize = 22.sp)
-            }
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "SETTINGS",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextWhite,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 3.sp
-            )
+        TextButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+            Text("←", color = TextBody, fontSize = 22.sp)
         }
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "SETTINGS",
+            style = MaterialTheme.typography.titleMedium,
+            color = TextWhite,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 3.sp
+        )
     }
 }
 
@@ -148,8 +137,7 @@ private fun SettingsHeader(
 @Composable
 private fun SettingsContent(
     uiState: SettingsUiState,
-    viewModel: SettingsViewModel,
-    entranceStarted: Boolean
+    viewModel: SettingsViewModel
 ) {
     val scrollState = rememberScrollState()
 
@@ -168,23 +156,9 @@ private fun SettingsContent(
     ) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Section entrance animation
-        var sectionVisible by remember { mutableStateOf(0) }
-        LaunchedEffect(entranceStarted) {
-            if (entranceStarted) {
-                delay(100); sectionVisible = 1  // Keyboard
-                delay(100); sectionVisible = 2  // Sound
-                delay(100); sectionVisible = 3  // Haptics
-                delay(100); sectionVisible = 4  // Visual
-                delay(100); sectionVisible = 5  // Accessibility
-            }
-        }
+
 
         // ── Keyboard Section ─────────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 1,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
             SettingsSection(
                 title = "KEYBOARD",
                 icon = "⌨️"
@@ -207,13 +181,13 @@ private fun SettingsContent(
                     onSelect = { viewModel.updateKeySize(it) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))                // Keyboard type selector
-                    SettingsSegmentedRow(
-                        label = "Keyboard Type",
-                        options = listOf("CUSTOM", "NATIVE"),
-                        optionLabels = listOf("In-App", "Device"),
-                        selected = uiState.keyboardType,
-                        onSelect = { viewModel.updateKeyboardType(it) }
-                    )
+                SettingsSegmentedRow(
+                    label = "Keyboard Type",
+                    options = listOf("CUSTOM", "NATIVE"),
+                    optionLabels = listOf("In-App", "Device"),
+                    selected = uiState.keyboardType,
+                    onSelect = { viewModel.updateKeyboardType(it) }
+                )
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Key click type
@@ -265,16 +239,11 @@ private fun SettingsContent(
                     }
                 }
             }
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── Sound Section ────────────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 2,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            SettingsSection(
+        SettingsSection(
                 title = "SOUND",
                 icon = "🔊"
             ) {
@@ -292,16 +261,11 @@ private fun SettingsContent(
                     displayValue = "${(uiState.musicVolume * 100).toInt()}"
                 )
             }
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── Haptics Section ──────────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 3,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            SettingsSection(
+        SettingsSection(
                 title = "HAPTICS",
                 icon = "📳"
             ) {
@@ -324,16 +288,11 @@ private fun SettingsContent(
                     )
                 }
             }
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── Visual Section ───────────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 4,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            SettingsSection(
+        SettingsSection(
                 title = "VISUAL",
                 icon = "🎨"
             ) {
@@ -422,16 +381,11 @@ private fun SettingsContent(
                     }
                 }
             }
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── Accessibility Section ────────────────────
-        AnimatedVisibility(
-            visible = sectionVisible >= 5,
-            enter = slideInVertically(tween(300)) + fadeIn(tween(200))
-        ) {
-            SettingsSection(
+        SettingsSection(
                 title = "ACCESSIBILITY",
                 icon = "♿"
             ) {
@@ -447,10 +401,8 @@ private fun SettingsContent(
                     label = "Left-Handed Mode",
                     subtitle = "Mirror keyboard layout for left-hand use",
                     checked = uiState.leftHanded,
-                    onCheckedChange = { viewModel.updateLeftHanded(it) }
-                )
-            }
-        }
+                    onCheckedChange = { viewModel.updateLeftHanded(it) }                    )
+                }
 
         // Save indicator
         Spacer(modifier = Modifier.height(8.dp))
