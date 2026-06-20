@@ -102,25 +102,41 @@ NEXT_PUBLIC_API_URL=http://localhost:8080 npm run dev
 ```
 type-strike/
 ├── run.sh                     # Unified server manager (root)
+├── .gitignore                 # Root gitignore
 ├── backend/                   # Go backend (API server)
 │   ├── cmd/server/main.go     # Entry point
 │   ├── internal/              # Handlers, repositories, models
-│   ├── migrations/            # SQL migrations
-│   └── run.sh                 # Backend-specific server manager
+│   ├── migrations/            # SQL migrations (001–004)
+│   └── run.sh                 # Backend server manager
 │
 ├── type-strike-android/       # Android app
 │   └── app/src/main/java/     # Kotlin + Jetpack Compose
 │
 ├── type-strike-web/           # Next.js website
 │   └── src/
-│       ├── app/               # App Router pages
+│       ├── app/               # App Router (14 pages/routes)
 │       ├── components/        # React components
-│       ├── lib/               # Types, API client, utils
-│       └── hooks/             # Custom React hooks
+│       │   ├── ui/            # Button, Card, GlassPanel, ProgressBar
+│       │   ├── layout/        # TopBar, BottomNav, PageContainer
+│       │   ├── game/          # GameplayUI, ParagraphDisplay, CountdownOverlay, ComboGauge, KineticText
+│       │   ├── effects/       # ParticleField
+│       │   └── analytics/     # LiveStats, ConsistencyGraph
+│       ├── engine/            # SOLID typing engine
+│       │   ├── interfaces.ts  # IInputSource, ITimerStrategy, IScoringStrategy, etc.
+│       │   ├── implementations.ts  # KeyboardInputSource, CountdownTimer, StandardScoring, etc.
+│       │   ├── TypingEngine.ts     # Core game loop
+│       │   └── index.ts       # Barrel exports
+│       ├── hooks/             # useGameplay, useMicroInteractions
+│       ├── lib/               # Types, API client, constants, utils
+│       └── globals.css        # Design system tokens
 │
-└── docs/
-    ├── logo.png               # Project logo
-    └── website-design.md      # Website design document
+├── docs/
+│   ├── logo.png               # Project logo
+│   ├── website-design.md      # Website design document
+│   └── platform-strategy.md   # Platform strategy
+│
+└── scripts/
+    └── git-hooks/pre-push     # Pre-push hook (Android lint)
 ```
 
 ---
@@ -216,14 +232,16 @@ Unlock new keyboard appearances by clearing levels:
 - Splash screen with logo reveal
 - **Website foundation** — Next.js project with theme, API client, 14 page shells
 - **Unified `run.sh`** — single command to run both backend and frontend
-- **Timed modes** (1min / 3min / 5min) and **daily contest** — designed, pending backend
+- **Web timed modes** (1min / 3min / 5min) + **daily contest** — backend game sessions, paragraph generation, CORS middleware
+- **SOLID typing engine** — TypingEngine with pluggable strategies (input, timer, scoring, combo, telemetry)
+- **Gameplay UI** — ParagraphDisplay, CountdownOverlay, ComboGauge, KineticText, LiveStats, ConsistencyGraph
+- **Backend game sessions API** — start/complete game sessions, timed leaderboard, contest entries
 
-### 🔥 Coming Next
-- Backend game sessions, contests, and extended stats endpoints
-- Website gameplay implementation (paragraph display, custom keyboard, timer)
-- Contest mode leaderboard
+### 🔥 On the Horizon
+- Contest mode leaderboard UI on web
 - Cross-platform account sync
 - Real-time multiplayer races
+- Production CORS configuration
 
 ---
 

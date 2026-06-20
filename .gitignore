@@ -33,6 +33,7 @@ out/
 .DS_Store
 Thumbs.db
 *.log
+*.pid
 .env
 .env.local
 backend/data/
@@ -65,7 +66,7 @@ backend/scripts/seed_levels
 type-strike-web/.next/
 type-strike-web/out/
 
-# ── Root run.sh artifacts ────────────────────────────
-.frontend.pid
-.frontend.log
-backend/server.pid
+# ── Process & lock files ──────────────────────────────
+*.pid
+*.lock
+server.pid

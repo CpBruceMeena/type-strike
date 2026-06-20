@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔥 Type Strike — Web Companion
 
-## Getting Started
+<p align="center">
+  <strong>Type with fury. Strike with fire.</strong>
+</p>
 
-First, run the development server:
+The web companion to **type-strike** — a typing game that turns every word into an explosive arcade battle. Built with **Next.js (React + TypeScript)**, this is the browser-based version of the Android app, featuring timed modes, daily contests, and full gameplay.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🎮 Game Modes
+
+| Mode | Duration | Description |
+|------|----------|-------------|
+| **1 Min Sprint** | 60s | Quick-fire speed test |
+| **3 Min Endurance** | 180s | Pace yourself |
+| **5 Min Marathon** | 300s | Full stamina challenge |
+| **Daily Contest** | — | One attempt, one expert paragraph, ranked globally |
+
+---
+
+## 🧠 Architecture
+
+```
+src/
+├── app/              # Next.js App Router — 14 pages
+│   ├── play/         # Timed modes + contest gameplay
+│   ├── (main)/       # Home, map, leaderboard, stats, etc.
+│   ├── victory/      # Result screen (WPM, accuracy, XP, rank)
+│   ├── failed/       # Failure screen with tips
+│   └── splash/       # Splash / intro
+│
+├── engine/           # SOLID typing engine (framework-agnostic)
+│   ├── interfaces.ts       # IInputSource, ITimerStrategy, IScoringStrategy, etc.
+│   ├── implementations.ts  # KeyboardInputSource, CountdownTimer, StandardScoring, etc.
+│   ├── TypingEngine.ts     # Core game loop
+│   └── index.ts            # Barrel exports
+│
+├── hooks/            # React hooks
+│   ├── useGameplay.ts          # Orchestrates engine + backend API
+│   └── useMicroInteractions.ts # Character-level animations
+│
+├── components/
+│   ├── game/         # GameplayUI, ParagraphDisplay, CountdownOverlay, ComboGauge, KineticText
+│   ├── analytics/    # LiveStats, ConsistencyGraph
+│   ├── ui/           # Button, Card, GlassPanel, ProgressBar
+│   ├── layout/       # TopBar, BottomNav, PageContainer
+│   └── effects/      # ParticleField
+│
+├── lib/
+│   ├── api.ts        # Backend API client (REST)
+│   ├── types.ts      # TypeScript interfaces
+│   ├── constants.ts  # Combo tiers, game modes, XP tables
+│   └── utils.ts      # WPM, accuracy, star calculation
+│
+└── globals.css       # Design system tokens (CSS custom properties)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Typing Engine (SOLID)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The engine uses **strategy pattern** with dependency injection:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **IInputSource** — keyboard input (swapable for touch/voice)
+- **ITimerStrategy** — countdown timer (timed modes) or no-timer (level mode)
+- **IScoringStrategy** — WPM, accuracy, star calculation
+- **IComboSystem** — streak tracking, gauge, tiers
+- **ITelemetryPipeline** — event batching and logging
+- **ITextProvider** — paragraph source (contest, practice, levels)
 
-## Learn More
+**Game flow:** `idle → loading → countdown → typing → complete/failed`
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# From project root, start both servers:
+./run.sh start
+# Or manually:
+cd type-strike-web
+NEXT_PUBLIC_API_URL=http://localhost:8080 npm run dev
+```
 
-## Deploy on Vercel
+The app runs on **port 3000** by default and connects to the Go backend on **port 8080**.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔧 Environment Variables
+
+| Variable | Default | Required |
+|----------|---------|----------|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8080` | Yes — backend endpoint |
+
+---
+
+## 🏗️ Built With
+
+- **Next.js 16** — App Router, React Server Components
+- **React 19** — Server & Client Components, Hooks
+- **TypeScript** — Full type safety
+- **Tailwind CSS 4** — Utility-first styling
+- **CSS Custom Properties** — Design system tokens
