@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -165,23 +167,17 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Bottom Navigation Bar
+            // Bottom Navigation Buttons (vertical column)
             EntranceFadeSlide(entranceStarted, delayMs = 850) {
-                QuickActionRow(
-                    onDailyChallengesClick = onNavigateToDailyChallenges,
-                    onAchievementsClick = onNavigateToAchievements,
-                    onStatsClick = onNavigateToStats,
-                    onLeaderboardClick = onNavigateToLeaderboard
+                HomeNavButtons(
+                    onPlay = onPlay,
+                    onDailyChallenges = onNavigateToDailyChallenges,
+                    onAchievements = onNavigateToAchievements,
+                    onStats = onNavigateToStats
                 )
             }
 
-            EntranceFadeSlide(entranceStarted, delayMs = 900) {
-                HomeNavBar(
-                    activeTab = "Home",
-                    onPlayClick = onPlay,
-                    onStatsClick = onNavigateToStats
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -804,116 +800,120 @@ private fun JumpInButton(
     }
 }
 
-// ── Quick Action Row (compact nav buttons) ───────────────
+// ── Home Navigation Buttons (vertical column) ────────────
 
 @Composable
-private fun QuickActionRow(
-    onDailyChallengesClick: () -> Unit,
-    onAchievementsClick: () -> Unit,
-    onStatsClick: () -> Unit,
-    onLeaderboardClick: () -> Unit = {}
+private fun HomeNavButtons(
+    onPlay: () -> Unit,
+    onDailyChallenges: () -> Unit,
+    onAchievements: () -> Unit,
+    onStats: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        QuickActionChip("🎯", "Daily", MagmaRed, onDailyChallengesClick, Modifier.weight(1f))
-        QuickActionChip("🏆", "Feats", TextBody, onAchievementsClick, Modifier.weight(1f))
-        QuickActionChip("📊", "Stats", TextBody, onStatsClick, Modifier.weight(1f))
-        QuickActionChip("🏅", "Rank", MoltenGold, onLeaderboardClick, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun QuickActionChip(
-    icon: String,
-    label: String,
-    color: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(34.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = color),
-        border = BorderStroke(1.dp, color.copy(alpha = if (color == MagmaRed) 0.35f else 0.15f)),
-        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-    ) {
-        Text(text = icon, fontSize = 12.sp)
-        Spacer(modifier = Modifier.width(3.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (color == MagmaRed) FontWeight.Bold else FontWeight.SemiBold,
-            fontSize = 10.sp,
-            letterSpacing = 0.5.sp
+        NavButtonLarge(
+            icon = "🗺",
+            label = "PLAY",
+            desc = "Choose your level and conquer",
+            color = MagmaRed,
+            onClick = onPlay
+        )
+        NavButtonLarge(
+            icon = "🎯",
+            label = "DAILY CHALLENGES",
+            desc = "Practice with fresh daily words",
+            color = MoltenGold,
+            onClick = onDailyChallenges
+        )
+        NavButtonLarge(
+            icon = "🏆",
+            label = "ACHIEVEMENTS",
+            desc = "Track your feats and milestones",
+            color = NeonPurple,
+            onClick = onAchievements
+        )
+        NavButtonLarge(
+            icon = "📊",
+            label = "STATS",
+            desc = "View your performance and progress",
+            color = TextBody,
+            onClick = onStats
         )
     }
 }
 
-// ── Navigation Bar ───────────────────────────────────────
-
 @Composable
-private fun HomeNavBar(
-    activeTab: String,
-    onPlayClick: () -> Unit,
-    onStatsClick: () -> Unit
+private fun NavButtonLarge(
+    icon: String,
+    label: String,
+    desc: String,
+    color: Color,
+    onClick: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Background,
-        tonalElevation = 0.dp,
-        shadowElevation = 6.dp
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scaleAnim by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = tween(80),
+        label = "navBtnScale"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scaleAnim)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.8f)),
+        border = BorderStroke(1.dp, color.copy(alpha = if (isPressed) 0.5f else 0.15f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPressed) 1.dp else 3.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .background(Background)
-                .padding(bottom = 4.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavTab("🏠", "Home", activeTab == "Home", onClick = {})
-            NavTab("🗺", "Play", activeTab == "Play", onClick = onPlayClick)
-            NavTab("📊", "Stats", activeTab == "Stats", onClick = onStatsClick)
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(color.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = icon, fontSize = 18.sp)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = desc,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted,
+                    fontSize = 10.sp
+                )
+            }
+            Text(
+                text = "→",
+                color = color.copy(alpha = if (isPressed) 1f else 0.5f),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
-    }
-}
-
-@Composable
-private fun NavTab(
-    icon: String,
-    label: String,
-    isActive: Boolean,
-    onClick: () -> Unit
-) {
-    val color = if (isActive) MagmaRed else TextDisabled.copy(alpha = 0.6f)
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .size(56.dp)
-            .padding(2.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier
-                .width(if (isActive) 16.dp else 0.dp)
-                .height(3.dp)
-                .clip(RoundedCornerShape(1.5.dp))
-                .background(MagmaRed)
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(text = icon, fontSize = 18.sp, color = color)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
-        )
     }
 }
 

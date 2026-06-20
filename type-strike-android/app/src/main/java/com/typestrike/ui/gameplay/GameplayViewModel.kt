@@ -295,7 +295,8 @@ class GameplayViewModel @Inject constructor(
         // Play error sound
         soundManager.playError(_soundVolume)
 
-        // Mark current char as wrong
+        // Mark current char as wrong and advance to next
+        val newIndex = state.currentCharIndex + 1
         val updatedResults = state.charResults.toMutableList()
         updatedResults[state.currentCharIndex] = CharResult(
             charIndex = state.currentCharIndex,
@@ -303,22 +304,21 @@ class GameplayViewModel @Inject constructor(
             isTyped = true
         )
 
+        val isComplete = newIndex >= state.paragraph.length
+
         val newState = state.copy(
-            gameState = GameState.MISTAKE,
+            gameState = if (isComplete) GameState.COMPLETE else GameState.TYPING,
+            currentCharIndex = newIndex,
             charResults = updatedResults,
             totalKeystrokes = state.totalKeystrokes + 1,
-            // Don't advance charIndex — user must type the correct char
+            combo = 0,
+            gaugeProgress = 0f
         )
         updateWpmAndAccuracy(newState)
         _uiState.value = newState
 
-        // Reset combo on mistake
-        _uiState.value = _uiState.value.copy(combo = 0, gaugeProgress = 0f)
-
-        mistakeJob?.cancel()
-        mistakeJob = viewModelScope.launch {
-            delay(MISTAKE_COOLDOWN_MS)
-            _uiState.value = _uiState.value.copy(gameState = GameState.TYPING)
+        if (isComplete) {
+            finishGame(newState)
         }
     }
 
