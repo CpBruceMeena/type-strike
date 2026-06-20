@@ -220,8 +220,16 @@ class GameplayViewModel @Inject constructor(
 
     fun onKeyPress(char: Char) {
         val state = _uiState.value
-        if (state.gameState != GameState.TYPING) return
-        if (mistakeJob?.isActive == true) return
+
+        // Un-stall on any input — the "Keep typing…" overlay should dismiss on tap
+        if (state.gameState == GameState.STALLED) {
+            _uiState.value = state.copy(gameState = GameState.TYPING)
+            lastInputTimeMs = System.currentTimeMillis()
+            startStallTimer()
+        }
+
+        // Only process keystrokes during active typing (allow STALLED to un-stall above)
+        if (state.gameState != GameState.TYPING && state.gameState != GameState.STALLED) return
         if (state.currentCharIndex >= state.paragraph.length) return
 
         val expectedChar = state.paragraph[state.currentCharIndex]
@@ -284,6 +292,7 @@ class GameplayViewModel @Inject constructor(
             finishGame(newState)
         } else {
             _uiState.value = newState
+            updateWpmAndAccuracy(newState)  // Overwrites with WPM if >= 1s elapsed
             lastInputTimeMs = System.currentTimeMillis()
             startStallTimer()
         }
@@ -295,8 +304,8 @@ class GameplayViewModel @Inject constructor(
         // Play error sound
         soundManager.playError(_soundVolume)
 
-        // Mark current char as wrong and advance to next
-        val newIndex = state.currentCharIndex + 1
+        // Mark current char as wrong — but DON'T advance the cursor.
+        // The user must type the correct character to advance.
         val updatedResults = state.charResults.toMutableList()
         updatedResults[state.currentCharIndex] = CharResult(
             charIndex = state.currentCharIndex,
@@ -304,11 +313,9 @@ class GameplayViewModel @Inject constructor(
             isTyped = true
         )
 
-        val isComplete = newIndex >= state.paragraph.length
-
         val newState = state.copy(
-            gameState = if (isComplete) GameState.COMPLETE else GameState.TYPING,
-            currentCharIndex = newIndex,
+            gameState = GameState.TYPING,
+            currentCharIndex = state.currentCharIndex,  // Stay on the same character
             charResults = updatedResults,
             totalKeystrokes = state.totalKeystrokes + 1,
             combo = 0,
@@ -317,9 +324,8 @@ class GameplayViewModel @Inject constructor(
         updateWpmAndAccuracy(newState)
         _uiState.value = newState
 
-        if (isComplete) {
-            finishGame(newState)
-        }
+        lastInputTimeMs = System.currentTimeMillis()
+        startStallTimer()
     }
 
     // ── Stall Detection ──────────────────────────────────
