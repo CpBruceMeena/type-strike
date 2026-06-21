@@ -99,6 +99,17 @@ function CoderSessionContent() {
 
       await engine.initialize();
 
+      // Read language info from text provider metadata
+      const meta = textProvider.getMetadata();
+      const snippetLanguage = meta.language as string | undefined;
+      const snippetColor = meta.languageColor as string | undefined;
+
+      setState((s) => ({
+        ...s,
+        language: snippetLanguage,
+        languageColor: snippetColor,
+      }));
+
       engine.onCharUpdateCallback((index, result) => {
         setState((s) => {
           const updatedResults = [...s.charResults];
