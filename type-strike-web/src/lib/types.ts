@@ -340,4 +340,7 @@ export interface GameplayUIState {
   finalWpm: number;
   finalAccuracy: number;
   stars: number;
+  /** Language shown as a badge (e.g. "JavaScript", "Python") — only for coder mode */
+  language?: string;
+  languageColor?: string;
 }

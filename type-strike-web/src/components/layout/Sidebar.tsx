@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { label: "STRIKE", href: "/home", icon: "⚡", accent: "#FF5020" },
   { label: "MAP", href: "/map", icon: "🗺️", accent: "#FF6600" },
+  { label: "LEARN", href: "/learn", icon: "🎓", accent: "#22DD44" },
   { label: "CODER", href: "/play/coder", icon: "👨‍💻", accent: "#00E5FF" },
   { label: "DAILY", href: "/daily-challenges", icon: "🎯", accent: "#FFCC00" },
   { label: "FEATS", href: "/achievements", icon: "🏅", accent: "#CC44FF" },

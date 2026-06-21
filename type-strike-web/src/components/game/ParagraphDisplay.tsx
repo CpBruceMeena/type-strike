@@ -83,6 +83,23 @@ export default function ParagraphDisplay({
             const isTyped = result?.isTyped ?? false;
             const isCorrect = result?.isCorrect ?? true;
 
+            // Detect special characters for code snippets
+            const isNewline = char === '\n';
+            const isTab = char === '\t';
+            const isSpace = char === ' ';
+
+            // Determine display character with visual indicators for special keys
+            let displayChar: string | null = char;
+
+            if (isNewline) {
+              displayChar = '↵';
+            } else if (isTab) {
+              displayChar = '→';
+            } else if (isSpace && isCurrent) {
+              // Only show · when cursor is on a space (never show for ALL spaces — too noisy)
+              displayChar = '·';
+            }
+
             let color: string;
             if (isCurrent && isActive) {
               color = "var(--text-white)";
@@ -90,6 +107,9 @@ export default function ParagraphDisplay({
               color = "var(--success-green)";
             } else if (isTyped && !isCorrect) {
               color = "var(--error-red)";
+            } else if (isNewline || isTab) {
+              // Dim special chars (↵, →) so they're visible but not distracting
+              color = "rgba(106,106,122,0.35)";
             } else {
               color = "rgba(106,106,122,0.6)";
             }
@@ -109,7 +129,62 @@ export default function ParagraphDisplay({
                       : "none",
                 }}
               >
-                {char}
+                {/* Key-hint badge for current special character */}
+                {isCurrent && isActive && isNewline && (
+                  <span
+                    className="absolute -top-5 left-1/2 -translate-x-1/2 z-10"
+                  >
+                    <span
+                      className="whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-bold tracking-[1px]"
+                      style={{
+                        background: 'rgba(34,221,68,0.15)',
+                        color: '#22DD44',
+                        border: '1px solid rgba(34,221,68,0.3)',
+                      }}
+                    >
+                      ENTER
+                    </span>
+                  </span>
+                )}
+                {isCurrent && isActive && isTab && (
+                  <span
+                    className="absolute -top-5 left-1/2 -translate-x-1/2 z-10"
+                  >
+                    <span
+                      className="whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-bold tracking-[1px]"
+                      style={{
+                        background: 'rgba(0,229,255,0.15)',
+                        color: '#00E5FF',
+                        border: '1px solid rgba(0,229,255,0.3)',
+                      }}
+                    >
+                      TAB
+                    </span>
+                  </span>
+                )}
+                {isCurrent && isActive && isSpace && (
+                  <span
+                    className="absolute -top-5 left-1/2 -translate-x-1/2 z-10"
+                  >
+                    <span
+                      className="whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-bold tracking-[1px]"
+                      style={{
+                        background: 'rgba(255,204,0,0.15)',
+                        color: '#FFCC00',
+                        border: '1px solid rgba(255,204,0,0.3)',
+                      }}
+                    >
+                      SPACE
+                    </span>
+                  </span>
+                )}
+
+                {/* The display character */}
+                {displayChar}
+                {/* Preserve the actual newline for line breaks */}
+                {isNewline && '\n'}
+
+                {/* Cursor */}
                 {isCurrent && isActive && (
                   <span
                     ref={cursorRef}

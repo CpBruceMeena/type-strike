@@ -36,5 +36,6 @@ export {
   LevelTextProvider,
   ContestTextProvider,
   FreePracticeTextProvider,
+  LessonTextProvider,
   EnterpriseTextProvider,
 } from "./implementations";

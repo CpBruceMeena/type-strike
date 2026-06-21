@@ -102,6 +102,20 @@ export default function GameplayUI({
             {modeLabel}
           </span>
 
+          {/* Language badge — shown for coder mode */}
+          {state.language && (
+            <span
+              className="rounded px-2 py-0.5 text-[10px] font-bold tracking-[1.5px]"
+              style={{
+                background: `${state.languageColor ?? '#888888'}20`,
+                color: state.languageColor ?? '#888888',
+                border: `1px solid ${state.languageColor ?? '#888888'}40`,
+              }}
+            >
+              {state.language}
+            </span>
+          )}
+
           {/* Timer */}
           {state.timeRemaining !== null && (
             <div className="flex items-center gap-2">
