@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { TypingEngine } from "@/engine/TypingEngine";
 import {
   KeyboardInputSource,
-  CountdownTimer,
+  NoTimer,
   StandardScoring,
   StandardComboSystem,
   TelemetryPipeline,
@@ -63,22 +63,13 @@ function CoderSessionContent() {
 
   const engineRef = useRef<TypingEngine | null>(null);
   const inputRef = useRef<KeyboardInputSource | null>(null);
-  const timerRef = useRef<CountdownTimer | null>(null);
   const playerId = DEFAULT_PLAYER_ID;
-
-  // Duration based on difficulty
-  const durationMap: Record<string, number> = {
-    easy: 60,
-    medium: 90,
-    hard: 120,
-  };
-  const durationSec = durationMap[difficulty] ?? 60;
 
   const startGame = useCallback(async () => {
     setState((s) => ({ ...s, gameState: "loading" as GameState }));
 
     try {
-      const timer = new CountdownTimer(durationSec);
+      const timer = new NoTimer();
       const textProvider: ITextProvider = new CoderTextProvider(playerId, difficulty, language, snippetIndex);
 
       const input = new KeyboardInputSource();
@@ -97,7 +88,6 @@ function CoderSessionContent() {
       );
 
       inputRef.current = input;
-      timerRef.current = timer;
       engineRef.current = engine;
 
       await engine.initialize();
@@ -136,7 +126,7 @@ function CoderSessionContent() {
           gaugeProgress: stats.gauge,
           activeComboTierIndex: stats.tierIndex,
           elapsedMs: stats.elapsed,
-          timeRemaining: timer.isExpired() ? 0 : timer.getRemainingMs(),
+          timeRemaining: null, // No timer in coder mode (unlimited time)
         }));
 
         setDataPoints((prev) => {
@@ -175,7 +165,7 @@ function CoderSessionContent() {
       console.error("Failed to start coder game:", err);
       setState((s) => ({ ...s, gameState: "failed" as GameState }));
     }
-  }, [difficulty, language, snippetIndex, playerId, durationSec]);
+  }, [difficulty, language, snippetIndex, playerId]);
 
   const startCountdown = useCallback(async () => {
     const engine = engineRef.current;
