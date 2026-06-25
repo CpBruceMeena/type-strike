@@ -246,6 +246,58 @@ const HARD_SNIPPETS: CodeSnippet[] = [
     language: 'Python',
     code: "class TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\n\ndef serialize(root):\n    if not root:\n        return 'null'\n    left = serialize(root.left)\n    right = serialize(root.right)\n    return f'{root.val},{left},{right}'\n\n\ndef deserialize(data):\n    nodes = data.split(',')\n    def build():\n        val = nodes.pop(0)\n        if val == 'null':\n            return None\n        node = TreeNode(int(val))\n        node.left = build()\n        node.right = build()\n        return node\n    return build()",
   },
+  // ── Research-backed: Advanced Graphs (Google, Meta) ───
+  {
+    title: 'Alien Dictionary',
+    language: 'Python',
+    code: "from collections import deque, defaultdict\n\n\ndef alien_order(words):\n    graph = defaultdict(set)\n    in_degree = {c: 0 for word in words for c in word}\n    for i in range(len(words) - 1):\n        w1, w2 = words[i], words[i + 1]\n        if len(w1) > len(w2) and w1.startswith(w2):\n            return ''\n        for c1, c2 in zip(w1, w2):\n            if c1 != c2:\n                if c2 not in graph[c1]:\n                    graph[c1].add(c2)\n                    in_degree[c2] += 1\n                break\n    queue = deque([c for c in in_degree if in_degree[c] == 0])\n    result = []\n    while queue:\n        c = queue.popleft()\n        result.append(c)\n        for neighbor in graph[c]:\n            in_degree[neighbor] -= 1\n            if in_degree[neighbor] == 0:\n                queue.append(neighbor)\n    return ''.join(result) if len(result) == len(in_degree) else ''",
+  },
+  {
+    title: 'Word Ladder II',
+    language: 'Python',
+    code: "from collections import deque, defaultdict\n\n\ndef find_ladders(begin_word, end_word, word_list):\n    word_set = set(word_list)\n    if end_word not in word_set:\n        return []\n    graph = defaultdict(list)\n    rev_graph = defaultdict(list)\n    level = {begin_word: 0}\n    queue = deque([begin_word])\n    found = False\n    while queue and not found:\n        for _ in range(len(queue)):\n            word = queue.popleft()\n            for i in range(len(word)):\n                for c in 'abcdefghijklmnopqrstuvwxyz':\n                    nxt = word[:i] + c + word[i + 1:]\n                    if nxt in word_set:\n                        if nxt not in level:\n                            level[nxt] = level[word] + 1\n                            queue.append(nxt)\n                        if level[nxt] == level[word] + 1:\n                            graph[word].append(nxt)\n                            rev_graph[nxt].append(word)\n        found = end_word in level\n    result = []\n    def backtrack(path, word):\n        if word == begin_word:\n            result.append(path[::-1])\n            return\n        for prev in rev_graph[word]:\n            path.append(prev)\n            backtrack(path, prev)\n            path.pop()\n    backtrack([end_word], end_word)\n    return result",
+  },
+  {
+    title: 'Critical Connections',
+    language: 'JavaScript',
+    code: "function criticalConnections(n, connections) {\n  const graph = Array.from({ length: n }, () => []);\n  for (const [u, v] of connections) {\n    graph[u].push(v);\n    graph[v].push(u);\n  }\n  const disc = Array(n).fill(-1);\n  const low = Array(n).fill(0);\n  const result = [];\n  let time = 0;\n  function dfs(u, parent) {\n    disc[u] = low[u] = time++;\n    for (const v of graph[u]) {\n      if (v === parent) continue;\n      if (disc[v] === -1) {\n        dfs(v, u);\n        low[u] = Math.min(low[u], low[v]);\n        if (low[v] > disc[u]) {\n          result.push([u, v]);\n        }\n      } else {\n        low[u] = Math.min(low[u], disc[v]);\n      }\n    }\n  }\n  for (let i = 0; i < n; i++) {\n    if (disc[i] === -1) dfs(i, -1);\n  }\n  return result;\n}",
+  },
+  {
+    title: 'Pacific Atlantic Flow',
+    language: 'JavaScript',
+    code: "function pacificAtlantic(heights) {\n  const rows = heights.length;\n  const cols = heights[0].length;\n  const pac = Array.from({ length: rows }, () => Array(cols).fill(false));\n  const atl = Array.from({ length: rows }, () => Array(cols).fill(false));\n  function dfs(r, c, ocean, prev) {\n    if (r < 0 || r >= rows || c < 0 || c >= cols) return;\n    if (ocean[r][c]) return;\n    if (heights[r][c] < prev) return;\n    ocean[r][c] = true;\n    dfs(r + 1, c, ocean, heights[r][c]);\n    dfs(r - 1, c, ocean, heights[r][c]);\n    dfs(r, c + 1, ocean, heights[r][c]);\n    dfs(r, c - 1, ocean, heights[r][c]);\n  }\n  for (let c = 0; c < cols; c++) {\n    dfs(0, c, pac, heights[0][c]);\n    dfs(rows - 1, c, atl, heights[rows - 1][c]);\n  }\n  for (let r = 0; r < rows; r++) {\n    dfs(r, 0, pac, heights[r][0]);\n    dfs(r, cols - 1, atl, heights[r][cols - 1]);\n  }\n  const result = [];\n  for (let r = 0; r < rows; r++) {\n    for (let c = 0; c < cols; c++) {\n      if (pac[r][c] && atl[r][c]) result.push([r, c]);\n    }\n  }\n  return result;\n}",
+  },
+  {
+    title: 'Accounts Merge',
+    language: 'Python',
+    code: "from collections import defaultdict\n\n\ndef accounts_merge(accounts):\n    parent = {}\n    email_to_name = {}\n    def find(x):\n        while parent[x] != x:\n            parent[x] = parent[parent[x]]\n            x = parent[x]\n        return x\n    def union(x, y):\n        px, py = find(x), find(y)\n        if px != py:\n            parent[px] = py\n    for account in accounts:\n        name = account[0]\n        first_email = account[1]\n        for email in account[1:]:\n            if email not in parent:\n                parent[email] = email\n            email_to_name[email] = name\n            union(first_email, email)\n    groups = defaultdict(list)\n    for email in parent:\n        groups[find(email)].append(email)\n    result = []\n    for root, emails in groups.items():\n        result.append([email_to_name[root]] + sorted(emails))\n    return result",
+  },
+  // ── Research-backed: Advanced DSA (cross-company) ────
+  {
+    title: 'Binary Tree Max Path Sum',
+    language: 'JavaScript',
+    code: "function maxPathSum(root) {\n  let maxSum = -Infinity;\n  function dfs(node) {\n    if (!node) return 0;\n    const left = Math.max(0, dfs(node.left));\n    const right = Math.max(0, dfs(node.right));\n    maxSum = Math.max(maxSum, left + right + node.val);\n    return Math.max(left, right) + node.val;\n  }\n  dfs(root);\n  return maxSum;\n}",
+  },
+  {
+    title: 'Burst Balloons (DP)',
+    language: 'Python',
+    code: "def max_coins(nums):\n    nums = [1] + nums + [1]\n    n = len(nums)\n    dp = [[0] * n for _ in range(n)]\n    for length in range(2, n):\n        for left in range(0, n - length):\n            right = left + length\n            for k in range(left + 1, right):\n                coins = nums[left] * nums[k] * nums[right]\n                coins += dp[left][k] + dp[k][right]\n                dp[left][right] = max(dp[left][right], coins)\n    return dp[0][n - 1]",
+  },
+  {
+    title: 'Trapping Rain Water',
+    language: 'JavaScript',
+    code: "function trap(height) {\n  let left = 0;\n  let right = height.length - 1;\n  let leftMax = 0;\n  let rightMax = 0;\n  let total = 0;\n  while (left < right) {\n    if (height[left] < height[right]) {\n      if (height[left] >= leftMax) {\n        leftMax = height[left];\n      } else {\n        total += leftMax - height[left];\n      }\n      left++;\n    } else {\n      if (height[right] >= rightMax) {\n        rightMax = height[right];\n      } else {\n        total += rightMax - height[right];\n      }\n      right--;\n    }\n  }\n  return total;\n}",
+  },
+  {
+    title: 'Median of Two Arrays',
+    language: 'JavaScript',
+    code: "function findMedianSortedArrays(nums1, nums2) {\n  if (nums1.length > nums2.length) {\n    [nums1, nums2] = [nums2, nums1];\n  }\n  const m = nums1.length;\n  const n = nums2.length;\n  let lo = 0;\n  let hi = m;\n  while (lo <= hi) {\n    const i = (lo + hi) >> 1;\n    const j = ((m + n + 1) >> 1) - i;\n    const l1 = i === 0 ? -Infinity : nums1[i - 1];\n    const r1 = i === m ? Infinity : nums1[i];\n    const l2 = j === 0 ? -Infinity : nums2[j - 1];\n    const r2 = j === n ? Infinity : nums2[j];\n    if (l1 <= r2 && l2 <= r1) {\n      if ((m + n) % 2 === 0) {\n        return (Math.max(l1, l2) + Math.min(r1, r2)) / 2;\n      } else {\n        return Math.max(l1, l2);\n      }\n    } else if (l1 > r2) {\n      hi = i - 1;\n    } else {\n      lo = i + 1;\n    }\n  }\n  return 0;\n}",
+  },
+  {
+    title: 'Graph Valid Tree',
+    language: 'Python',
+    code: "def valid_tree(n, edges):\n    if len(edges) != n - 1:\n        return False\n    parent = list(range(n))\n    rank = [0] * n\n    def find(x):\n        while parent[x] != x:\n            parent[x] = parent[parent[x]]\n            x = parent[x]\n        return x\n    def union(x, y):\n        px, py = find(x), find(y)\n        if px == py:\n            return False\n        if rank[px] < rank[py]:\n            parent[px] = py\n        elif rank[px] > rank[py]:\n            parent[py] = px\n        else:\n            parent[py] = px\n            rank[px] += 1\n        return True\n    for u, v in edges:\n        if not union(u, v):\n            return False\n    return True",
+  },
 ];
 
 // ── Accessors ─────────────────────────────────────────────
