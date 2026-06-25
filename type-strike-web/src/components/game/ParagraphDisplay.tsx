@@ -33,11 +33,6 @@ export default function ParagraphDisplay({
         if (result) {
           if (result.isCorrect) {
             trigger("correct", typedIndex);
-          } else {
-            trigger("error", typedIndex);
-          }
-          if (paragraph[typedIndex] === " ") {
-            trigger("space");
           }
         }
       } else if (diff < 0) {
@@ -53,7 +48,7 @@ export default function ParagraphDisplay({
     if (cursorRef.current) {
       cursorRef.current.scrollIntoView({
         block: "center",
-        behavior: "smooth",
+        behavior: "auto",
       });
     }
   }, [currentCharIndex]);
@@ -85,7 +80,6 @@ export default function ParagraphDisplay({
 
             // Detect special characters for code snippets
             const isNewline = char === '\n';
-            const isTab = char === '\t';
             const isSpace = char === ' ';
 
             // Determine display character with visual indicators for special keys
@@ -93,8 +87,6 @@ export default function ParagraphDisplay({
 
             if (isNewline) {
               displayChar = '↵';
-            } else if (isTab) {
-              displayChar = '→';
             } else if (isSpace && isCurrent) {
               // Only show · when cursor is on a space (never show for ALL spaces — too noisy)
               displayChar = '·';
@@ -107,8 +99,8 @@ export default function ParagraphDisplay({
               color = "var(--success-green)";
             } else if (isTyped && !isCorrect) {
               color = "var(--error-red)";
-            } else if (isNewline || isTab) {
-              // Dim special chars (↵, →) so they're visible but not distracting
+            } else if (isNewline) {
+              // Dim special chars (↵) so they're visible but not distracting
               color = "rgba(106,106,122,0.35)";
             } else {
               color = "rgba(106,106,122,0.6)";
@@ -143,22 +135,6 @@ export default function ParagraphDisplay({
                       }}
                     >
                       ENTER
-                    </span>
-                  </span>
-                )}
-                {isCurrent && isActive && isTab && (
-                  <span
-                    className="absolute -top-5 left-1/2 -translate-x-1/2 z-10"
-                  >
-                    <span
-                      className="whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-bold tracking-[1px]"
-                      style={{
-                        background: 'rgba(0,229,255,0.15)',
-                        color: '#00E5FF',
-                        border: '1px solid rgba(0,229,255,0.3)',
-                      }}
-                    >
-                      TAB
                     </span>
                   </span>
                 )}
