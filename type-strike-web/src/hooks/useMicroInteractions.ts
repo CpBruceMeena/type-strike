@@ -2,13 +2,11 @@
 
 import { useCallback, useRef } from "react";
 
-type FeedbackType = "correct" | "error" | "backspace" | "combo" | "space";
+type FeedbackType = "correct" | "backspace" | "combo";
 
 const CORRECT_CFG = { color: "#22FF44" as const, duration: 150 };
-const ERROR_CFG = { color: "#FF2200" as const, duration: 200, shakePx: 3 };
 const BACKSPACE_CFG = { opacityMin: 0.4, duration: 100 };
 const COMBO_CFG = { glowIntensity: 0.5, duration: 600 };
-const SPACE_CFG = { flexPx: 2, duration: 80 };
 
 export function useMicroInteractions() {
   const charRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -31,23 +29,6 @@ export function useMicroInteractions() {
         break;
       }
 
-      case "error": {
-        const el = charRefs.current[charIndex!];
-        if (el) {
-          el.style.color = ERROR_CFG.color;
-        }
-        if (containerRef.current) {
-          containerRef.current.classList.remove("animate-shake");
-          void containerRef.current.offsetWidth;
-          containerRef.current.classList.add("animate-shake");
-          setTimeout(() => {
-            containerRef.current?.classList.remove("animate-shake");
-            if (el) el.style.color = "";
-          }, ERROR_CFG.duration);
-        }
-        break;
-      }
-
       case "backspace": {
         const el = charRefs.current[charIndex!];
         if (!el) return;
@@ -66,17 +47,6 @@ export function useMicroInteractions() {
           setTimeout(() => {
             if (gaugeRef.current) gaugeRef.current.style.boxShadow = "";
           }, COMBO_CFG.duration);
-        }
-        break;
-      }
-
-      case "space": {
-        if (containerRef.current) {
-          containerRef.current.style.transition = `padding ${SPACE_CFG.duration}ms`;
-          containerRef.current.style.paddingBottom = `${SPACE_CFG.flexPx}px`;
-          setTimeout(() => {
-            if (containerRef.current) containerRef.current.style.paddingBottom = "";
-          }, SPACE_CFG.duration);
         }
         break;
       }

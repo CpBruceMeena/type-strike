@@ -52,6 +52,9 @@ function CoderSessionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const difficulty = searchParams.get("difficulty") ?? "easy";
+  const language = searchParams.get("language") ?? undefined;
+  const snippetIndexStr = searchParams.get("snippet");
+  const snippetIndex = snippetIndexStr ? parseInt(snippetIndexStr, 10) : undefined;
 
   const [state, setState] = useState<GameplayUIState>(createInitialState);
   const [dataPoints, setDataPoints] = useState<
@@ -76,7 +79,7 @@ function CoderSessionContent() {
 
     try {
       const timer = new CountdownTimer(durationSec);
-      const textProvider: ITextProvider = new CoderTextProvider(playerId, difficulty);
+      const textProvider: ITextProvider = new CoderTextProvider(playerId, difficulty, language, snippetIndex);
 
       const input = new KeyboardInputSource();
       const scoring = new StandardScoring();
@@ -172,7 +175,7 @@ function CoderSessionContent() {
       console.error("Failed to start coder game:", err);
       setState((s) => ({ ...s, gameState: "failed" as GameState }));
     }
-  }, [difficulty, playerId, durationSec]);
+  }, [difficulty, language, snippetIndex, playerId, durationSec]);
 
   const startCountdown = useCallback(async () => {
     const engine = engineRef.current;
