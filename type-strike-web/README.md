@@ -93,6 +93,29 @@ The app runs on **port 3000** by default and connects to the Go backend on **por
 
 ---
 
+## 👤 Profile
+
+The **Profile** page (`/profile`) is available to signed-in users and displays:
+
+- Clerk profile picture (from Google/GitHub OAuth)
+- Name, username, and email
+- Account join date
+- **Log Out** button
+- Quick links to Stats and Feats
+
+Unauthenticated users see a sign-in prompt with modal buttons.
+
+---
+
+## 📐 Layout
+
+- **Desktop**: The left sidebar is pinned on all main tabs (Home, Map, Learn, Coder, Daily, Feats, Leaderboard, Stats, Profile). Only the right content area scrolls.
+- **Coder Session**: The sidebar is hidden while typing (`/play/coder/session`) for a full-bleed code arena.
+- **Lesson Session**: The sidebar is hidden during active lessons (`/learn/lesson`) for an immersive typing experience.
+- **Mobile**: A bottom navigation bar provides quick access to Play, Learn, Coder, Daily, and Feats.
+
+---
+
 ## 🔧 Environment Variables
 
 | Variable | Default | Required |
@@ -135,3 +158,46 @@ Content is generated entirely client-side from 50+ curated snippets — no backe
 - **TypeScript** — Full type safety
 - **Tailwind CSS 4** — Utility-first styling
 - **CSS Custom Properties** — Design system tokens
+
+---
+
+## 🔐 Authentication
+
+Type Strike uses **Clerk** for authentication. Supported sign-in methods:
+
+- **Email + Password**
+- **GitHub OAuth**
+- **Google OAuth**
+
+> Phone-based authentication has been disabled to avoid region-specific issues (e.g., Indian mobile number support).
+
+### Clerk Setup
+
+This project is linked to the Clerk app `typestrike` (`app_3FdBMyckMf9fVLP8TKikdaVyWhw`).
+
+1. Install the Clerk CLI:
+   ```bash
+   npm install -g clerk
+   ```
+2. Authenticate:
+   ```bash
+   clerk auth login
+   ```
+3. Initialize in the project:
+   ```bash
+   clerk init --app app_3FdBMyckMf9fVLP8TKikdaVyWhw
+   ```
+
+Clerk automatically creates:
+- `src/proxy.ts` — auth middleware
+- `src/app/sign-in/[[...sign-in]]/page.tsx`
+- `src/app/sign-up/[[...sign-up]]/page.tsx`
+- `.env.local` — Clerk keys
+
+### Protected Routes
+
+All app routes are protected by default. Public routes:
+- `/sign-in`
+- `/sign-up`
+
+The sidebar and top bar show **Sign In / Sign Up** buttons when logged out, and a **UserButton** (with profile avatar) when logged in.

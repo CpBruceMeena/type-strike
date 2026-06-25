@@ -20,7 +20,7 @@ export default function VictoryContent() {
   const mode = searchParams.get("mode") ?? "";
   const rank = searchParams.get("rank");
 
-  const starCount = parseInt(stars, 10);
+  const starCount = Math.max(0, parseInt(stars, 10) || 0);
 
   // ── Dynamic OG meta tags (client-side update) ──
   // Server-side generateMetadata handles OG tags for crawlers (Facebook, Twitter, Discord).
@@ -236,6 +236,9 @@ export default function VictoryContent() {
         </Button>
         <Button variant="secondary" size="lg" onClick={() => router.push("/home")}>
           HOME
+        </Button>
+        <Button variant="ghost" size="lg" onClick={() => router.back()}>
+          ← BACK
         </Button>
       </div>
     </div>

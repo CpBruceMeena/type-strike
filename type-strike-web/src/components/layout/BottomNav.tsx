@@ -9,6 +9,7 @@ const NAV_TABS = [
   { label: "CODER", href: "/play/coder", accent: "#00E5FF" },
   { label: "DAILY", href: "/daily-challenges", accent: "#FFCC00" },
   { label: "FEATS", href: "/achievements", accent: "#CC44FF" },
+  { label: "PROFILE", href: "/profile", accent: "#FF44CC" },
 ];
 
 export default function BottomNav() {
@@ -20,6 +21,7 @@ export default function BottomNav() {
     if (href === "/play/coder") return pathname.startsWith("/play/coder");
     if (href === "/daily-challenges") return pathname.startsWith("/daily-challenges");
     if (href === "/achievements") return pathname.startsWith("/achievements");
+    if (href === "/profile") return pathname === "/profile";
     return false;
   };
 
