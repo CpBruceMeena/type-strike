@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 
 const NAV_ITEMS = [
   { label: "STRIKE", href: "/home", icon: "⚡", accent: "#FF5020" },
@@ -12,10 +13,12 @@ const NAV_ITEMS = [
   { label: "FEATS", href: "/achievements", icon: "🏅", accent: "#CC44FF" },
   { label: "LEADERBOARD", href: "/leaderboard", icon: "🏆", accent: "#8844FF" },
   { label: "STATS", href: "/stats", icon: "📊", accent: "#00F0FF" },
+  { label: "PROFILE", href: "/profile", icon: "👤", accent: "#FF44CC" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { isSignedIn, user } = useUser();
 
   return (
     <aside
@@ -62,6 +65,49 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Profile / auth */}
+      <div className="mx-4 mb-2 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+      {isSignedIn ? (
+        <div className="flex items-center gap-3 px-3 py-2">
+          {user.imageUrl ? (
+            <img
+              src={user.imageUrl}
+              alt={user.fullName || "Profile"}
+              className="h-8 w-8 rounded-full border border-white/10 object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary text-xs font-black text-white">
+              {user.firstName?.[0] || user.username?.[0] || "?"}
+            </div>
+          )}
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-[11px] font-bold tracking-[1px] text-text-white">
+              {user.firstName || user.username}
+            </span>
+            <span className="truncate text-[9px] tracking-[1px] text-text-muted">
+              {user.primaryEmailAddress?.emailAddress}
+            </span>
+          </div>
+          <div className="ml-auto">
+            <UserButton />
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 px-3 py-2">
+          <SignInButton mode="modal">
+            <button className="w-full rounded-xl bg-accent-primary/90 px-3 py-2 text-[11px] font-bold tracking-[2px] text-white hover:bg-accent-primary transition-colors">
+              SIGN IN
+            </button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <button className="w-full rounded-xl border border-white/10 px-3 py-2 text-[11px] font-bold tracking-[2px] text-text-body hover:border-accent-primary/60 hover:text-accent-primary transition-colors">
+              SIGN UP
+            </button>
+          </SignUpButton>
+        </div>
+      )}
 
       {/* Bottom section spacer */}
       <div className="pb-4" />
