@@ -12,7 +12,6 @@
 # Options (used with start/restart):
 #   --seed                — (re)seed levels before starting
 #   --seed-only           — seed levels and exit (no server start)
-#   --force               — kill any process on SERVER_PORT before starting
 # ────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -115,35 +114,26 @@ preflight() {
 cmd_start() {
   local DO_SEED=false
   local SEED_ONLY=false
-  local DO_FORCE=false
 
   # Parse flags passed to start
   for arg in "$@"; do
     case "$arg" in
       --seed-only) SEED_ONLY=true; DO_SEED=true ;;
       --seed) DO_SEED=true ;;
-      --force) DO_FORCE=true ;;
     esac
   done
 
-  # Clean up stale PID file first
+  # Clean up any existing process on our port
   if [ -f "$PID_FILE" ]; then
     local existing_pid
     existing_pid=$(cat "$PID_FILE")
     if kill -0 "$existing_pid" 2>/dev/null; then
-      if [ "$DO_FORCE" = true ]; then
-        warn "Server is already running (PID $existing_pid). Force-killing..."
-        kill_port
-        rm -f "$PID_FILE"
-      else
-        err "Server is already running (PID $existing_pid)."
-        info "  Use: ./run.sh restart  or  ./run.sh stop  or  ./run.sh start --force"
-        exit 1
-      fi
+      warn "Server is already running (PID $existing_pid). Stopping it..."
+      kill_port
     else
       warn "Stale PID file found. Cleaning up..."
-      rm -f "$PID_FILE"
     fi
+    rm -f "$PID_FILE"
   fi
 
   # Check port availability — if something else is on our port, free it automatically
@@ -152,15 +142,8 @@ cmd_start() {
     occupant_pid=$(port_pid)
     local occupant_name
     occupant_name=$(ps -o comm= -p "$occupant_pid" 2>/dev/null || echo "unknown")
-    if [ "$DO_FORCE" = true ]; then
-      warn "Port $SERVER_PORT is occupied by PID $occupant_pid ($occupant_name). Freeing it..."
-      kill_port
-    else
-      warn "Port $SERVER_PORT is in use by PID $occupant_pid ($occupant_name)."
-      info "  Use --force to auto-kill and restart, or stop the other process first."
-      info "  Tip: SERVER_PORT=8081 ./run.sh start  to use a different port."
-      exit 1
-    fi
+    warn "Port $SERVER_PORT is occupied by PID $occupant_pid ($occupant_name). Freeing it..."
+    kill_port
   fi
 
   preflight
@@ -319,7 +302,6 @@ print_usage() {
   echo "  Options (for start/restart):"
   echo "    --seed             (Re)seed levels before starting"
   echo "    --seed-only        Seed levels and exit"
-  echo "    --force            Kill any existing process on the port"
   echo ""
   echo "  Environment:"
   echo "    SERVER_PORT        Server port (default: 8080)"
