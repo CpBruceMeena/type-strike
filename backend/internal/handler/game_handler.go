@@ -152,6 +152,16 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		if _, _, err := h.repo.Player.AddXP(r.Context(), req.PlayerID, xpEarned); err != nil {
 			log.Printf("failed to award XP: %v", err)
 		}
+		// Update progression total XP counter
+		if err := h.repo.Progression.UpdateTotalXPEarned(r.Context(), req.PlayerID, xpEarned); err != nil {
+			log.Printf("failed to update total xp earned: %v", err)
+		}
+	}
+
+	// Check for tier upgrade
+	upgradeResult, err := h.repo.Progression.CheckAndProcessUpgrade(r.Context(), req.PlayerID)
+	if err != nil {
+		log.Printf("failed to check tier upgrade: %v", err)
 	}
 
 	// Update streak
@@ -197,6 +207,11 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		XPEarned: xpEarned,
 		Stars:    updated.Stars,
 		Rank:     rank,
+	}
+
+	// Include tier upgrade info if an upgrade occurred
+	if upgradeResult != nil && upgradeResult.Upgraded {
+		resp.Upgrade = upgradeResult
 	}
 
 	// Override rank with contest rank if applicable

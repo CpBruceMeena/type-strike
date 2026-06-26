@@ -39,20 +39,24 @@ err()   { echo -e "${RED}✗${NC} $1"; }
 
 # ── Port helpers ───────────────────────────────────────────
 # Get the PID of whatever is listening on SERVER_PORT (if any)
-port_pid() {
-  lsof -ti:"$SERVER_PORT" 2>/dev/null || echo ""
+port_pids() {
+  lsof -ti:"$SERVER_PORT" 2>/dev/null || true
 }
 
 # Check if the port is free
 port_is_free() {
-  [ -z "$(port_pid)" ]
+  [ -z "$(port_pids)" ]
 }
 
-# Kill any process on SERVER_PORT
+# Kill any process on SERVER_PORT (handles multiple PIDs)
 kill_port() {
-  local pid
-  pid=$(port_pid)
-  if [ -n "$pid" ]; then
+  local pids
+  pids=$(port_pids)
+  if [ -z "$pids" ]; then
+    return
+  fi
+  while IFS= read -r pid; do
+    [ -z "$pid" ] && continue
     local name
     name=$(ps -o comm= -p "$pid" 2>/dev/null || echo "unknown")
     warn "Killing process on port $SERVER_PORT (PID $pid — $name)..."
@@ -66,10 +70,9 @@ kill_port() {
         break
       fi
     done
-    # Small cooldown so the port is released
-    sleep 1
-    ok "Port $SERVER_PORT freed"
-  fi
+  done <<< "$pids"
+  sleep 1
+  ok "Port $SERVER_PORT freed"
 }
 
 # ── Migration & Seed ───────────────────────────────────────
@@ -185,46 +188,57 @@ cmd_start() {
 
 # ── Stop ────────────────────────────────────────────────────
 cmd_stop() {
-  local pid=""
+  local killed_any=false
 
-  # Prefer PID file
+  # 1. Try PID file first
   if [ -f "$PID_FILE" ]; then
+    local pid
     pid=$(cat "$PID_FILE")
-  fi
-
-  # Fallback: find any process on the configured port
-  if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
-    local port_pid_val
-    port_pid_val=$(port_pid)
-    if [ -n "$port_pid_val" ]; then
-      warn "PID file missing/stale. Found process $port_pid_val on port $SERVER_PORT."
-      pid="$port_pid_val"
+    if kill -0 "$pid" 2>/dev/null; then
+      info "Stopping server (PID $pid)..."
+      kill "$pid" 2>/dev/null || true
+      local waited=0
+      while kill -0 "$pid" 2>/dev/null; do
+        sleep 1
+        waited=$((waited + 1))
+        if [ "$waited" -ge 10 ]; then
+          warn "Server did not stop gracefully. Force killing..."
+          kill -9 "$pid" 2>/dev/null || true
+          break
+        fi
+      done
+      killed_any=true
+      ok "Server stopped (PID $pid)"
     fi
-  fi
-
-  if [ -z "$pid" ]; then
-    warn "No server process found on port $SERVER_PORT."
     rm -f "$PID_FILE"
-    return
   fi
 
-  # Try graceful stop first
-  info "Stopping server (PID $pid)..."
-  kill "$pid" 2>/dev/null || true
+  # 2. Kill any remaining processes on the port (handles multiple PIDs)
+  local port_pids_val
+  port_pids_val=$(port_pids)
+  if [ -n "$port_pids_val" ]; then
+    warn "Found process(es) on port $SERVER_PORT — cleaning up..."
+    while IFS= read -r pid; do
+      [ -z "$pid" ] && continue
+      info "Stopping port process (PID $pid)..."
+      kill "$pid" 2>/dev/null || true
+      local waited=0
+      while kill -0 "$pid" 2>/dev/null; do
+        sleep 1
+        waited=$((waited + 1))
+        if [ "$waited" -ge 10 ]; then
+          kill -9 "$pid" 2>/dev/null || true
+          break
+        fi
+      done
+    done <<< "$port_pids_val"
+    killed_any=true
+    ok "Port $SERVER_PORT freed"
+  fi
 
-  local waited=0
-  while kill -0 "$pid" 2>/dev/null; do
-    sleep 1
-    waited=$((waited + 1))
-    if [ "$waited" -ge 10 ]; then
-      warn "Server did not stop gracefully. Force killing..."
-      kill -9 "$pid" 2>/dev/null || true
-      break
-    fi
-  done
-
-  rm -f "$PID_FILE"
-  ok "Server stopped"
+  if [ "$killed_any" = false ]; then
+    warn "No server process found on port $SERVER_PORT."
+  fi
 }
 
 # ── Restart ─────────────────────────────────────────────────

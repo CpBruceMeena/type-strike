@@ -76,6 +76,7 @@ export interface LevelCompleteResponse {
   completed: boolean;
   attempts: number;
   last_played_at: string;
+  upgrade?: TierUpgradeResponse | null;
 }
 
 export interface CompleteLevelRequest {
@@ -222,6 +223,7 @@ export interface GameCompleteResponse {
   xp_earned: number;
   stars: number | null;
   rank: number | null;
+  upgrade?: TierUpgradeResponse | null;
 }
 
 export interface GameHistoryEntry {
@@ -329,6 +331,72 @@ export interface UpdateLessonProgressRequest {
   wpm: number;
   accuracy: number;
   completed: boolean;
+}
+
+// ── Progression (Ranks, Titles, Themes) ────────────────
+
+export interface RankTier {
+  id: number;
+  name: string;
+  display_name: string;
+  icon: string;
+  color: string;
+  min_xp: number;
+  max_xp: number | null;
+  description: string;
+  sort_order: number;
+}
+
+export interface ProgressionResponse {
+  current_tier: RankTier | null;
+  highest_tier: RankTier | null;
+  all_tiers: RankTier[];
+  unlocked_titles: string[];
+  unlocked_themes: string[];
+  total_xp_earned: number;
+  xp: number;
+  next_tier: RankTier | null;
+  xp_to_next_tier: number;
+  current_title: string;
+  current_theme: string;
+}
+
+export interface TierUpgradeResponse {
+  upgraded: boolean;
+  previous_tier: RankTier | null;
+  new_tier: RankTier | null;
+  new_unlocks: string[];
+}
+
+export interface Title {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string;
+  tier_id: number | null;
+  icon: string;
+  sort_order: number;
+}
+
+export interface ThemeUnlock {
+  id: number;
+  theme_key: string;
+  display_name: string;
+  description: string;
+  tier_id: number | null;
+  icon: string;
+  preview_color: string;
+  sort_order: number;
+}
+
+export interface TierDetail {
+  tier: RankTier;
+  titles: Title[];
+  themes: ThemeUnlock[];
+}
+
+export interface AllTiersDetailResponse {
+  tiers: TierDetail[];
 }
 
 // ── Game State (web UI) ─────────────────────────────────

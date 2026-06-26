@@ -57,12 +57,13 @@ type CompleteGameRequest struct {
 
 // CompleteGameResponse is returned when a game is completed.
 type CompleteGameResponse struct {
-	GameID   string `json:"game_id"`
-	WPM      int     `json:"wpm"`
-	Accuracy float64 `json:"accuracy"`
-	XPEarned int     `json:"xp_earned"`
-	Stars    *int    `json:"stars"`
-	Rank     *int    `json:"rank"`
+	GameID   string              `json:"game_id"`
+	WPM      int                 `json:"wpm"`
+	Accuracy float64             `json:"accuracy"`
+	XPEarned int                 `json:"xp_earned"`
+	Stars    *int                `json:"stars"`
+	Rank     *int                `json:"rank"`
+	Upgrade  *TierUpgradeResponse `json:"upgrade,omitempty"`
 }
 
 // GameHistoryEntry is a single entry in a player's game history.

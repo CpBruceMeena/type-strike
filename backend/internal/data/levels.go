@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/cpbrucemeena/type-strike-backend/internal/models"
 )
@@ -28,15 +27,14 @@ func init() {
 }
 
 // GetLevel returns the config for a specific level ID (1-indexed).
-// Each call generates a fresh random paragraph from the level's content pool,
-// so every playthrough gets unique content. Levels beyond 100 are generated
-// dynamically with auto-generated names and scaling difficulty.
+// Uses deterministic paragraph generation so the same level always returns
+// the same paragraph — ensuring map preview matches gameplay content.
+// Levels beyond 100 are generated dynamically with auto-generated names.
 func GetLevel(id int) *LevelConfig {
 	if id < 1 {
 		return nil
 	}
 	if id <= len(LevelConfigs) {
-		// Clone the base config with a fresh random paragraph
 		base := LevelConfigs[id-1]
 		return &LevelConfig{
 			ID:           base.ID,
@@ -45,7 +43,7 @@ func GetLevel(id int) *LevelConfig {
 			Difficulty:   base.Difficulty,
 			PassWPM:      base.PassWPM,
 			PassAccuracy: base.PassAccuracy,
-			Paragraph:    genParagraph(id),
+			Paragraph:    base.Paragraph,
 		}
 	}
 	// Dynamically generate level for IDs beyond the existing catalog.
@@ -388,12 +386,13 @@ var contentPools = [][]string{
 
 // ── Paragraph Generation ─────────────────────────────────
 
-// genParagraph creates a random paragraph from the appropriate content pool.
-// Each call produces fresh random content using time-based seeding.
+// genParagraph creates a deterministic paragraph from the appropriate content pool.
+// The seed is derived solely from the level ID, so the SAME level always produces
+// the SAME paragraph (for consistent preview vs gameplay alignment).
 // Paragraphs combine multiple entries for longer, more substantial text.
 func genParagraph(levelID int) string {
-	// Mix level ID into seed to prevent collisions when called in tight loops
-	rng := rand.New(rand.NewSource(time.Now().UnixNano() + int64(levelID)*9999))
+	// Deterministic seed: level ID only — no time component
+	rng := rand.New(rand.NewSource(int64(levelID) * 9999))
 
 	// Determine which content pool to use based on level:
 	// Levels 1-25: Fun facts (simple, short)
@@ -485,8 +484,6 @@ func generateLevels() []LevelConfig {
 	tierWPM := [][2]int{{30, 40}, {40, 55}, {55, 70}, {70, 85}}
 	tierAcc := [][2]int{{85, 88}, {88, 92}, {90, 93}, {92, 95}}
 
-	rand.Seed(time.Now().UnixNano())
-
 	for ti, name := range tierKeys {
 		start, end := tierRange[name][0], tierRange[name][1]
 		for i := start; i <= end; i++ {
@@ -499,9 +496,6 @@ func generateLevels() []LevelConfig {
 			wpm := tierWPM[ti][0] + int(progress*float64(tierWPM[ti][1]-tierWPM[ti][0]))
 			acc := tierAcc[ti][0] + int(progress*float64(tierAcc[ti][1]-tierAcc[ti][0]))
 
-			// Generate a random paragraph from the level's content pool
-			paragraph := genParagraph(i)
-
 			levels = append(levels, LevelConfig{
 				ID:           i,
 				Name:         tierNames[ti][idx],
@@ -509,7 +503,7 @@ func generateLevels() []LevelConfig {
 				Difficulty:   tierDiffs[ti],
 				PassWPM:      wpm,
 				PassAccuracy: acc,
-				Paragraph:    paragraph,
+				Paragraph:    genParagraph(i),
 			})
 		}
 	}

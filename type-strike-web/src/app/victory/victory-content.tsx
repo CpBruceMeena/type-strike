@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
+import TierUpgradeCelebration from "@/components/game/TierUpgradeCelebration";
 import { api } from "@/lib/api";
 import { LEVEL_TOTAL_COUNT } from "@/lib/constants";
 
@@ -20,6 +21,16 @@ export default function VictoryContent() {
   const stars = searchParams.get("stars") ?? "0";
   const mode = searchParams.get("mode") ?? "";
   const rank = searchParams.get("rank");
+  const upgraded = searchParams.get("upgraded") === "true";
+  const newTier = searchParams.get("newTier") ?? "";
+  const newTierIcon = searchParams.get("newTierIcon") ?? "🏆";
+  const newTierColor = searchParams.get("newTierColor") ?? "#FF5020";
+  const newUnlocksParam = searchParams.get("newUnlocks");
+  const newUnlocks: string[] = newUnlocksParam ? (() => {
+    try { return JSON.parse(newUnlocksParam); } catch { return []; }
+  })() : [];
+
+  const [showUpgradeModal, setShowUpgradeModal] = useState(upgraded);
 
   const starCount = Math.max(0, parseInt(stars, 10) || 0);
 
@@ -144,6 +155,16 @@ export default function VictoryContent() {
         ))}
       </div>
 
+      {/* Tier Upgrade Celebration Modal */}
+      <TierUpgradeCelebration
+        show={showUpgradeModal}
+        tierName={newTier}
+        tierIcon={newTierIcon}
+        tierColor={newTierColor}
+        newUnlocks={newUnlocks}
+        onDismiss={() => setShowUpgradeModal(false)}
+      />
+
       {/* Stats panel */}
       <GlassPanel glow="gold" blur="md" depth={2} className="mb-6 w-full max-w-lg p-6">
         <div className="grid grid-cols-3 gap-4">
@@ -231,16 +252,9 @@ export default function VictoryContent() {
       </GlassPanel>
 
       {/* Actions */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="flex gap-3">
-          <Button variant="primary" size="lg" onClick={handlePlayAgain}>
-            PLAY AGAIN
-          </Button>
-          <Button variant="secondary" size="lg" onClick={() => router.push("/app/home")}>
-            HOME
-          </Button>
-        </div>
-        <div className="flex gap-3">
+      <GlassPanel glow="none" blur="sm" depth={1} className="w-full max-w-lg p-4">
+        <div className="flex flex-col gap-2">
+          {/* Next Level — prominent CTA for level mode */}
           {mode.startsWith("level-") && (() => {
             const currentLevel = parseInt(mode.replace("level-", ""), 10);
             const nextLevel = currentLevel + 1;
@@ -248,24 +262,68 @@ export default function VictoryContent() {
             if (!hasNext) return null;
             return (
               <button
-                onClick={() => router.push(`/play/level?id=${nextLevel}`)}
-                className="group relative rounded-xl px-6 py-2.5 text-xs font-bold tracking-[2px] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,204,0,0.3)]"
+                onClick={() => {
+                  router.push(`/play/level?id=${nextLevel}`);
+                }}
+                className="group relative w-full overflow-hidden rounded-xl py-3.5 text-sm font-extrabold tracking-[3px] transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{
                   background: "linear-gradient(135deg, #FFCC00, #FF6600)",
                   color: "#000000",
+                  boxShadow: "0 0 24px rgba(255,204,0,0.3)",
                 }}
               >
-                <span className="relative z-10 flex items-center gap-2">
-                  NEXT LEVEL →
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span>→</span>
+                  <span>NEXT LEVEL</span>
                 </span>
+                {/* Shimmer overlay */}
+                <div
+                  className="absolute inset-0 -translate-x-full transition-transform duration-700 group-hover:translate-x-full"
+                  style={{
+                    background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)",
+                  }}
+                />
               </button>
             );
           })()}
-          <Button variant="ghost" size="lg" onClick={() => router.back()}>
-            ← BACK
-          </Button>
+
+          {/* Play Again + Home — side by side */}
+          <div className="flex gap-2">
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              onClick={handlePlayAgain}
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <span>⚡</span>
+                <span>PLAY AGAIN</span>
+              </span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              fullWidth
+              onClick={() => router.push("/app/home")}
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <span>⌂</span>
+                <span>HOME</span>
+              </span>
+            </Button>
+          </div>
+
+          {/* Back — ghost, centered */}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold tracking-[2px] transition-all hover:brightness-125"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <span>←</span>
+            <span>BACK</span>
+          </button>
         </div>
-      </div>
+      </GlassPanel>
     </div>
   );
 }

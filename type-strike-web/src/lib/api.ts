@@ -29,6 +29,10 @@ import type {
   PlayerExtendedStats,
   LessonProgress,
   UpdateLessonProgressRequest,
+  ProgressionResponse,
+  TierUpgradeResponse,
+  RankTier,
+  AllTiersDetailResponse,
 } from "./types";
 
 // ── Configuration ───────────────────────────────────────
@@ -43,6 +47,7 @@ async function request<T>(
 ): Promise<T> {
   const url = `${API_BASE}/${path}`;
   const res = await fetch(url, {
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
@@ -305,5 +310,29 @@ export const api = {
         body: JSON.stringify(data),
       }
     );
+  },
+
+  // ── Progression (Ranks, Titles, Themes) ────────────
+  getProgression(playerId: number): Promise<ProgressionResponse> {
+    return request<ProgressionResponse>(
+      `api/v1/players/${playerId}/progression`
+    );
+  },
+
+  checkTierUpgrade(playerId: number): Promise<TierUpgradeResponse> {
+    return request<TierUpgradeResponse>(
+      `api/v1/players/${playerId}/progression/check`,
+      {
+        method: "POST",
+      }
+    );
+  },
+
+  getAllTiers(): Promise<RankTier[]> {
+    return request<RankTier[]>("api/v1/tiers");
+  },
+
+  getTierDetails(): Promise<AllTiersDetailResponse> {
+    return request<AllTiersDetailResponse>("api/v1/tiers/detail");
   },
 };

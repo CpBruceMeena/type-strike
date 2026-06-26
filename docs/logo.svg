@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" width="800" height="240">
+  <defs>
+    <linearGradient id="flameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#FF5020"/>
+      <stop offset="50%" stop-color="#FF6600"/>
+      <stop offset="100%" stop-color="#FFCC00"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#FFCC00"/>
+      <stop offset="100%" stop-color="#FF5020"/>
+    </linearGradient>
+    <linearGradient id="strikeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF5020"/>
+      <stop offset="100%" stop-color="#FF6600"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="240" rx="32" fill="#0A0A14"/>
+
+  <!-- Flame icon (scaled up from favicon) -->
+  <g transform="translate(80, 120) scale(3.5)">
+    <path d="M16 4C12 10 8 14 8 18C8 22.4183 11.5817 26 16 26C20.4183 26 24 22.4183 24 18C24 14 20 10 16 4Z" fill="url(#flameGrad)" opacity="0.9" filter="url(#glow)"/>
+    <path d="M16 10C14 13 12 15 12 17.5C12 19.7091 13.7909 21.5 16 21.5C18.2091 21.5 20 19.7091 20 17.5C20 15 18 13 16 10Z" fill="#FFE066" opacity="0.5"/>
+    <path d="M15 16L14 19H16L15 22" stroke="#FF5020" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- TYPE text -->
+  <text x="200" y="105" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="72" font-weight="900" fill="white" letter-spacing="12">
+    TYPE
+  </text>
+
+  <!-- STRIKE text (colored) -->
+  <text x="200" y="175" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="72" font-weight="900" fill="url(#strikeGrad)" letter-spacing="12">
+    STRIKE
+  </text>
+
+  <!-- Tagline -->
+  <text x="200" y="208" font-family="system-ui, sans-serif" font-size="14" fill="#666688" letter-spacing="4" font-weight="600">
+    TYPE WITH FURY. STRIKE WITH FIRE.
+  </text>
+
+  <!-- Small decorative flame dots -->
+  <circle cx="695" cy="60" r="3" fill="#FF5020" opacity="0.4"/>
+  <circle cx="720" cy="80" r="2" fill="#FF6600" opacity="0.3"/>
+  <circle cx="710" cy="45" r="1.5" fill="#FFCC00" opacity="0.5"/>
+  <circle cx="680" cy="75" r="2" fill="#FF5020" opacity="0.2"/>
+</svg>

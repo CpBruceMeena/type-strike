@@ -1,7 +1,7 @@
 # ⚡ type-strike
 
 <p align="center">
-  <img src="docs/logo.png" alt="type-strike" width="400">
+  <img src="docs/logo.svg" alt="type-strike" width="600">
 </p>
 
 <p align="center">
@@ -32,6 +32,8 @@ You enter a dark, molten world — your progression map. Each node is a crystall
 - **Dynamic share cards** — Open Graph images for social media
 - **Custom keyboard themes** — unlock visual styles as you progress
 - **Retry on failure** — automatic retry button when a game fails to load
+- **Gamified progression** — 6 rank tiers (Bronze → Obsidian) with titles, themes, and tier upgrade celebrations
+- **Confetti celebrations** — canvas-based confetti burst on tier upgrades with unlockable titles & themes preview
 
 ---
 

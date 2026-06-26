@@ -11,8 +11,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import type { TierUpgradeResponse } from "@/lib/types";
 import { DEFAULT_PLAYER_ID } from "@/lib/constants";
 import { TypingEngine } from "@/engine/TypingEngine";
 import {
@@ -222,14 +224,18 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
         );
       }
 
-      // Submit to backend via completeLevel
+      // Submit to backend via completeLevel — captures upgrade info from response
+      let levelUpgrade: TierUpgradeResponse | null = null;
       try {
-        await api.completeLevel(pid, levelId, {
+        const levelResp = await api.completeLevel(pid, levelId, {
           wpm: result.wpm,
           accuracy: result.accuracy,
           stars,
           completed: result.completed,
         });
+        if (levelResp.upgrade?.upgraded) {
+          levelUpgrade = levelResp.upgrade;
+        }
       } catch (err) {
         console.error("Failed to submit level result:", err);
       }
@@ -256,6 +262,16 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
         stars: String(stars),
         mode: `level-${levelId}`,
       });
+
+      if (levelUpgrade?.upgraded) {
+        params.set("upgraded", "true");
+        params.set("newTier", levelUpgrade.new_tier?.display_name ?? "");
+        params.set("newTierIcon", levelUpgrade.new_tier?.icon ?? "🏆");
+        params.set("newTierColor", levelUpgrade.new_tier?.color ?? "#FF5020");
+        if (levelUpgrade.new_unlocks?.length > 0) {
+          params.set("newUnlocks", JSON.stringify(levelUpgrade.new_unlocks));
+        }
+      }
 
       setTimeout(() => {
         const dest = result.completed ? "/victory" : "/failed";

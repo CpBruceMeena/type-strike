@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -75,17 +76,24 @@ func (h *LevelHandler) UpdateProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	progress, err := h.executeLevelComplete(r.Context(), playerID, levelID, req)
+	progress, upgradeResult, err := h.executeLevelComplete(r.Context(), playerID, levelID, req)
 	if err != nil {
 		log.Printf("level complete transaction failed: player=%d level=%d err=%v", playerID, levelID, err)
 		writeError(w, http.StatusInternalServerError, "UPDATE_FAILED", "Failed to update level progress")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, progress)
+	resp := models.LevelCompleteResponse{
+		LevelProgress: progress,
+	}
+	if upgradeResult != nil && upgradeResult.Upgraded {
+		resp.Upgrade = upgradeResult
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
 
-func (h *LevelHandler) executeLevelComplete(ctx context.Context, playerID, levelID int, req models.UpdateLevelProgressRequest) (*models.LevelProgress, error) {
+func (h *LevelHandler) executeLevelComplete(ctx context.Context, playerID, levelID int, req models.UpdateLevelProgressRequest) (*models.LevelProgress, *models.TierUpgradeResponse, error) {
 	var progress models.LevelProgress
 
 	err := h.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -136,10 +144,40 @@ func (h *LevelHandler) executeLevelComplete(ctx context.Context, playerID, level
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &progress, nil
+	// Award XP for level completion, outside the transaction
+	var upgradeResult *models.TierUpgradeResponse
+	if req.Completed {
+		xpEarned := computeLevelXP(req.WPM, req.Accuracy)
+		if xpEarned > 0 {
+			if _, _, err := h.repo.Player.AddXP(ctx, playerID, xpEarned); err != nil {
+				log.Printf("failed to award level XP: %v", err)
+			}
+			// Update progression total XP counter
+			if err := h.repo.Progression.UpdateTotalXPEarned(ctx, playerID, xpEarned); err != nil {
+				log.Printf("failed to update total xp earned: %v", err)
+			}
+		}
+
+		// Check for tier upgrade
+		result, err := h.repo.Progression.CheckAndProcessUpgrade(ctx, playerID)
+		if err != nil {
+			log.Printf("failed to check tier upgrade: %v", err)
+		} else {
+			upgradeResult = result
+		}
+	}
+
+	return &progress, upgradeResult, nil
+}
+
+// computeLevelXP calculates XP rewards for level completion.
+func computeLevelXP(wpm int, accuracy float64) int {
+	base := int(math.Max(5, float64(wpm)*0.3))
+	accBonus := int(math.Floor(accuracy*100-80)) * 1
+	return int(math.Max(0, float64(base+accBonus)))
 }
 
 // GetAllProgress handles GET /api/v1/players/{playerId}/levels

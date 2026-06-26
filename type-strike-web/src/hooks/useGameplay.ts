@@ -257,6 +257,15 @@ export function useGameplay(mode: GameMode, playerId?: number) {
           if (response.rank !== null && response.rank !== undefined) {
             params.set("rank", String(response.rank));
           }
+          if (response.upgrade?.upgraded) {
+            params.set("upgraded", "true");
+            params.set("newTier", response.upgrade.new_tier?.display_name ?? "");
+            params.set("newTierIcon", response.upgrade.new_tier?.icon ?? "🏆");
+            params.set("newTierColor", response.upgrade.new_tier?.color ?? "#FF5020");
+            if (response.upgrade.new_unlocks?.length > 0) {
+              params.set("newUnlocks", JSON.stringify(response.upgrade.new_unlocks));
+            }
+          }
 
           setTimeout(() => {
             const dest = result.completed ? "/victory" : "/failed";
