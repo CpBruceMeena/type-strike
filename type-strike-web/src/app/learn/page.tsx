@@ -8,32 +8,60 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Sidebar from "@/components/layout/Sidebar";
 import { LESSONS, LESSON_CATEGORIES, getLessonsByCategory, FINGER_COLORS, KEY_FINGER_MAP } from "@/lib/lessons";
+import { api } from "@/lib/api";
+import { DEFAULT_PLAYER_ID } from "@/lib/constants";
+import type { LessonProgress } from "@/lib/types";
 
 export default function LessonsHubPage() {
   const router = useRouter();
   const grouped = useMemo(() => getLessonsByCategory(), []);
+  const [lessonProgress, setLessonProgress] = useState<Map<number, LessonProgress>>(new Map());
+  const [progressLoaded, setProgressLoaded] = useState(false);
+
+  useEffect(() => {
+    async function fetchProgress() {
+      try {
+        const allProgress = await api.getAllLessonProgress(DEFAULT_PLAYER_ID);
+        const progressMap = new Map<number, LessonProgress>();
+        for (const p of allProgress) {
+          progressMap.set(p.lesson_id, p);
+        }
+        setLessonProgress(progressMap);
+      } catch {
+        // Silently fail — progress is optional
+      } finally {
+        setProgressLoaded(true);
+      }
+    }
+    fetchProgress();
+  }, []);
+
+  const completedCount = Array.from(lessonProgress.values()).filter((p) => p.completed).length;
+  const progressPercent = LESSONS.length > 0 ? Math.round((completedCount / LESSONS.length) * 100) : 0;
 
   return (
-    <div className="flex flex-1 flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 md:px-6">
-        <button
-          onClick={() => router.push("/home")}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-sm transition-colors hover:bg-white/5"
-          style={{ color: "var(--text-body)" }}
-        >
-          ✕
-        </button>
-        <span
-          className="text-xs font-bold tracking-[3px]"
-          style={{ color: "var(--text-muted)" }}
-        >
-          LEARNING LESSONS
-        </span>
-        <div className="w-9" />
-      </header>
+    <div className="flex h-dvh overflow-hidden">
+      <Sidebar />
+      <div className="flex flex-1 flex-col min-w-0 h-dvh overflow-hidden">
+        {/* Header */}
+        <header className="flex items-center justify-between px-4 py-3 md:px-6">
+          <button
+            onClick={() => router.push("/app/home")}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-text-body hover:text-text-white transition-colors"
+            aria-label="Back to home"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <span className="text-xs font-bold tracking-[2px] uppercase" style={{ color: "var(--text-white)" }}>
+            LEARNING LESSONS
+          </span>
+          <div className="w-9" />
+        </header>
 
       {/* Title */}
       <div className="mb-6 px-4 md:px-6">
@@ -50,9 +78,7 @@ export default function LessonsHubPage() {
           <p className="mt-1 text-xs tracking-[3px]" style={{ color: "var(--text-muted)" }}>
             Master touch typing from the ground up
           </p>
-        </div>
-
-        {/* Progress summary */}
+        </div>          {/* Progress summary */}
         <div
           className="mx-auto mt-4 max-w-lg rounded-xl p-4"
           style={{
@@ -62,10 +88,10 @@ export default function LessonsHubPage() {
         >
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold tracking-[1px]" style={{ color: "var(--text-body)" }}>
-              {LESSONS.length} LESSONS
+              {completedCount}/{LESSONS.length} COMPLETED
             </span>
             <span className="tracking-[1px]" style={{ color: "var(--text-muted)" }}>
-              Start with Lesson 1 and progress through all lessons
+              Keep going!
             </span>
           </div>
           <div className="mt-2 flex items-center gap-2">
@@ -76,13 +102,13 @@ export default function LessonsHubPage() {
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
-                  width: "0%",
+                  width: `${progressPercent}%`,
                   background: "linear-gradient(90deg, #22DD44, #44DDAA)",
                 }}
               />
             </div>
             <span className="text-[10px] font-bold tabular-nums" style={{ color: "var(--text-muted)" }}>
-              0%
+              {progressPercent}%
             </span>
           </div>
         </div>
@@ -120,8 +146,9 @@ export default function LessonsHubPage() {
                   {/* Lesson cards */}
                   <div className="grid gap-2">
                     {lessons.map((lesson) => {
-                      const isCompleted = false; // TODO: track completion
-                      const isLocked = false; // TODO: track progress
+                      const lp = lessonProgress.get(lesson.id);
+                      const isCompleted = lp?.completed ?? false;
+                      const isLocked = false;
                       const fingerColors = lesson.focusKeys
                         .map((k) => KEY_FINGER_MAP[k])
                         .filter(Boolean)
@@ -234,6 +261,7 @@ export default function LessonsHubPage() {
             }
           )}
         </div>
+      </div>
       </div>
     </div>
   );

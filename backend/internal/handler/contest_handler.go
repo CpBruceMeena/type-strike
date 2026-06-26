@@ -29,9 +29,7 @@ func (h *ContestHandler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-
-	contest, err := h.repo.Contest.GetActiveContest(ctx)
+	contest, err := h.repo.Contest.GetActiveContest(r.Context())
 	if err != nil {
 		log.Printf("failed to get active contest: %v", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to get active contest")
@@ -40,7 +38,7 @@ func (h *ContestHandler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 
 	if contest == nil {
 		// No active contest — create one for today
-		contest, _, err = h.repo.Contest.GetOrCreateDailyContest(ctx, generateContestParagraph())
+		contest, _, err = h.repo.Contest.GetOrCreateDailyContest(r.Context(), generateContestParagraph())
 		if err != nil {
 			log.Printf("failed to create daily contest: %v", err)
 			writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create daily contest")
@@ -49,13 +47,13 @@ func (h *ContestHandler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get player's entry if any
-	playerEntry, err := h.repo.Contest.GetPlayerEntry(ctx, contest.ID, playerID)
+	playerEntry, err := h.repo.Contest.GetPlayerEntry(r.Context(), contest.ID, playerID)
 	if err != nil {
 		log.Printf("failed to get player contest entry: %v", err)
 		// Non-fatal — player may not have entered yet
 	}
 
-	hasEntry, _ := h.repo.Contest.HasPlayerEntered(ctx, contest.ID, playerID)
+	hasEntry, _ := h.repo.Contest.HasPlayerEntered(r.Context(), contest.ID, playerID)
 
 	// If the player hasn't entered, hide the paragraph until they start
 	// (paragraph is revealed when they start a contest game session)

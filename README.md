@@ -24,12 +24,14 @@ You enter a dark, molten world — your progression map. Each node is a crystall
 - **5 game modes** — Levels, Timed (1/3/5 min), Contest, and Coder (code & DSA)
 - **Plasma combo engine** — 6 escalating tiers with visual effects
 - **Coder mode** — type real multi-line code snippets across 7 languages (JS, TS, Python, Go, Java, C++, Rust)
-- **Learn mode** — 48 progressive typing lessons from single keys to full sentences
+- **Learn mode** — 48 progressive typing lessons with **backend-tracked progress** (persisted across sessions)
 - **Daily challenges** — with streak multipliers
-- **Leaderboards** — global and contest rankings
+- **Leaderboards** — Global (XP), Daily (today's best), and Timed (1min/3min/5min) rankings with stacked collapsible sections
+- **Stats dashboard** — real player data: game history, level progress, activity feed, XP tracking, streak counter
 - **18 achievements** — across speed, accuracy, combo, progression, and streaks
 - **Dynamic share cards** — Open Graph images for social media
 - **Custom keyboard themes** — unlock visual styles as you progress
+- **Retry on failure** — automatic retry button when a game fails to load
 
 ---
 

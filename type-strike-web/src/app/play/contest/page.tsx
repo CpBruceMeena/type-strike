@@ -44,16 +44,15 @@ export default function ContestHubPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 md:px-6">
           <button
-            onClick={() => router.push("/home")}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-sm transition-colors hover:bg-white/5"
-            style={{ color: "var(--text-body)" }}
+            onClick={() => router.push("/app/home")}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-text-body hover:text-text-white transition-colors"
+            aria-label="Back to home"
           >
-            ✕
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
-          <span
-            className="text-xs font-bold tracking-[3px]"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <span className="text-xs font-bold tracking-[2px] uppercase" style={{ color: "var(--text-white)" }}>
             TIMED MODES
           </span>
           <div className="w-9" />

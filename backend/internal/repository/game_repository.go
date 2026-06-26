@@ -6,92 +6,61 @@ import (
 	"time"
 
 	"github.com/cpbrucemeena/type-strike-backend/internal/models"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 // GameRepository handles database operations for game sessions and timed leaderboards.
 type GameRepository struct {
-	pool *pgxpool.Pool
+	db *gorm.DB
 }
 
 // NewGameRepository creates a new GameRepository.
-func NewGameRepository(pool *pgxpool.Pool) *GameRepository {
-	return &GameRepository{pool: pool}
+func NewGameRepository(db *gorm.DB) *GameRepository {
+	return &GameRepository{db: db}
 }
 
 // CreateSession inserts a new game session and returns it.
 func (r *GameRepository) CreateSession(ctx context.Context, session *models.GameSession) error {
-	_, err := r.pool.Exec(ctx, `
-		INSERT INTO game_sessions (id, player_id, mode, level_id, paragraph, duration_sec, started_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`,
-		session.ID, session.PlayerID, session.Mode, session.LevelID,
-		session.Paragraph, session.DurationSec, session.StartedAt,
-	)
-	if err != nil {
+	if err := r.db.WithContext(ctx).Create(session).Error; err != nil {
 		return fmt.Errorf("insert game session: %w", err)
 	}
 	return nil
 }
 
 // CompleteSession updates a game session with results.
-func (r *GameRepository) CompleteSession(ctx context.Context, sessionID string, req models.CompleteGameRequest, xpEarned int) (*models.GameSession, error) {
+func (r *GameRepository) CompleteSession(ctx context.Context, sessionID int64, req models.CompleteGameRequest, xpEarned int) (*models.GameSession, error) {
 	now := time.Now()
+	db := r.db.WithContext(ctx)
 
-	var session models.GameSession
-	err := r.pool.QueryRow(ctx, `
-		UPDATE game_sessions SET
-			completed_at = $1,
-			wpm = $2,
-			accuracy = $3,
-			correct_ks = $4,
-			total_ks = $5,
-			max_combo = $6,
-			error_count = $7,
-			consistency = $8,
-			xp_earned = $9,
-			is_completed = $10
-		WHERE id = $11
-		RETURNING id, player_id, mode, level_id, paragraph, duration_sec,
-			started_at, completed_at, wpm, accuracy, correct_ks, total_ks,
-			max_combo, error_count, consistency, xp_earned, stars, is_completed
-	`,
-		now, req.WPM, req.Accuracy, req.CorrectKeystrokes, req.TotalKeystrokes,
-		req.MaxCombo, req.ErrorCount, req.Consistency, xpEarned, req.Completed,
-		sessionID,
-	).Scan(
-		&session.ID, &session.PlayerID, &session.Mode, &session.LevelID,
-		&session.Paragraph, &session.DurationSec,
-		&session.StartedAt, &session.CompletedAt,
-		&session.WPM, &session.Accuracy, &session.CorrectKS, &session.TotalKS,
-		&session.MaxCombo, &session.ErrorCount, &session.Consistency,
-		&session.XPEarned, &session.Stars, &session.IsCompleted,
-	)
-	if err != nil {
+	updates := map[string]interface{}{
+		"completed_at": now,
+		"wpm":          req.WPM,
+		"accuracy":     req.Accuracy,
+		"correct_ks":   req.CorrectKeystrokes,
+		"total_ks":     req.TotalKeystrokes,
+		"max_combo":    req.MaxCombo,
+		"error_count":  req.ErrorCount,
+		"consistency":  req.Consistency,
+		"xp_earned":    xpEarned,
+		"is_completed": req.Completed,
+	}
+
+	if err := db.Model(&models.GameSession{}).Where("id = ?", sessionID).Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("complete game session: %w", err)
 	}
 
+	var session models.GameSession
+	if err := db.Where("id = ?", sessionID).First(&session).Error; err != nil {
+		return nil, fmt.Errorf("re-fetch game session: %w", err)
+	}
 	return &session, nil
 }
 
 // GetSession retrieves a game session by ID.
-func (r *GameRepository) GetSession(ctx context.Context, sessionID string) (*models.GameSession, error) {
+func (r *GameRepository) GetSession(ctx context.Context, sessionID int64) (*models.GameSession, error) {
 	var session models.GameSession
-	err := r.pool.QueryRow(ctx, `
-		SELECT id, player_id, mode, level_id, paragraph, duration_sec,
-			started_at, completed_at, wpm, accuracy, correct_ks, total_ks,
-			max_combo, error_count, consistency, xp_earned, stars, is_completed
-		FROM game_sessions WHERE id = $1
-	`, sessionID).Scan(
-		&session.ID, &session.PlayerID, &session.Mode, &session.LevelID,
-		&session.Paragraph, &session.DurationSec,
-		&session.StartedAt, &session.CompletedAt,
-		&session.WPM, &session.Accuracy, &session.CorrectKS, &session.TotalKS,
-		&session.MaxCombo, &session.ErrorCount, &session.Consistency,
-		&session.XPEarned, &session.Stars, &session.IsCompleted,
-	)
-	if err == pgx.ErrNoRows {
+	err := r.db.WithContext(ctx).Where("id = ?", sessionID).First(&session).Error
+	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
 	if err != nil {
@@ -102,52 +71,69 @@ func (r *GameRepository) GetSession(ctx context.Context, sessionID string) (*mod
 
 // GetHistory returns a player's game history with pagination.
 func (r *GameRepository) GetHistory(ctx context.Context, playerID int, mode string, limit, offset int) ([]models.GameHistoryEntry, int, error) {
-	var total int
-	err := r.pool.QueryRow(ctx, `
-		SELECT COUNT(*) FROM game_sessions
-		WHERE player_id = $1 AND is_completed = true
-		AND ($2 = '' OR mode = $2)
-	`, playerID, mode).Scan(&total)
-	if err != nil {
+	db := r.db.WithContext(ctx)
+
+	var total int64
+	query := db.Model(&models.GameSession{}).Where("player_id = ? AND is_completed = true", playerID)
+	if mode != "" {
+		query = query.Where("mode = ?", mode)
+	}
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count history: %w", err)
 	}
 
-	rows, err := r.pool.Query(ctx, `
-		SELECT id::text, mode, COALESCE(wpm, 0), COALESCE(accuracy, 0),
-			correct_ks, total_ks, max_combo, xp_earned, completed_at, stars
-		FROM game_sessions
-		WHERE player_id = $1 AND is_completed = true
-		AND ($2 = '' OR mode = $2)
-		ORDER BY completed_at DESC
-		LIMIT $3 OFFSET $4
-	`, playerID, mode, limit, offset)
-	if err != nil {
+	var sessions []models.GameSession
+	q := db.Where("player_id = ? AND is_completed = true", playerID)
+	if mode != "" {
+		q = q.Where("mode = ?", mode)
+	}
+	if err := q.Order("completed_at DESC").Limit(limit).Offset(offset).Find(&sessions).Error; err != nil {
 		return nil, 0, fmt.Errorf("query history: %w", err)
 	}
-	defer rows.Close()
 
-	var entries []models.GameHistoryEntry
-	for rows.Next() {
-		var e models.GameHistoryEntry
-		if err := rows.Scan(
-			&e.ID, &e.Mode, &e.WPM, &e.Accuracy,
-			&e.CorrectKeystrokes, &e.TotalKeystrokes, &e.MaxCombo,
-			&e.XPEarned, &e.PlayedAt, &e.Stars,
-		); err != nil {
-			return nil, 0, fmt.Errorf("scan history entry: %w", err)
+	entries := make([]models.GameHistoryEntry, len(sessions))
+	for i, s := range sessions {
+		wpm := 0
+		accuracy := 0.0
+		if s.WPM != nil {
+			wpm = *s.WPM
 		}
-		entries = append(entries, e)
+		if s.Accuracy != nil {
+			accuracy = *s.Accuracy
+		}
+		playedAt := time.Time{}
+		if s.CompletedAt != nil {
+			playedAt = *s.CompletedAt
+		}
+		entries[i] = models.GameHistoryEntry{
+			ID:                s.ID,
+			Mode:              s.Mode,
+			WPM:               wpm,
+			Accuracy:          accuracy,
+			CorrectKeystrokes: s.CorrectKS,
+			TotalKeystrokes:   s.TotalKS,
+			MaxCombo:          s.MaxCombo,
+			XPEarned:          s.XPEarned,
+			PlayedAt:          playedAt,
+			Stars:             s.Stars,
+		}
 	}
 
-	return entries, total, nil
+	return entries, int(total), nil
 }
 
 // UpsertTimedLeaderboard inserts or updates a player's best score for a timed mode.
-func (r *GameRepository) UpsertTimedLeaderboard(ctx context.Context, playerID int, mode string, wpm int, accuracy float64, gameSessionID string) error {
-	_, err := r.pool.Exec(ctx, `
+func (r *GameRepository) UpsertTimedLeaderboard(ctx context.Context, playerID int, mode string, wpm int, accuracy float64, gameSessionID int64) error {
+	db := r.db.WithContext(ctx)
+
+	var p models.Player
+	if err := db.Select("title").Where("id = ?", playerID).First(&p).Error; err != nil {
+		return fmt.Errorf("get player name: %w", err)
+	}
+
+	rawSQL := `
 		INSERT INTO leaderboard_timed (mode, player_id, player_name, best_wpm, best_accuracy, game_session_id, achieved_at)
-		SELECT $1, $2, COALESCE(p.title, ''), $3, $4, $5, NOW()
-		FROM players p WHERE p.id = $2
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
 		ON CONFLICT (mode, player_id) DO UPDATE SET
 			best_wpm = GREATEST(leaderboard_timed.best_wpm, EXCLUDED.best_wpm),
 			best_accuracy = CASE
@@ -162,8 +148,8 @@ func (r *GameRepository) UpsertTimedLeaderboard(ctx context.Context, playerID in
 				WHEN leaderboard_timed.best_wpm < EXCLUDED.best_wpm THEN NOW()
 				ELSE leaderboard_timed.achieved_at
 			END
-	`, mode, playerID, wpm, accuracy, gameSessionID)
-	if err != nil {
+	`
+	if err := db.Exec(rawSQL, mode, playerID, p.Title, wpm, accuracy, gameSessionID).Error; err != nil {
 		return fmt.Errorf("upsert timed leaderboard: %w", err)
 	}
 	return nil
@@ -171,23 +157,25 @@ func (r *GameRepository) UpsertTimedLeaderboard(ctx context.Context, playerID in
 
 // GetTimedLeaderboard returns the top players for a timed mode.
 func (r *GameRepository) GetTimedLeaderboard(ctx context.Context, mode string, limit int) ([]models.TimedLeaderboardEntry, int, error) {
-	var totalCount int
-	err := r.pool.QueryRow(ctx, `
-		SELECT COUNT(*) FROM leaderboard_timed WHERE mode = $1
-	`, mode).Scan(&totalCount)
-	if err != nil {
+	db := r.db.WithContext(ctx)
+
+	var totalCount int64
+	if err := db.Model(&models.TimedLeaderboardEntry{}).
+		Table("leaderboard_timed").
+		Where("mode = ?", mode).
+		Count(&totalCount).Error; err != nil {
 		return nil, 0, fmt.Errorf("count timed leaderboard: %w", err)
 	}
 
-	rows, err := r.pool.Query(ctx, `
-		SELECT
-			player_id, player_name, mode, best_wpm, best_accuracy, achieved_at,
+	rawSQL := `
+		SELECT player_id, player_name, mode, best_wpm, best_accuracy, achieved_at,
 			ROW_NUMBER() OVER (ORDER BY best_wpm DESC, best_accuracy DESC) AS rank
 		FROM leaderboard_timed
 		WHERE mode = $1
 		ORDER BY best_wpm DESC, best_accuracy DESC
 		LIMIT $2
-	`, mode, limit)
+	`
+	rows, err := db.Raw(rawSQL, mode, limit).Rows()
 	if err != nil {
 		return nil, 0, fmt.Errorf("query timed leaderboard: %w", err)
 	}
@@ -196,37 +184,34 @@ func (r *GameRepository) GetTimedLeaderboard(ctx context.Context, mode string, l
 	var entries []models.TimedLeaderboardEntry
 	for rows.Next() {
 		var e models.TimedLeaderboardEntry
-		if err := rows.Scan(
-			&e.PlayerID, &e.PlayerName, &e.Mode, &e.BestWPM, &e.BestAccuracy, &e.AchievedAt, &e.Rank,
-		); err != nil {
+		if err := rows.Scan(&e.PlayerID, &e.PlayerName, &e.Mode, &e.BestWPM, &e.BestAccuracy, &e.AchievedAt, &e.Rank); err != nil {
 			return nil, 0, fmt.Errorf("scan timed entry: %w", err)
 		}
 		entries = append(entries, e)
 	}
 
-	return entries, totalCount, nil
+	return entries, int(totalCount), nil
 }
 
 // GetPlayerTimedRank returns a player's personal best in a timed mode with rank.
 func (r *GameRepository) GetPlayerTimedRank(ctx context.Context, playerID int, mode string) (*models.TimedLeaderboardEntry, error) {
-	var entry models.TimedLeaderboardEntry
-	err := r.pool.QueryRow(ctx, `
-		SELECT player_id, player_name, mode, best_wpm, best_accuracy, achieved_at,
-			rank
+	db := r.db.WithContext(ctx)
+
+	rawSQL := `
+		SELECT player_id, player_name, mode, best_wpm, best_accuracy, achieved_at, rank
 		FROM (
 			SELECT *, ROW_NUMBER() OVER (ORDER BY best_wpm DESC, best_accuracy DESC) AS rank
 			FROM leaderboard_timed WHERE mode = $1
 		) sub
 		WHERE player_id = $2
-	`, mode, playerID).Scan(
-		&entry.PlayerID, &entry.PlayerName, &entry.Mode, &entry.BestWPM,
-		&entry.BestAccuracy, &entry.AchievedAt, &entry.Rank,
-	)
-	if err == pgx.ErrNoRows {
-		return nil, nil
-	}
+	`
+	var entry models.TimedLeaderboardEntry
+	err := db.Raw(rawSQL, mode, playerID).Scan(&entry).Error
 	if err != nil {
 		return nil, fmt.Errorf("get player timed rank: %w", err)
+	}
+	if entry.PlayerID == 0 {
+		return nil, nil
 	}
 	return &entry, nil
 }

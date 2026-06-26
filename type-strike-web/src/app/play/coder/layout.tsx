@@ -1,4 +1,4 @@
-import Sidebar from "@/components/layout/Sidebar";
+import ParticleField from "@/components/effects/ParticleField";
 
 export default function CoderLayout({
   children,
@@ -6,11 +6,12 @@ export default function CoderLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col min-w-0 h-dvh overflow-hidden">
-        {children}
+    <>
+      <ParticleField />
+      {/* Full-bleed gameplay arena */}
+      <div className="relative z-10 flex h-dvh flex-col">
+        <main className="flex flex-1 flex-col">{children}</main>
       </div>
-    </div>
+    </>
   );
 }

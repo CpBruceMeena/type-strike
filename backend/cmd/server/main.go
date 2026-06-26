@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,25 +23,21 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// Context with cancellation for graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	rand.Seed(time.Now().UnixNano())
 	// Connect to PostgreSQL
 	log.Println("Connecting to PostgreSQL...")
-	pool, err := database.Connect(ctx, cfg.DatabaseURL)
+	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer pool.Close()
 	log.Println("Connected to PostgreSQL successfully")
 
 	// Initialize repositories
-	repos := repository.NewRepositories(pool)
+	repos := repository.NewRepositories(db)
 
 	// Initialize handlers
 	playerHandler := handler.NewPlayerHandler(repos)
-	levelHandler := handler.NewLevelHandler(repos, pool)
+	levelHandler := handler.NewLevelHandler(repos, db)
 	activityHandler := handler.NewActivityHandler(repos)
 	settingsHandler := handler.NewSettingsHandler(repos)
 	analyticsHandler := handler.NewAnalyticsHandler(repos)
@@ -49,6 +46,7 @@ func main() {
 	leaderboardHandler := handler.NewLeaderboardHandler(repos)
 	gameHandler := handler.NewGameHandler(repos)
 	contestHandler := handler.NewContestHandler(repos)
+	lessonHandler := handler.NewLessonHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -82,6 +80,7 @@ func main() {
 		// Players
 		r.Route("/players", func(r chi.Router) {
 			r.Post("/", playerHandler.Create)
+			r.Post("/register", playerHandler.Register)
 			r.Get("/{id}", playerHandler.GetByID)
 			r.Patch("/{id}", playerHandler.Update)
 			r.Post("/{id}/xp", playerHandler.AddXP)
@@ -143,6 +142,13 @@ func main() {
 			r.Get("/current", contestHandler.GetCurrent)
 			r.Get("/leaderboard", contestHandler.GetLeaderboard)
 		})
+
+		// Lesson Progress
+		r.Route("/players/{playerId}/lessons", func(r chi.Router) {
+			r.Get("/", lessonHandler.GetAllProgress)
+			r.Get("/{lessonId}", lessonHandler.GetProgress)
+			r.Post("/{lessonId}/complete", lessonHandler.UpdateProgress)
+		})
 	})
 
 	// Start server
@@ -167,7 +173,6 @@ func main() {
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Fatalf("Server shutdown error: %v", err)
 		}
-		cancel()
 	}()
 
 	log.Printf("type-strike backend server starting on %s", cfg.Addr())

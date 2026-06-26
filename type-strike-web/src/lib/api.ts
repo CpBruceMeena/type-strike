@@ -4,6 +4,8 @@ import type {
   CreatePlayerRequest,
   AddXpRequest,
   AddXpResponse,
+  RegisterPlayerRequest,
+  RegisterPlayerResponse,
   LevelDetail,
   LevelCompleteResponse,
   CompleteLevelRequest,
@@ -25,6 +27,8 @@ import type {
   ContestLeaderboardResponse,
   TimedLeaderboardResponse,
   PlayerExtendedStats,
+  LessonProgress,
+  UpdateLessonProgressRequest,
 } from "./types";
 
 // ── Configuration ───────────────────────────────────────
@@ -65,6 +69,13 @@ export const api = {
     });
   },
 
+  registerPlayer(data: RegisterPlayerRequest): Promise<RegisterPlayerResponse> {
+    return request<RegisterPlayerResponse>("api/v1/players/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   getPlayer(id: number): Promise<Player> {
     return request<Player>(`api/v1/players/${id}`);
   },
@@ -87,8 +98,11 @@ export const api = {
     );
   },
 
-  getAllLevels(): Promise<LevelDetail[]> {
-    return request<LevelDetail[]>("api/v1/levels");
+  getAllLevels(playerId?: number): Promise<LevelDetail[]> {
+    const path = playerId
+      ? `api/v1/levels?player_id=${playerId}`
+      : "api/v1/levels";
+    return request<LevelDetail[]>(path);
   },
 
   getNextLevel(playerId: number): Promise<NextLevelResponse> {
@@ -260,6 +274,36 @@ export const api = {
   getExtendedStats(playerId: number): Promise<PlayerExtendedStats> {
     return request<PlayerExtendedStats>(
       `api/v1/players/${playerId}/extended-stats`
+    );
+  },
+
+  // ── Lesson Progress ────────────────────────────────
+  getAllLessonProgress(playerId: number): Promise<LessonProgress[]> {
+    return request<LessonProgress[]>(
+      `api/v1/players/${playerId}/lessons`
+    );
+  },
+
+  getLessonProgress(
+    playerId: number,
+    lessonId: number
+  ): Promise<LessonProgress> {
+    return request<LessonProgress>(
+      `api/v1/players/${playerId}/lessons/${lessonId}`
+    );
+  },
+
+  completeLesson(
+    playerId: number,
+    lessonId: number,
+    data: UpdateLessonProgressRequest
+  ): Promise<LessonProgress> {
+    return request<LessonProgress>(
+      `api/v1/players/${playerId}/lessons/${lessonId}/complete`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
     );
   },
 };

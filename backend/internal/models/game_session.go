@@ -1,32 +1,30 @@
 package models
 
-import (
-	"time"
-
-	"github.com/google/uuid"
-)
+import "time"
 
 // GameSession represents a single game session for timed modes or contests.
 type GameSession struct {
-	ID           uuid.UUID  `json:"id"`
-	PlayerID     int        `json:"player_id"`
-	Mode         string     `json:"mode"`
-	LevelID      *int       `json:"level_id,omitempty"`
-	Paragraph    string     `json:"-"`
-	DurationSec  *int       `json:"duration_seconds,omitempty"`
-	StartedAt    time.Time  `json:"started_at"`
-	CompletedAt  *time.Time `json:"completed_at,omitempty"`
-	WPM          *int       `json:"wpm,omitempty"`
-	Accuracy     *float64   `json:"accuracy,omitempty"`
-	CorrectKS    int        `json:"correct_keystrokes"`
-	TotalKS      int        `json:"total_keystrokes"`
-	MaxCombo     int        `json:"max_combo"`
-	ErrorCount   int        `json:"error_count"`
-	Consistency  float64    `json:"consistency"`
-	XPEarned     int        `json:"xp_earned"`
-	Stars        *int       `json:"stars,omitempty"`
-	IsCompleted  bool       `json:"is_completed"`
+	ID          int64      `json:"id" gorm:"primaryKey;autoIncrement"`
+	PlayerID    int        `json:"player_id" gorm:"column:player_id;index"`
+	Mode        string     `json:"mode"`
+	LevelID     *int       `json:"level_id,omitempty" gorm:"column:level_id"`
+	Paragraph   string     `json:"-" gorm:"type:text"`
+	DurationSec *int       `json:"duration_seconds,omitempty" gorm:"column:duration_sec"`
+	StartedAt   time.Time  `json:"started_at" gorm:"column:started_at;autoCreateTime"`
+	CompletedAt *time.Time `json:"completed_at,omitempty" gorm:"column:completed_at"`
+	WPM         *int       `json:"wpm,omitempty" gorm:"column:wpm"`
+	Accuracy    *float64   `json:"accuracy,omitempty" gorm:"column:accuracy"`
+	CorrectKS   int        `json:"correct_keystrokes" gorm:"column:correct_ks;default:0"`
+	TotalKS     int        `json:"total_keystrokes" gorm:"column:total_ks;default:0"`
+	MaxCombo    int        `json:"max_combo" gorm:"column:max_combo;default:0"`
+	ErrorCount  int        `json:"error_count" gorm:"column:error_count;default:0"`
+	Consistency float64    `json:"consistency" gorm:"default:0"`
+	XPEarned    int        `json:"xp_earned" gorm:"column:xp_earned;default:0"`
+	Stars       *int       `json:"stars,omitempty"`
+	IsCompleted bool       `json:"is_completed" gorm:"column:is_completed;default:false"`
 }
+
+func (GameSession) TableName() string { return "game_sessions" }
 
 // StartGameRequest is the payload for starting a new game session.
 type StartGameRequest struct {
@@ -46,39 +44,39 @@ type StartGameResponse struct {
 
 // CompleteGameRequest is the payload for submitting game results.
 type CompleteGameRequest struct {
-	PlayerID         int     `json:"player_id"`
-	WPM              int     `json:"wpm"`
-	Accuracy         float64 `json:"accuracy"`
-	CorrectKeystrokes int    `json:"correct_keystrokes"`
-	TotalKeystrokes  int     `json:"total_keystrokes"`
-	MaxCombo         int     `json:"max_combo"`
-	ErrorCount       int     `json:"error_count"`
-	Consistency      float64 `json:"consistency"`
-	Completed        bool    `json:"completed"`
+	PlayerID          int     `json:"player_id"`
+	WPM               int     `json:"wpm"`
+	Accuracy          float64 `json:"accuracy"`
+	CorrectKeystrokes int     `json:"correct_keystrokes"`
+	TotalKeystrokes   int     `json:"total_keystrokes"`
+	MaxCombo          int     `json:"max_combo"`
+	ErrorCount        int     `json:"error_count"`
+	Consistency       float64 `json:"consistency"`
+	Completed         bool    `json:"completed"`
 }
 
 // CompleteGameResponse is returned when a game is completed.
 type CompleteGameResponse struct {
-	GameID    string `json:"game_id"`
-	WPM       int     `json:"wpm"`
-	Accuracy  float64 `json:"accuracy"`
-	XPEarned  int     `json:"xp_earned"`
-	Stars     *int    `json:"stars"`
-	Rank      *int    `json:"rank"`
+	GameID   string `json:"game_id"`
+	WPM      int     `json:"wpm"`
+	Accuracy float64 `json:"accuracy"`
+	XPEarned int     `json:"xp_earned"`
+	Stars    *int    `json:"stars"`
+	Rank     *int    `json:"rank"`
 }
 
 // GameHistoryEntry is a single entry in a player's game history.
 type GameHistoryEntry struct {
-	ID               string    `json:"id"`
-	Mode             string    `json:"mode"`
-	WPM              int       `json:"wpm"`
-	Accuracy         float64   `json:"accuracy"`
-	CorrectKeystrokes int      `json:"correct_keystrokes"`
-	TotalKeystrokes  int       `json:"total_keystrokes"`
-	MaxCombo         int       `json:"max_combo"`
-	XPEarned         int       `json:"xp_earned"`
-	PlayedAt         time.Time `json:"played_at"`
-	Stars            *int      `json:"stars,omitempty"`
+	ID                int64     `json:"id"`
+	Mode              string    `json:"mode"`
+	WPM               int       `json:"wpm"`
+	Accuracy          float64   `json:"accuracy"`
+	CorrectKeystrokes int       `json:"correct_keystrokes"`
+	TotalKeystrokes   int       `json:"total_keystrokes"`
+	MaxCombo          int       `json:"max_combo"`
+	XPEarned          int       `json:"xp_earned"`
+	PlayedAt          time.Time `json:"played_at"`
+	Stars             *int      `json:"stars,omitempty"`
 }
 
 // GameHistoryResponse wraps a list of game history entries.

@@ -111,6 +111,56 @@ func (h *PlayerHandler) AddXP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Register handles POST /api/v1/players/register
+// Get-or-create a player by email (Clerk auth integration).
+// Generates an internal player_tag from the email with collision checking.
+func (h *PlayerHandler) Register(w http.ResponseWriter, r *http.Request) {
+	var req models.RegisterPlayerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	if req.Email == "" {
+		writeError(w, http.StatusBadRequest, "MISSING_EMAIL", "Email is required")
+		return
+	}
+
+	// Check if player already exists by email
+	existing, err := h.repo.Player.GetByEmail(r.Context(), req.Email)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "LOOKUP_FAILED", "Failed to lookup player")
+		return
+	}
+	if existing != nil {
+		// Update display_name if provided and different
+		if req.DisplayName != "" && existing.DisplayName != req.DisplayName {
+			updateReq := models.UpdatePlayerRequest{}
+			updateReq.Title = &req.DisplayName
+			h.repo.Player.Update(r.Context(), existing.ID, updateReq)
+			existing.DisplayName = req.DisplayName
+		}
+		writeJSON(w, http.StatusOK, models.RegisterPlayerResponse{
+			Player: *existing,
+			IsNew:  false,
+		})
+		return
+	}
+
+	// Create new player
+	player, err := h.repo.Player.CreatePlayerByEmail(r.Context(), req.Email, req.DisplayName)
+	if err != nil {
+		log.Printf("failed to create player by email %s: %v", req.Email, err)
+		writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create player")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, models.RegisterPlayerResponse{
+		Player: *player,
+		IsNew:  true,
+	})
+}
+
 // GetSummary handles GET /api/v1/players/{id}/summary
 // Returns combined data for the home/dashboard screen.
 func (h *PlayerHandler) GetSummary(w http.ResponseWriter, r *http.Request) {

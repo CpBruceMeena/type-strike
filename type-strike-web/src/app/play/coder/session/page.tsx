@@ -13,6 +13,7 @@ import {
   CoderTextProvider,
 } from "@/engine/implementations";
 import type { ITextProvider } from "@/engine/interfaces";
+import { usePlayer } from "@/hooks/usePlayer";
 import GameplayUI from "@/components/game/GameplayUI";
 import type { GameplayUIState, GameState } from "@/lib/types";
 import type { GameResult } from "@/engine/interfaces";
@@ -63,7 +64,8 @@ function CoderSessionContent() {
 
   const engineRef = useRef<TypingEngine | null>(null);
   const inputRef = useRef<KeyboardInputSource | null>(null);
-  const playerId = DEFAULT_PLAYER_ID;
+  const { playerId: clerkPlayerId } = usePlayer();
+  const playerId = clerkPlayerId ?? DEFAULT_PLAYER_ID;
 
   const startGame = useCallback(async () => {
     setState((s) => ({ ...s, gameState: "loading" as GameState }));
@@ -135,13 +137,6 @@ function CoderSessionContent() {
           if (last && Math.abs(last.wpm - point.wpm) < 2) return prev;
           return [...prev.slice(-200), point];
         });
-      });
-
-      engine.onKineticTextCallback((text) => {
-        if (text) {
-          setState((s) => ({ ...s, showKineticText: text }));
-          setTimeout(() => setState((s) => ({ ...s, showKineticText: null })), 1800);
-        }
       });
 
       engine.onCompleteCallback((result: GameResult) => {

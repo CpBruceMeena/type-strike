@@ -60,14 +60,14 @@ export default function FingerGuide({ highlightKeys = [], allowedKeys = [] }: Fi
         ))}
       </div>
 
-      {/* Keyboard */}
-      <div className="flex flex-col items-center gap-0.5">
+      {/* Keyboard — bigger keys for better visibility */}
+      <div className="flex flex-col items-center gap-1">
         {ROWS.map((row, rowIndex) => (
           <div
             key={rowIndex}
-            className="flex items-center justify-center gap-0.5"
+            className="flex items-center justify-center gap-1"
             style={{
-              paddingLeft: rowIndex === 0 ? "0px" : rowIndex === 2 ? "4px" : "8px",
+              paddingLeft: rowIndex === 0 ? "0px" : rowIndex === 2 ? "8px" : "16px",
             }}
           >
             {row.map((key) => {
@@ -77,14 +77,14 @@ export default function FingerGuide({ highlightKeys = [], allowedKeys = [] }: Fi
               const isLearned = allowedSet.has(key) || allowedSet.size === 0;
 
               const isSpecialKey = key.length > 1;
-              const keyWidth = isSpecialKey ? "52px" : "32px";
-              const keyHeight = "32px";
+              const keyWidth = isSpecialKey ? "64px" : "40px";
+              const keyHeight = "40px";
 
               return (
                 <div
                   key={key}
                   title={isSpecialKey ? (key === "Bksp" ? "Backspace" : key === "Enter" ? "Enter" : key === "Shift" ? "Shift" : key) : finger ? `${key.toUpperCase()} — ${FINGER_LABELS[finger]} (${finger.includes("left") ? "Left" : "Right"} hand)` : key}
-                  className="relative flex items-center justify-center rounded-lg text-[10px] font-bold transition-all duration-200"
+                  className="relative flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-200"
                   style={{
                     width: keyWidth,
                     height: keyHeight,
@@ -105,13 +105,14 @@ export default function FingerGuide({ highlightKeys = [], allowedKeys = [] }: Fi
                         : "var(--text-disabled)",
                     boxShadow: isFocus ? `0 0 12px ${color}50` : "none",
                     transform: isFocus ? "scale(1.1)" : "scale(1)",
+                    borderRadius: "10px",
                   }}
                 >
                   <span className="uppercase">{isSpecialKey ? key.slice(0, 4) : key}</span>
                   {/* Finger dot */}
                   {finger && !isSpecialKey && (
                     <div
-                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full"
+                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full"
                       style={{ background: color, opacity: isFocus || isLearned ? 1 : 0.3 }}
                     />
                   )}

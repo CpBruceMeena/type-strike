@@ -1,9 +1,7 @@
 package repository
 
 import (
-	"strings"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 // Repositories bundles all repository instances for easy dependency injection.
@@ -17,24 +15,21 @@ type Repositories struct {
 	Leaderboard     *LeaderboardRepository
 	Game            *GameRepository
 	Contest         *ContestRepository
+	LessonProgress  *LessonProgressRepository
 }
 
-// NewRepositories creates all repository instances from a single connection pool.
-func NewRepositories(pool *pgxpool.Pool) *Repositories {
+// NewRepositories creates all repository instances from a single GORM DB connection.
+func NewRepositories(db *gorm.DB) *Repositories {
 	return &Repositories{
-		Player:          NewPlayerRepository(pool),
-		LevelProgress:   NewLevelProgressRepository(pool),
-		Activity:        NewActivityRepository(pool),
-		Settings:        NewSettingsRepository(pool),
-		Analytics:       NewAnalyticsRepository(pool),
-		DailyChallenge:  NewDailyChallengeRepository(pool),
-		Leaderboard:     NewLeaderboardRepository(pool),
-		Game:            NewGameRepository(pool),
-		Contest:         NewContestRepository(pool),
+		Player:          NewPlayerRepository(db),
+		LevelProgress:   NewLevelProgressRepository(db),
+		Activity:        NewActivityRepository(db),
+		Settings:        NewSettingsRepository(db),
+		Analytics:       NewAnalyticsRepository(db),
+		DailyChallenge:  NewDailyChallengeRepository(db),
+		Leaderboard:     NewLeaderboardRepository(db),
+		Game:            NewGameRepository(db),
+		Contest:         NewContestRepository(db),
+		LessonProgress:  NewLessonProgressRepository(db),
 	}
-}
-
-// joinClauses joins SQL SET clause strings with comma separators.
-func joinClauses(clauses []string) string {
-	return strings.Join(clauses, ", ")
 }

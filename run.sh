@@ -241,16 +241,36 @@ cmd_stop() {
       fi
     done
     ok "Frontend stopped"
-  else
-    # Also try killing by port
-    local port_pid_val
-    port_pid_val=$(port_pid "$FRONTEND_PORT")
-    if [ -n "$port_pid_val" ]; then
-      info "Killing process on port $FRONTEND_PORT (PID $port_pid_val)..."
-      kill "$port_pid_val" 2>/dev/null || true
-      ok "Port $FRONTEND_PORT freed"
+  fi
+
+  # Kill any process still holding the frontend port
+  local port_pids
+  port_pids=$(port_pid "$FRONTEND_PORT")
+  if [ -n "$port_pids" ]; then
+    while IFS= read -r pid; do
+      [ -z "$pid" ] && continue
+      info "Killing process on port $FRONTEND_PORT (PID $pid)..."
+      kill "$pid" 2>/dev/null || true
+      local waited=0
+      while kill -0 "$pid" 2>/dev/null; do
+        sleep 1
+        waited=$((waited + 1))
+        if [ "$waited" -ge 3 ]; then
+          kill -9 "$pid" 2>/dev/null || true
+          break
+        fi
+      done
+    done <<< "$port_pids"
+    ok "Port $FRONTEND_PORT freed"
+  fi
+
+  # Kill any orphaned next dev / Next.js processes by name
+  if command -v pkill >/dev/null 2>&1; then
+    if pkill -f "next dev" 2>/dev/null; then
+      ok "Killed remaining Next.js processes"
     fi
   fi
+
   rm -f "$FRONTEND_PID_FILE"
 
   echo ""

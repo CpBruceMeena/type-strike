@@ -59,14 +59,14 @@ function createInitialState(mode: GameMode): GameplayUIState {
 
 // ── Hook ────────────────────────────────────────────────
 
-export function useGameplay(mode: GameMode) {
+export function useGameplay(mode: GameMode, playerId?: number) {
   const router = useRouter();
   const [state, setState] = useState<GameplayUIState>(() => createInitialState(mode));
   const engineRef = useRef<TypingEngine | null>(null);
   const inputRef = useRef<KeyboardInputSource | null>(null);
   const timerRef = useRef<CountdownTimer | null>(null);
   const gameIdRef = useRef<string | null>(null);
-  const playerId = DEFAULT_PLAYER_ID;
+  const pid = playerId ?? DEFAULT_PLAYER_ID;
 
   // Data points for the consistency graph
   const [dataPoints, setDataPoints] = useState<
@@ -80,7 +80,7 @@ export function useGameplay(mode: GameMode) {
 
     try {
       // 1. Start session on backend
-      const session = await api.startGame({ player_id: playerId, mode });
+      const session = await api.startGame({ player_id: pid, mode });
       gameIdRef.current = session.game_id;
 
       // 2. Determine duration
@@ -92,7 +92,7 @@ export function useGameplay(mode: GameMode) {
       // 4. Create text provider
       const textProvider: ITextProvider =
         mode === "contest"
-          ? new ContestTextProvider(playerId)
+          ? new ContestTextProvider(pid)
           : new FreePracticeTextProvider(session.paragraph);
 
       // 5. Create engine with all strategies
@@ -166,15 +166,6 @@ export function useGameplay(mode: GameMode) {
         });
       });
 
-      engine.onKineticTextCallback((text) => {
-        if (text) {
-          setState((s) => ({ ...s, showKineticText: text }));
-          setTimeout(() => {
-            setState((s) => ({ ...s, showKineticText: null }));
-          }, 1800);
-        }
-      });
-
       engine.onCompleteCallback((result: GameResult) => {
         handleGameComplete(result);
       });
@@ -198,7 +189,7 @@ export function useGameplay(mode: GameMode) {
       console.error("Failed to start game:", err);
       setState((s) => ({ ...s, gameState: "failed" as GameState }));
     }
-  }, [mode, playerId]);
+  }, [mode, pid]);
 
   // ── Countdown Sequence ───────────────────────────────
 
@@ -230,7 +221,7 @@ export function useGameplay(mode: GameMode) {
       try {
         if (gameIdRef.current) {
           const response = await api.completeGame(gameIdRef.current, {
-            player_id: playerId,
+            player_id: pid,
             wpm: result.wpm,
             accuracy: result.accuracy,
             correct_keystrokes: result.correctKeystrokes,
@@ -282,10 +273,7 @@ export function useGameplay(mode: GameMode) {
 
       // Cleanup engine
       engineRef.current?.destroy();
-      inputRef.current?.destroy();
-    },
-    [playerId, mode, router]
-  );
+      inputRef.current?.destroy();  }, [pid, mode, router]);
 
   // ── Cleanup on unmount ───────────────────────────────
 

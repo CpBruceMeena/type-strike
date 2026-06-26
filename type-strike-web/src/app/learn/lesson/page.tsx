@@ -26,8 +26,9 @@ import type { GameResult, CharResult } from "@/engine/interfaces";
 import FingerGuide from "@/components/game/FingerGuide";
 import ParagraphDisplay from "@/components/game/ParagraphDisplay";
 import CountdownOverlay from "@/components/game/CountdownOverlay";
-import KineticText from "@/components/game/KineticText";
 import GlassPanel from "@/components/ui/GlassPanel";
+import { api } from "@/lib/api";
+import { DEFAULT_PLAYER_ID } from "@/lib/constants";
 import type { GameState } from "@/lib/types";
 
 // ── Lesson State ───────────────────────────────────────
@@ -164,16 +165,18 @@ function LessonContent() {
         }));
       });
 
-      engine.onKineticTextCallback((text) => {
+      engine.onCompleteCallback(async (result: GameResult) => {
         if (lessonIdRef.current !== currentLessonId) return;
-        if (text) {
-          setState((s) => ({ ...s, showKineticText: text }));
-          setTimeout(() => setState((s) => ({ ...s, showKineticText: null })), 1800);
+        // Save progress to backend
+        try {
+          await api.completeLesson(DEFAULT_PLAYER_ID, lessonId, {
+            wpm: result.wpm,
+            accuracy: result.accuracy,
+            completed: true,
+          });
+        } catch (err) {
+          console.error("Failed to save lesson progress:", err);
         }
-      });
-
-      engine.onCompleteCallback((result: GameResult) => {
-        if (lessonIdRef.current !== currentLessonId) return;
         setState((s) => ({
           ...s,
           complete: true,
@@ -455,16 +458,17 @@ function LessonContent() {
       <header className="flex items-center justify-between px-3 py-2 md:px-6 md:py-3">
         <button
           onClick={() => router.push("/learn")}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-sm transition-colors hover:bg-white/5"
-          style={{ color: "var(--text-body)" }}
-          title="Back to lesson list"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-text-body hover:text-text-white transition-colors"
+          aria-label="Back to lessons"
         >
-          ✕
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
         <div className="flex items-center gap-3">
           <span
-            className="text-xs font-bold tracking-[2px]"
-            style={{ color: "#22DD44" }}
+            className="text-xs font-bold tracking-[2px] uppercase"
+            style={{ color: "var(--text-white)" }}
             title={`Lesson ${lesson.id} — ${lesson.category.replace("-", " ").toUpperCase()}`}
           >
             LESSON {lesson.id}
@@ -485,18 +489,10 @@ function LessonContent() {
         </div>
       </header>
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 pb-8">
-        {/* Finger Guide */}
-        <div className="w-full max-w-lg">
-          <FingerGuide
-            highlightKeys={lesson.focusKeys}
-            allowedKeys={lesson.allowedKeys}
-          />
-        </div>
-
-        {/* Paragraph */}
-        <div className="w-full max-w-lg">
+      {/* Main area — typing text at top, keyboard below */}
+      <div className="flex flex-1 flex-col gap-5 px-4 pb-8 overflow-y-auto">
+        {/* Paragraph at top */}
+        <div className="w-full max-w-lg mx-auto pt-5">
           <GlassPanel glow="none" blur="sm" depth={1} className="p-4 md:p-6">
             <ParagraphDisplay
               paragraph={state.paragraph}
@@ -507,8 +503,16 @@ function LessonContent() {
           </GlassPanel>
         </div>
 
+        {/* Finger Guide below */}
+        <div className="w-full max-w-lg mx-auto">
+          <FingerGuide
+            highlightKeys={lesson.focusKeys}
+            allowedKeys={lesson.allowedKeys}
+          />
+        </div>
+
         {/* Live Stats */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center justify-center gap-6">
           <div className="group text-center">
             <p className="text-lg font-black tabular-nums" style={{ color: "#22DD44" }}>
               {state.liveWpm}
@@ -516,9 +520,6 @@ function LessonContent() {
             <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
               WPM
             </p>
-            <span className="block text-[8px] tracking-[0.5px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-muted)" }}>
-              Words per minute
-            </span>
           </div>
           <div className="group text-center">
             <p className="text-lg font-black tabular-nums" style={{ color: "#FFCC00" }}>
@@ -529,9 +530,6 @@ function LessonContent() {
             <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
               ACC
             </p>
-            <span className="block text-[8px] tracking-[0.5px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-muted)" }}>
-              Accuracy
-            </span>
           </div>
           <div className="group text-center">
             <p className="text-lg font-black tabular-nums" style={{ color: "#CC44FF" }}>
@@ -540,15 +538,9 @@ function LessonContent() {
             <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
               COMBO
             </p>
-            <span className="block text-[8px] tracking-[0.5px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-muted)" }}>
-              Consecutive correct
-            </span>
           </div>
         </div>
       </div>
-
-      {/* Kinetic text overlay */}
-      <KineticText text={state.showKineticText} />
     </div>
   );
 }

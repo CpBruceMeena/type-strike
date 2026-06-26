@@ -16,19 +16,20 @@ import ParagraphDisplay from "./ParagraphDisplay";
 
 import ComboGauge from "./ComboGauge";
 import CountdownOverlay from "./CountdownOverlay";
-import KineticText from "./KineticText";
 import type { GameplayUIState } from "@/lib/types";
 
 interface GameplayUIProps {
   state: GameplayUIState;
   dataPoints: Array<{ wpm: number; raw: number; net: number; accuracy: number }>;
   onStartCountdown: () => void;
+  onRetry?: () => void;
 }
 
 export default function GameplayUI({
   state,
   dataPoints,
   onStartCountdown,
+  onRetry,
 }: GameplayUIProps) {
   const router = useRouter();
 
@@ -63,6 +64,51 @@ export default function GameplayUI({
     );
   }
 
+  // ── Failed state (during loading/init — not a real game result) ───
+  if (state.gameState === "failed" && state.finalWpm === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+        <div className="text-center">
+          <div className="mb-3 text-5xl">💥</div>
+          <h1
+            className="text-2xl font-black tracking-[4px]"
+            style={{ color: "var(--error-red)" }}
+          >
+            LOAD FAILED
+          </h1>
+          <p className="mt-2 text-xs tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
+            Could not connect to the game server. Make sure the backend is running.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="rounded-xl px-6 py-3 text-xs font-bold tracking-[2px] transition-all hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, var(--accent-primary), var(--accent-gold))",
+                color: "#000000",
+              }}
+            >
+              🔄 RETRY
+            </button>
+          )}
+          <button
+            onClick={() => window.history.back()}
+            className="rounded-xl px-6 py-3 text-xs font-bold tracking-[2px] transition-all hover:scale-105"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "var(--text-body)",
+            }}
+          >
+            ← BACK
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Typing / Mistake gameplay ─────────────────────────
   const isActive = state.gameState === "typing" || state.gameState === "mistake";
   if (!isActive) {
@@ -86,11 +132,13 @@ export default function GameplayUI({
       {/* ── Arena header ────────────────────────────── */}
       <header className="flex items-center justify-between px-3 py-2 md:px-6 md:py-3">
         <button
-          onClick={() => router.push("/home")}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-sm transition-colors hover:bg-white/5"
-          style={{ color: "var(--text-body)" }}
+          onClick={() => router.back()}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-text-body hover:text-text-white transition-colors"
+          aria-label="Back"
         >
-          ✕
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
 
         <div className="flex items-center gap-4">
@@ -219,8 +267,7 @@ export default function GameplayUI({
         </div>
       </div>
 
-      {/* Kinetic text overlay */}
-      <KineticText text={state.showKineticText} />
+
     </div>
   );
 }

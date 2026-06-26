@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"github.com/cpbrucemeena/type-strike-backend/internal/models"
 	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 // GameHandler handles HTTP requests for game sessions and timed modes.
@@ -51,8 +51,6 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-
 	// Generate paragraph and determine duration
 	var (
 		paragraph string
@@ -61,7 +59,7 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 
 	if req.Mode == models.ModeContest {
 		// Contest mode: use or create today's contest paragraph
-		contest, _, err := h.repo.Contest.GetOrCreateDailyContest(ctx, generateContestParagraph())
+		contest, _, err := h.repo.Contest.GetOrCreateDailyContest(r.Context(), generateContestParagraph())
 		if err != nil {
 			log.Printf("failed to get/create contest: %v", err)
 			writeError(w, http.StatusInternalServerError, "CONTEST_FAILED", "Failed to initialize contest")
@@ -78,7 +76,6 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 
 	// Create game session (level_id is nil for timed modes and contest)
 	session := &models.GameSession{
-		ID:          uuid.New(),
 		PlayerID:    req.PlayerID,
 		Mode:        req.Mode,
 		LevelID:     nil,
@@ -87,14 +84,14 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 		StartedAt:   time.Now(),
 	}
 
-	if err := h.repo.Game.CreateSession(ctx, session); err != nil {
+	if err := h.repo.Game.CreateSession(r.Context(), session); err != nil {
 		log.Printf("failed to create game session: %v", err)
 		writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create game session")
 		return
 	}
 
 	resp := models.StartGameResponse{
-		GameID:          session.ID.String(),
+		GameID:          fmt.Sprintf("%d", session.ID),
 		Mode:            session.Mode,
 		Paragraph:       session.Paragraph,
 		DurationSeconds: session.DurationSec,
@@ -107,9 +104,14 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 // Complete handles POST /api/v1/games/{gameId}/complete
 // Submits game results, updates leaderboards, and awards XP.
 func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
-	gameID := chi.URLParam(r, "gameId")
-	if gameID == "" {
+	gameIDStr := chi.URLParam(r, "gameId")
+	if gameIDStr == "" {
 		writeError(w, http.StatusBadRequest, "MISSING_ID", "Game ID is required")
+		return
+	}
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_ID", "Game ID must be a number")
 		return
 	}
 
@@ -119,10 +121,8 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-
 	// Verify the session exists and belongs to this player
-	session, err := h.repo.Game.GetSession(ctx, gameID)
+	session, err := h.repo.Game.GetSession(r.Context(), gameID)
 	if err != nil || session == nil {
 		writeError(w, http.StatusNotFound, "SESSION_NOT_FOUND", "Game session not found")
 		return
@@ -140,7 +140,7 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	xpEarned := computeGameXP(req.WPM, req.Accuracy, session.Mode)
 
 	// Update the session
-	updated, err := h.repo.Game.CompleteSession(ctx, gameID, req, xpEarned)
+	updated, err := h.repo.Game.CompleteSession(r.Context(), gameID, req, xpEarned)
 	if err != nil {
 		log.Printf("failed to complete game session: %v", err)
 		writeError(w, http.StatusInternalServerError, "COMPLETE_FAILED", "Failed to complete game session")
@@ -149,41 +149,38 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 
 	// Award XP to player
 	if xpEarned > 0 {
-		if _, _, err := h.repo.Player.AddXP(ctx, req.PlayerID, xpEarned); err != nil {
+		if _, _, err := h.repo.Player.AddXP(r.Context(), req.PlayerID, xpEarned); err != nil {
 			log.Printf("failed to award XP: %v", err)
 		}
 	}
 
 	// Update streak
-	if _, err := h.repo.Player.UpdateStreak(ctx, req.PlayerID); err != nil {
+	if _, err := h.repo.Player.UpdateStreak(r.Context(), req.PlayerID); err != nil {
 		log.Printf("failed to update streak: %v", err)
 	}
 
 	// Sync leaderboard
-	if err := h.repo.Leaderboard.SyncPlayer(ctx, req.PlayerID); err != nil {
+	if err := h.repo.Leaderboard.SyncPlayer(r.Context(), req.PlayerID); err != nil {
 		log.Printf("failed to sync leaderboard: %v", err)
 	}
 
 	// Update timed leaderboard if applicable
 	var rank *int
 	if isTimedMode(session.Mode) {
-		if err := h.repo.Game.UpsertTimedLeaderboard(ctx, req.PlayerID, session.Mode, req.WPM, req.Accuracy, gameID); err != nil {
+		if err := h.repo.Game.UpsertTimedLeaderboard(r.Context(), req.PlayerID, session.Mode, req.WPM, req.Accuracy, gameID); err != nil {
 			log.Printf("failed to upsert timed leaderboard: %v", err)
 		}
 		// Get player's rank in this mode
-		if entry, err := h.repo.Game.GetPlayerTimedRank(ctx, req.PlayerID, session.Mode); err == nil && entry != nil {
+		if entry, err := h.repo.Game.GetPlayerTimedRank(r.Context(), req.PlayerID, session.Mode); err == nil && entry != nil {
 			rank = &entry.Rank
 		}
 	}
 
 	// Handle contest entry
 	var contestRank *int
-	if session.Mode == models.ModeContest {
-		contest, err := h.repo.Contest.GetActiveContest(ctx)
-		if err == nil && contest != nil {
-			hasEntered, _ := h.repo.Contest.HasPlayerEntered(ctx, contest.ID, req.PlayerID)
-			if !hasEntered {
-				entry, err := h.repo.Contest.InsertEntry(ctx, contest.ID, req.PlayerID, gameID, req.WPM, req.Accuracy)
+	if session.Mode == models.ModeContest {			contest, err := h.repo.Contest.GetActiveContest(r.Context())
+		if err == nil && contest != nil {				hasEntered, _ := h.repo.Contest.HasPlayerEntered(r.Context(), contest.ID, req.PlayerID)
+			if !hasEntered {					entry, err := h.repo.Contest.InsertEntry(r.Context(), contest.ID, req.PlayerID, gameID, req.WPM, req.Accuracy)
 				if err != nil {
 					log.Printf("failed to insert contest entry: %v", err)
 				} else {
@@ -194,7 +191,7 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := models.CompleteGameResponse{
-		GameID:   gameID,
+		GameID:   fmt.Sprintf("%d", gameID),
 		WPM:      req.WPM,
 		Accuracy: req.Accuracy,
 		XPEarned: xpEarned,

@@ -1,4 +1,4 @@
-import Sidebar from "@/components/layout/Sidebar";
+import ParticleField from "@/components/effects/ParticleField";
 
 export default function LearnLayout({
   children,
@@ -6,11 +6,11 @@ export default function LearnLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col min-w-0 h-dvh overflow-y-auto">
-        {children}
+    <>
+      <ParticleField />
+      <div className="relative z-10 flex h-dvh flex-col">
+        <main className="flex flex-1 flex-col">{children}</main>
       </div>
-    </div>
+    </>
   );
 }

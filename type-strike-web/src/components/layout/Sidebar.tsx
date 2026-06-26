@@ -5,15 +5,15 @@ import { usePathname } from "next/navigation";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 
 const NAV_ITEMS = [
-  { label: "STRIKE", href: "/home", icon: "⚡", accent: "#FF5020" },
-  { label: "MAP", href: "/map", icon: "🗺️", accent: "#FF6600" },
+  { label: "STRIKE", href: "/app/home", icon: "⚡", accent: "#FF5020" },
+  { label: "MAP", href: "/app/map", icon: "🗺️", accent: "#FF6600" },
   { label: "LEARN", href: "/learn", icon: "🎓", accent: "#22DD44" },
   { label: "CODER", href: "/play/coder", icon: "👨‍💻", accent: "#00E5FF" },
-  { label: "DAILY", href: "/daily-challenges", icon: "🎯", accent: "#FFCC00" },
-  { label: "FEATS", href: "/achievements", icon: "🏅", accent: "#CC44FF" },
-  { label: "LEADERBOARD", href: "/leaderboard", icon: "🏆", accent: "#8844FF" },
-  { label: "STATS", href: "/stats", icon: "📊", accent: "#00F0FF" },
-  { label: "PROFILE", href: "/profile", icon: "👤", accent: "#FF44CC" },
+  { label: "DAILY", href: "/app/daily-challenges", icon: "🎯", accent: "#FFCC00" },
+  { label: "FEATS", href: "/app/achievements", icon: "🏅", accent: "#CC44FF" },
+  { label: "LEADERBOARD", href: "/app/leaderboard", icon: "🏆", accent: "#8844FF" },
+  { label: "STATS", href: "/app/stats", icon: "📊", accent: "#00F0FF" },
+  { label: "PROFILE", href: "/app/profile", icon: "👤", accent: "#FF44CC" },
 ];
 
 export default function Sidebar() {

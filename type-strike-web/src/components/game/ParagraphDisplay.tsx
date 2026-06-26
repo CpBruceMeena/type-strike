@@ -157,17 +157,18 @@ export default function ParagraphDisplay({
 
                 {/* The display character */}
                 {displayChar}
-                {/* Preserve the actual newline for line breaks */}
-                {isNewline && '\n'}
+                {/* Preserve the actual newline for line breaks — use <br /> so the span stays single-line for proper cursor positioning */}
+                {isNewline && <br />}
 
-                {/* Cursor */}
+                {/* Cursor — fixed height, positioned at top for newlines (multi-line span) and centered for regular chars */}
                 {isCurrent && isActive && (
                   <span
                     ref={cursorRef}
-                    className="absolute left-0 top-0 h-full w-[2.5px]"
+                    className={`absolute left-0 w-[2.5px] h-5 ${isNewline ? 'top-0' : 'top-1/2 -translate-y-1/2'}`}
                     style={{
                       background: "var(--accent-primary)",
                       boxShadow: "0 0 10px rgba(255,80,32,0.9), 0 0 25px rgba(255,80,32,0.4)",
+                      borderRadius: "2px",
                       animation: "cursor-blink 1s step-end infinite",
                     }}
                   />

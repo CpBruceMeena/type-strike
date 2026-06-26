@@ -81,13 +81,13 @@ export default function ProfilePage() {
                 </p>
                 <div className="mt-4 flex gap-2">
                   <button
-                    onClick={() => router.push("/stats")}
+                    onClick={() => router.push("/app/stats")}
                     className="rounded-xl border border-white/10 px-3 py-2 text-[11px] font-bold tracking-[2px] text-text-body hover:border-accent-primary/60 hover:text-accent-primary transition-colors"
                   >
                     STATS
                   </button>
                   <button
-                    onClick={() => router.push("/achievements")}
+                    onClick={() => router.push("/app/achievements")}
                     className="rounded-xl border border-white/10 px-3 py-2 text-[11px] font-bold tracking-[2px] text-text-body hover:border-accent-primary/60 hover:text-accent-primary transition-colors"
                   >
                     FEATS

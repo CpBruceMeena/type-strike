@@ -8,7 +8,6 @@ import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
 import { TIERS } from "@/lib/constants";
 import { api } from "@/lib/api";
-import { DEFAULT_PLAYER_ID } from "@/lib/constants";
 import type { LevelDetail } from "@/lib/types";
 
 export default function MapPage() {
@@ -16,12 +15,29 @@ export default function MapPage() {
   const [levels, setLevels] = useState<LevelDetail[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<LevelDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [playerScore, setPlayerScore] = useState<{ wpm: number; acc: number; stars: number } | null>(null);
 
   useEffect(() => {
     async function fetchLevels() {
       try {
-        const data = await api.getAllLevels();
+        // Fetch levels with player progress (playerId=1 for default/unsigned users)
+        const data = await api.getAllLevels(1);
         setLevels(data);
+
+        // Compute overall player score from progress
+        const completedLevels = data.filter((l) => l.player_stars && l.player_stars > 0);
+        if (completedLevels.length > 0) {
+          const avgWpm = Math.round(
+            completedLevels.reduce((sum, l) => sum + (l.player_best_wpm ?? 0), 0) /
+              completedLevels.length
+          );
+          const avgAcc = Math.round(
+            completedLevels.reduce((sum, l) => sum + ((l.player_best_acc ?? 0) * 100), 0) /
+              completedLevels.length
+          );
+          const totalStars = completedLevels.reduce((sum, l) => sum + (l.player_stars ?? 0), 0);
+          setPlayerScore({ wpm: avgWpm, acc: avgAcc, stars: totalStars });
+        }
       } catch {
         // Fallback: no data
       } finally {
@@ -53,6 +69,35 @@ export default function MapPage() {
       <TopBar showBack title="LEVELS" />
 
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+        {/* Player Score Summary */}
+        {playerScore && (
+          <div className="mx-auto mb-6 w-full max-w-4xl">
+            <GlassPanel glow="gold" blur="sm" depth={1} className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-2xl">🏆</span>
+                  <div>
+                    <p className="text-[10px] font-bold tracking-[2px]" style={{ color: "var(--text-muted)" }}>
+                      YOUR PROGRESS
+                    </p>
+                    <p className="text-xs font-bold" style={{ color: "var(--text-white)" }}>
+                      Avg {playerScore.wpm} WPM • {playerScore.acc}% ACC • {playerScore.stars} ⭐ total
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black tabular-nums" style={{ color: "var(--accent-gold)" }}>
+                    {levels.filter((l) => l.player_stars && l.player_stars > 0).length}/{levels.length}
+                  </p>
+                  <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
+                    LEVELS CLEARED
+                  </p>
+                </div>
+              </div>
+            </GlassPanel>
+          </div>
+        )}
+
         <div className="mx-auto w-full max-w-4xl space-y-6">
           {TIERS.filter((t) => t.key !== "beyond").map((tier) => (
             <div key={tier.key}>
