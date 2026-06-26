@@ -217,13 +217,35 @@ cmd_stop() {
         break
       fi
     done
-    ok "Backend stopped"
-  else
-    # Try the backend's own run.sh stop
-    if [ -f "$BACKEND_DIR/run.sh" ]; then
-      (cd "$BACKEND_DIR" && bash ./run.sh stop) 2>/dev/null || true
-    fi
+    ok "Backend stopped (PID $backend_pid_val)"
   fi
+
+  # Also kill any process on backend port (handles orphaned processes)
+  local be_port_pids
+  be_port_pids=$(port_pid "$SERVER_PORT")
+  if [ -n "$be_port_pids" ]; then
+    while IFS= read -r pid; do
+      [ -z "$pid" ] && continue
+      warn "Killing orphan on backend port (PID $pid)..."
+      kill "$pid" 2>/dev/null || true
+      local waited=0
+      while kill -0 "$pid" 2>/dev/null; do
+        sleep 1
+        waited=$((waited + 1))
+        if [ "$waited" -ge 3 ]; then
+          kill -9 "$pid" 2>/dev/null || true
+          break
+        fi
+      done
+    done <<< "$be_port_pids"
+    ok "Port $SERVER_PORT freed"
+  fi
+
+  # Fallback: run backend's own stop script (handles PID file cleanup)
+  if [ -f "$BACKEND_DIR/run.sh" ]; then
+    (cd "$BACKEND_DIR" && bash ./run.sh stop) 2>/dev/null || true
+  fi
+
   rm -f "$BACKEND_PID_FILE"
 
   local frontend_pid_val

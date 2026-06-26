@@ -24,3 +24,9 @@ type UpdateLevelProgressRequest struct {
 	Accuracy     float64 `json:"accuracy"`
 	Completed    bool    `json:"completed"`
 }
+
+// LevelCompleteResponse wraps level progress with optional tier upgrade info.
+type LevelCompleteResponse struct {
+	*LevelProgress
+	Upgrade *TierUpgradeResponse `json:"upgrade,omitempty"`
+}

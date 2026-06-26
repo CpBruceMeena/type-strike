@@ -17,34 +17,51 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true);
   const [playerScore, setPlayerScore] = useState<{ wpm: number; acc: number; stars: number } | null>(null);
 
+  // Shared data processing — extracts player score from level data
+  function processLevelData(data: LevelDetail[]) {
+    setLevels(data);
+    const completedLevels = data.filter((l) => l.player_stars && l.player_stars > 0);
+    if (completedLevels.length > 0) {
+      const avgWpm = Math.round(
+        completedLevels.reduce((sum, l) => sum + (l.player_best_wpm ?? 0), 0) /
+          completedLevels.length
+      );
+      const avgAcc = Math.round(
+        completedLevels.reduce((sum, l) => sum + ((l.player_best_acc ?? 0) * 100), 0) /
+          completedLevels.length
+      );
+      const totalStars = completedLevels.reduce((sum, l) => sum + (l.player_stars ?? 0), 0);
+      setPlayerScore({ wpm: avgWpm, acc: avgAcc, stars: totalStars });
+    }
+  }
+
   useEffect(() => {
     async function fetchLevels() {
       try {
-        // Fetch levels with player progress (playerId=1 for default/unsigned users)
         const data = await api.getAllLevels(1);
-        setLevels(data);
-
-        // Compute overall player score from progress
-        const completedLevels = data.filter((l) => l.player_stars && l.player_stars > 0);
-        if (completedLevels.length > 0) {
-          const avgWpm = Math.round(
-            completedLevels.reduce((sum, l) => sum + (l.player_best_wpm ?? 0), 0) /
-              completedLevels.length
-          );
-          const avgAcc = Math.round(
-            completedLevels.reduce((sum, l) => sum + ((l.player_best_acc ?? 0) * 100), 0) /
-              completedLevels.length
-          );
-          const totalStars = completedLevels.reduce((sum, l) => sum + (l.player_stars ?? 0), 0);
-          setPlayerScore({ wpm: avgWpm, acc: avgAcc, stars: totalStars });
-        }
+        processLevelData(data);
       } catch {
         // Fallback: no data
       } finally {
         setLoading(false);
       }
     }
+
+    // Initial fetch
     fetchLevels();
+
+    // Silently re-fetch when page becomes visible again (e.g. after completing a level)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        api.getAllLevels(1).then(processLevelData).catch(() => {});
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const handleLevelClick = useCallback((level: LevelDetail) => {

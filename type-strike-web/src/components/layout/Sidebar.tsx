@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { usePlayer } from "@/hooks/usePlayer";
+import ProgressionSummary from "@/components/game/ProgressionSummary";
 
 const NAV_ITEMS = [
   { label: "STRIKE", href: "/app/home", icon: "⚡", accent: "#FF5020" },
@@ -11,6 +13,7 @@ const NAV_ITEMS = [
   { label: "CODER", href: "/play/coder", icon: "👨‍💻", accent: "#00E5FF" },
   { label: "DAILY", href: "/app/daily-challenges", icon: "🎯", accent: "#FFCC00" },
   { label: "FEATS", href: "/app/achievements", icon: "🏅", accent: "#CC44FF" },
+  { label: "RANKS", href: "/app/ranks", icon: "👑", accent: "#FFCC00" },
   { label: "LEADERBOARD", href: "/app/leaderboard", icon: "🏆", accent: "#8844FF" },
   { label: "STATS", href: "/app/stats", icon: "📊", accent: "#00F0FF" },
   { label: "PROFILE", href: "/app/profile", icon: "👤", accent: "#FF44CC" },
@@ -19,6 +22,7 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { isSignedIn, user } = useUser();
+  const { playerId } = usePlayer();
 
   return (
     <aside
@@ -39,7 +43,7 @@ export default function Sidebar() {
       <div className="mx-4 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
 
       {/* Nav items */}
-      <nav className="flex-1 flex flex-col gap-1 px-3 py-4">
+      <nav className="flex-1 flex flex-col gap-1 px-3 py-3">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -66,8 +70,11 @@ export default function Sidebar() {
         })}
       </nav>
 
+      {/* Rank progression */}
+      <ProgressionSummary playerId={playerId} />
+
       {/* Profile / auth */}
-      <div className="mx-4 mb-2 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+      <div className="mx-4 mb-2 mt-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
       {isSignedIn ? (
         <div className="flex items-center gap-3 px-3 py-2">
           {user.imageUrl ? (

@@ -47,6 +47,7 @@ func main() {
 	gameHandler := handler.NewGameHandler(repos)
 	contestHandler := handler.NewContestHandler(repos)
 	lessonHandler := handler.NewLessonHandler(repos)
+	progressionHandler := handler.NewProgressionHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -141,13 +142,23 @@ func main() {
 		r.Route("/contest", func(r chi.Router) {
 			r.Get("/current", contestHandler.GetCurrent)
 			r.Get("/leaderboard", contestHandler.GetLeaderboard)
+		})		// Lesson Progress
+			r.Route("/players/{playerId}/lessons", func(r chi.Router) {
+				r.Get("/", lessonHandler.GetAllProgress)
+				r.Get("/{lessonId}", lessonHandler.GetProgress)
+				r.Post("/{lessonId}/complete", lessonHandler.UpdateProgress)
+			})
+
+		// Progression (ranks, titles, themes)
+		r.Route("/players/{playerId}/progression", func(r chi.Router) {
+			r.Get("/", progressionHandler.GetProgression)
+			r.Post("/check", progressionHandler.CheckUpgrade)
 		})
 
-		// Lesson Progress
-		r.Route("/players/{playerId}/lessons", func(r chi.Router) {
-			r.Get("/", lessonHandler.GetAllProgress)
-			r.Get("/{lessonId}", lessonHandler.GetProgress)
-			r.Post("/{lessonId}/complete", lessonHandler.UpdateProgress)
+		// All rank tiers
+		r.Route("/tiers", func(r chi.Router) {
+			r.Get("/", progressionHandler.GetAllTiers)
+			r.Get("/detail", progressionHandler.GetTierDetails)
 		})
 	})
 
