@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import { useGameplay } from "@/hooks/useGameplay";
+import { usePlayer } from "@/hooks/usePlayer";
 import GameplayUI from "@/components/game/GameplayUI";
 
 export default function Timed1MinPage() {
-  const { state, dataPoints, startGame, startCountdown } = useGameplay("timed_1min");
+  const { playerId } = usePlayer();
+  const { state, dataPoints, startGame, startCountdown } = useGameplay("timed_1min", playerId ?? undefined);
 
   useEffect(() => {
     startGame();
@@ -16,6 +18,7 @@ export default function Timed1MinPage() {
       state={state}
       dataPoints={dataPoints}
       onStartCountdown={startCountdown}
+      onRetry={startGame}
     />
   );
 }

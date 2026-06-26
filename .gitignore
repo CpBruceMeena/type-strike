@@ -16,6 +16,7 @@ type-strike-android/build/
 type-strike-android/app/build/
 type-strike-android/local.properties
 *.iml
+.playwright-mcp
 .idea/
 .DS_Store
 *.apk
@@ -77,6 +78,10 @@ Thumbs.db
 
 # ── Backend build artifacts ──────────────────────────
 backend/scripts/seed_levels
+backend/server.log
+
+# ── Clerk auth migration (WIP — skip for now) ──────
+backend/migrations/005_clerk_auth.sql
 
 # ── Website (Next.js) ────────────────────────────────
 type-strike-web/.next/

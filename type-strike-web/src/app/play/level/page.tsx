@@ -4,13 +4,15 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useLevelGameplay } from "@/hooks/useLevelGameplay";
+import { usePlayer } from "@/hooks/usePlayer";
 import GameplayUI from "@/components/game/GameplayUI";
 
 function LevelPlayContent() {
   const searchParams = useSearchParams();
   const levelId = parseInt(searchParams.get("id") ?? "1", 10);
+  const { playerId } = usePlayer();
 
-  const { state, dataPoints, startGame, startCountdown } = useLevelGameplay(levelId);
+  const { state, dataPoints, startGame, startCountdown } = useLevelGameplay(levelId, playerId ?? undefined);
 
   useEffect(() => {
     startGame();
@@ -21,6 +23,7 @@ function LevelPlayContent() {
       state={state}
       dataPoints={dataPoints}
       onStartCountdown={startCountdown}
+      onRetry={startGame}
     />
   );
 }

@@ -60,7 +60,7 @@ function createInitialState(): GameplayUIState {
 
 // ── Hook ────────────────────────────────────────────────
 
-export function useLevelGameplay(levelId: number) {
+export function useLevelGameplay(levelId: number, playerId?: number) {
   const router = useRouter();
   const [state, setState] = useState<GameplayUIState>(() => ({
     ...createInitialState(),
@@ -70,7 +70,7 @@ export function useLevelGameplay(levelId: number) {
   const levelDetailRef = useRef<LevelDetail | null>(null);
   const engineRef = useRef<TypingEngine | null>(null);
   const inputRef = useRef<KeyboardInputSource | null>(null);
-  const playerId = DEFAULT_PLAYER_ID;
+  const pid = playerId ?? DEFAULT_PLAYER_ID;
 
   // Data points for the consistency graph
   const [dataPoints, setDataPoints] = useState<
@@ -84,7 +84,7 @@ export function useLevelGameplay(levelId: number) {
 
     try {
       // 1. Create text provider (fetches level paragraph)
-      const textProvider = new LevelTextProvider(levelId, playerId);
+      const textProvider = new LevelTextProvider(levelId, pid);
 
       // 2. Create timer (no limit for level mode)
       const timer = new NoTimer();
@@ -114,7 +114,7 @@ export function useLevelGameplay(levelId: number) {
 
       // Store level detail for star calculation (use ref to avoid stale closure in callbacks)
       try {
-        const detail = await api.getLevelDetail(levelId, playerId);
+        const detail = await api.getLevelDetail(levelId, pid);
         levelDetailRef.current = detail;
         setLevelDetail(detail);
       } catch {
@@ -162,15 +162,6 @@ export function useLevelGameplay(levelId: number) {
         });
       });
 
-      engine.onKineticTextCallback((text) => {
-        if (text) {
-          setState((s) => ({ ...s, showKineticText: text }));
-          setTimeout(() => {
-            setState((s) => ({ ...s, showKineticText: null }));
-          }, 1800);
-        }
-      });
-
       engine.onCompleteCallback((result: GameResult) => {
         handleGameComplete(result);
       });
@@ -194,7 +185,7 @@ export function useLevelGameplay(levelId: number) {
       console.error("Failed to start level game:", err);
       setState((s) => ({ ...s, gameState: "failed" as GameState }));
     }
-  }, [levelId, playerId]);
+  }, [levelId, pid]);
 
   // ── Countdown Sequence ───────────────────────────────
 
@@ -233,7 +224,7 @@ export function useLevelGameplay(levelId: number) {
 
       // Submit to backend via completeLevel
       try {
-        await api.completeLevel(playerId, levelId, {
+        await api.completeLevel(pid, levelId, {
           wpm: result.wpm,
           accuracy: result.accuracy,
           stars,
@@ -275,7 +266,7 @@ export function useLevelGameplay(levelId: number) {
       engineRef.current?.destroy();
       inputRef.current?.destroy();
     },
-    [levelId, playerId, router]
+    [levelId, pid, router]
   );
 
   // ── Cleanup on unmount ───────────────────────────────

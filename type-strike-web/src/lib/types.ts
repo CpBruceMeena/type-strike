@@ -11,6 +11,19 @@ export interface Player {
   last_played_at: string;
   streak_count: number;
   last_streak_date: string | null;
+  email: string;
+  player_tag: string;
+  display_name: string;
+}
+
+export interface RegisterPlayerRequest {
+  email: string;
+  display_name: string;
+}
+
+export interface RegisterPlayerResponse {
+  player: Player;
+  is_new: boolean;
 }
 
 export interface PlayerSummary {
@@ -295,6 +308,27 @@ export interface PlayerExtendedStats {
     games: number;
     best_wpm: number;
   }>;
+}
+
+// ── Lesson Progress ───────────────────────────────────
+
+export interface LessonProgress {
+  id: number;
+  player_id: number;
+  lesson_id: number;
+  best_wpm: number;
+  best_accuracy: number;
+  completed: boolean;
+  attempts: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateLessonProgressRequest {
+  wpm: number;
+  accuracy: number;
+  completed: boolean;
 }
 
 // ── Game State (web UI) ─────────────────────────────────

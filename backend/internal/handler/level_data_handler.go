@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cpbrucemeena/type-strike-backend/internal/data"
+	"github.com/cpbrucemeena/type-strike-backend/internal/models"
 	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
 	"github.com/go-chi/chi/v5"
 )
@@ -20,12 +21,28 @@ func NewLevelDataHandler(repo *repository.Repositories) *LevelDataHandler {
 	return &LevelDataHandler{repo: repo}
 }
 
-// GetAll handles GET /api/v1/levels
+// GetAll handles GET /api/v1/levels (optional ?player_id=N to include progress)
 func (h *LevelDataHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	configs := data.LevelConfigs
+	playerIDStr := r.URL.Query().Get("player_id")
+
+	// If player_id provided, pre-load all progress for this player
+	var progressMap map[int]*models.LevelProgress
+	if playerIDStr != "" {
+		if playerID, err := strconv.Atoi(playerIDStr); err == nil {
+			allProgress, err := h.repo.LevelProgress.GetAllForPlayer(r.Context(), playerID)
+			if err == nil {
+				progressMap = make(map[int]*models.LevelProgress, len(allProgress))
+				for i, p := range allProgress {
+					progressMap[p.LevelID] = &allProgress[i]
+				}
+			}
+		}
+	}
+
 	results := make([]map[string]interface{}, len(configs))
 	for i, c := range configs {
-		results[i] = map[string]interface{}{
+		result := map[string]interface{}{
 			"id":            c.ID,
 			"name":          c.Name,
 			"tier":          c.Tier,
@@ -34,6 +51,22 @@ func (h *LevelDataHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 			"pass_accuracy": c.PassAccuracy,
 			"paragraph":     c.Paragraph,
 		}
+		// Include player progress if available
+		if progressMap != nil {
+			if p, ok := progressMap[c.ID]; ok {
+				bestWPM := p.BestWPM
+				bestAcc := p.BestAccuracy
+				stars := p.Stars
+				if bestWPM > 0 {
+					result["player_best_wpm"] = bestWPM
+				}
+				if bestAcc > 0 {
+					result["player_best_acc"] = bestAcc
+				}
+				result["player_stars"] = stars
+			}
+		}
+		results[i] = result
 	}
 	writeJSON(w, http.StatusOK, results)
 }

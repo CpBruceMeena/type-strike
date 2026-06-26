@@ -84,7 +84,7 @@ export default function FailedContent() {
         <Button variant="primary" size="lg" onClick={handleRetry}>
           RETRY
         </Button>
-        <Button variant="secondary" size="lg" onClick={() => router.push("/home")}>
+        <Button variant="secondary" size="lg" onClick={() => router.push("/app/home")}>
           HOME
         </Button>
         <Button variant="ghost" size="lg" onClick={() => router.back()}>

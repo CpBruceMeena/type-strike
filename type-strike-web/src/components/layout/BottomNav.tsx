@@ -4,24 +4,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_TABS = [
-  { label: "PLAY", href: "/home", accent: "#FF5020" },
+  { label: "PLAY", href: "/app/home", accent: "#FF5020" },
   { label: "LEARN", href: "/learn", accent: "#22DD44" },
   { label: "CODER", href: "/play/coder", accent: "#00E5FF" },
-  { label: "DAILY", href: "/daily-challenges", accent: "#FFCC00" },
-  { label: "FEATS", href: "/achievements", accent: "#CC44FF" },
-  { label: "PROFILE", href: "/profile", accent: "#FF44CC" },
+  { label: "DAILY", href: "/app/daily-challenges", accent: "#FFCC00" },
+  { label: "FEATS", href: "/app/achievements", accent: "#CC44FF" },
+  { label: "PROFILE", href: "/app/profile", accent: "#FF44CC" },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   const getActive = (href: string): boolean => {
-    if (href === "/home") return pathname === "/home" || pathname === "/map";
+    if (href === "/app/home") return pathname === "/app/home" || pathname === "/app/map";
     if (href === "/learn") return pathname.startsWith("/learn");
     if (href === "/play/coder") return pathname.startsWith("/play/coder");
-    if (href === "/daily-challenges") return pathname.startsWith("/daily-challenges");
-    if (href === "/achievements") return pathname.startsWith("/achievements");
-    if (href === "/profile") return pathname === "/profile";
+    if (href === "/app/daily-challenges") return pathname.startsWith("/app/daily-challenges");
+    if (href === "/app/achievements") return pathname.startsWith("/app/achievements");
+    if (href === "/app/profile") return pathname === "/app/profile";
     return false;
   };
 

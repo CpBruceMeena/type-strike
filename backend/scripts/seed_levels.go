@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -12,21 +10,35 @@ import (
 	"math/rand"
 )
 
+type Level struct {
+	ID           int    `gorm:"primaryKey"`
+	Name         string `gorm:"type:varchar(100)"`
+	Tier         string `gorm:"type:varchar(20)"`
+	Difficulty   int    `gorm:"default:1"`
+	PassWPM      int    `gorm:"column:pass_wpm"`
+	PassAccuracy int    `gorm:"column:pass_accuracy"`
+	Paragraph    string `gorm:"type:text"`
+}
+
+func (Level) TableName() string { return "levels" }
+
 func main() {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		databaseURL = "postgresql://postgres:password@localhost:5432/typestrike?sslmode=disable"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	log.Println("Connecting to database...")
-	pool, err := database.Connect(ctx, databaseURL)
+	db, err := database.Connect(databaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
-	defer pool.Close()
+	defer func() {
+		sqlDB, _ := db.DB()
+		if sqlDB != nil {
+			sqlDB.Close()
+		}
+	}()
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -36,43 +48,40 @@ func main() {
 
 	log.Printf("Seeding %d levels into the database...", len(levels))
 
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		log.Fatalf("Failed to begin transaction: %v", err)
+	// Use a transaction for the bulk operation
+	tx := db.Begin()
+	if tx.Error != nil {
+		log.Fatalf("Failed to begin transaction: %v", tx.Error)
 	}
-	defer tx.Rollback(ctx)
 
 	// Clear existing levels
-	_, err = tx.Exec(ctx, "DELETE FROM levels")
-	if err != nil {
+	if err := tx.Exec("DELETE FROM levels").Error; err != nil {
+		tx.Rollback()
 		log.Fatalf("Failed to clear levels: %v", err)
 	}
 
 	// Insert each level
 	for _, lvl := range levels {
-		_, err := tx.Exec(ctx,
-			`INSERT INTO levels (id, name, tier, difficulty, pass_wpm, pass_accuracy, paragraph)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7)
-			 ON CONFLICT (id) DO UPDATE SET
-			   name = EXCLUDED.name,
-			   tier = EXCLUDED.tier,
-			   difficulty = EXCLUDED.difficulty,
-			   pass_wpm = EXCLUDED.pass_wpm,
-			   pass_accuracy = EXCLUDED.pass_accuracy,
-			   paragraph = EXCLUDED.paragraph`,
-			lvl.ID, lvl.Name, lvl.Tier, lvl.Difficulty, lvl.PassWPM, lvl.PassAccuracy, lvl.Paragraph,
-		)
-		if err != nil {
+		level := Level{
+			ID:           lvl.ID,
+			Name:         lvl.Name,
+			Tier:         lvl.Tier,
+			Difficulty:   lvl.Difficulty,
+			PassWPM:      lvl.PassWPM,
+			PassAccuracy: lvl.PassAccuracy,
+			Paragraph:    lvl.Paragraph,
+		}
+		if err := tx.Where("id = ?", lvl.ID).Assign(level).FirstOrCreate(&level).Error; err != nil {
+			tx.Rollback()
 			log.Fatalf("Failed to insert level %d: %v", lvl.ID, err)
 		}
 	}
 
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit().Error; err != nil {
 		log.Fatalf("Failed to commit: %v", err)
 	}
 
-	fmt.Printf("\n  ✅ %d levels seeded successfully!\n\n", len(levels))
-	fmt.Println("  Levels are now available from the database.")
+	log.Printf("✅ %d levels seeded successfully!", len(levels))
 }
 
 func init() {

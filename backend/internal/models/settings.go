@@ -2,11 +2,13 @@ package models
 
 // Setting represents a single player preference key-value pair.
 type Setting struct {
-	ID       int    `json:"id"`
-	PlayerID int    `json:"player_id"`
-	Key      string `json:"key"`
+	ID       int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	PlayerID int    `json:"player_id" gorm:"column:player_id;uniqueIndex:idx_player_key"`
+	Key      string `json:"key" gorm:"uniqueIndex:idx_player_key"`
 	Value    string `json:"value"`
 }
+
+func (Setting) TableName() string { return "settings" }
 
 // BatchUpdateSettingsRequest is the payload to update multiple settings at once.
 type BatchUpdateSettingsRequest struct {

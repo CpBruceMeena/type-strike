@@ -33,18 +33,17 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	ctx := r.Context()
 	today := time.Now()
 
 	// Read player streak for the response
-	player, _ := h.repo.Player.GetByID(ctx, playerID)
+	player, _ := h.repo.Player.GetByID(r.Context(), playerID)
 	streakCount := 0
 	if player != nil {
 		streakCount = player.StreakCount
 	}
 
 	// Try to fetch existing challenges for today
-	challenges, err := h.repo.DailyChallenge.GetChallengesForDate(ctx, playerID, today)
+	challenges, err := h.repo.DailyChallenge.GetChallengesForDate(r.Context(), playerID, today)
 	if err != nil {
 		log.Printf("failed to fetch daily challenges: %v", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch daily challenges")
@@ -66,7 +65,7 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 	// Get player's levels cleared count for appropriate challenge difficulty
 	levelsCleared := 0
 	if player != nil {
-		progress, err := h.repo.LevelProgress.GetAllForPlayer(ctx, playerID)
+		progress, err := h.repo.LevelProgress.GetAllForPlayer(r.Context(), playerID)
 		if err == nil {
 			for _, p := range progress {
 				if p.Completed {
@@ -96,14 +95,14 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 	}
 
 	// Insert into DB
-	if err := h.repo.DailyChallenge.InsertChallenges(ctx, playerID, today, challengeModels); err != nil {
+	if err := h.repo.DailyChallenge.InsertChallenges(r.Context(), playerID, today, challengeModels); err != nil {
 		log.Printf("failed to insert daily challenges: %v", err)
 		writeError(w, http.StatusInternalServerError, "GENERATE_FAILED", "Failed to generate daily challenges")
 		return
 	}
 
 	// Re-fetch to get the persisted records with IDs
-	challenges, err = h.repo.DailyChallenge.GetChallengesForDate(ctx, playerID, today)
+	challenges, err = h.repo.DailyChallenge.GetChallengesForDate(r.Context(), playerID, today)
 	if err != nil {
 		log.Printf("failed to re-fetch daily challenges: %v", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch generated challenges")
@@ -155,10 +154,8 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ctx := r.Context()
-
 	// Check if challenge was already completed (before this attempt)
-	challenges, err := h.repo.DailyChallenge.GetChallengesForDate(ctx, playerID, time.Now())
+	challenges, err := h.repo.DailyChallenge.GetChallengesForDate(r.Context(), playerID, time.Now())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch challenges")
 		return
@@ -173,7 +170,7 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Update progress
-	updated, err := h.repo.DailyChallenge.UpdateChallengeProgress(ctx, challengeID, playerID, req.WPM, req.Accuracy)
+	updated, err := h.repo.DailyChallenge.UpdateChallengeProgress(r.Context(), challengeID, playerID, req.WPM, req.Accuracy)
 	if err != nil {
 		log.Printf("failed to update challenge progress: %v", err)
 		writeError(w, http.StatusInternalServerError, "UPDATE_FAILED", "Failed to update challenge progress")
@@ -181,7 +178,7 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Read player's current streak for multiplier
-	player, _ := h.repo.Player.GetByID(ctx, playerID)
+	player, _ := h.repo.Player.GetByID(r.Context(), playerID)
 	streakCount := 0
 	if player != nil {
 		streakCount = player.StreakCount
@@ -211,13 +208,13 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 		resp.Message = "Challenge completed! Rewards awarded."
 
 		// Award XP and stars (with streak bonus applied)
-		if err := h.repo.DailyChallenge.AwardChallengeReward(ctx, playerID, rewardedXP, rewardedStars); err != nil {
+		if err := h.repo.DailyChallenge.AwardChallengeReward(r.Context(), playerID, rewardedXP, rewardedStars); err != nil {
 			log.Printf("failed to award challenge reward: %v", err)
 			resp.Message = "Challenge completed but reward delivery failed. Please try again."
 		}
 
 		// Update streak after completing a challenge
-		if _, err := h.repo.Player.UpdateStreak(ctx, playerID); err != nil {
+		if _, err := h.repo.Player.UpdateStreak(r.Context(), playerID); err != nil {
 			log.Printf("failed to update streak on challenge complete: %v", err)
 		}
 	} else if updated.Completed {

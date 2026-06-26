@@ -459,7 +459,7 @@ export default function FeatsPage() {
                 variant="primary"
                 size="md"
                 className="flex-1"
-                onClick={() => router.push("/map")}
+                onClick={() => router.push("/app/map")}
               >
                 PLAY
               </Button>

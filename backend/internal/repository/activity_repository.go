@@ -2,38 +2,35 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/cpbrucemeena/type-strike-backend/internal/models"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 // ActivityRepository handles database operations for the activity feed.
 type ActivityRepository struct {
-	pool *pgxpool.Pool
+	db *gorm.DB
 }
 
 // NewActivityRepository creates a new ActivityRepository.
-func NewActivityRepository(pool *pgxpool.Pool) *ActivityRepository {
-	return &ActivityRepository{pool: pool}
+func NewActivityRepository(db *gorm.DB) *ActivityRepository {
+	return &ActivityRepository{db: db}
 }
 
 // Record inserts a new activity event.
 func (r *ActivityRepository) Record(ctx context.Context, req models.RecordActivityRequest) (*models.Activity, error) {
-	metadata := req.Metadata
-	if metadata == nil {
-		metadata = json.RawMessage("{}")
+	if req.Metadata == nil {
+		req.Metadata = []byte("{}")
 	}
 
-	var a models.Activity
-	err := r.pool.QueryRow(ctx,
-		`INSERT INTO activity (player_id, type, metadata)
-		 VALUES ($1, $2, $3)
-		 RETURNING id, player_id, type, timestamp, metadata`,
-		req.PlayerID, req.Type, metadata,
-	).Scan(&a.ID, &a.PlayerID, &a.Type, &a.Timestamp, &a.Metadata)
-	if err != nil {
+	a := models.Activity{
+		PlayerID: req.PlayerID,
+		Type:     req.Type,
+		Metadata: req.Metadata,
+	}
+
+	if err := r.db.WithContext(ctx).Create(&a).Error; err != nil {
 		return nil, fmt.Errorf("insert activity: %w", err)
 	}
 	return &a, nil
@@ -45,24 +42,13 @@ func (r *ActivityRepository) GetRecent(ctx context.Context, playerID, limit int)
 		limit = 20
 	}
 
-	rows, err := r.pool.Query(ctx,
-		`SELECT id, player_id, type, timestamp, metadata
-		 FROM activity WHERE player_id = $1
-		 ORDER BY timestamp DESC LIMIT $2`,
-		playerID, limit,
-	)
+	var results []models.Activity
+	err := r.db.WithContext(ctx).Where("player_id = ?", playerID).
+		Order("timestamp DESC").
+		Limit(limit).
+		Find(&results).Error
 	if err != nil {
 		return nil, fmt.Errorf("get recent activity: %w", err)
-	}
-	defer rows.Close()
-
-	var results []models.Activity
-	for rows.Next() {
-		var a models.Activity
-		if err := rows.Scan(&a.ID, &a.PlayerID, &a.Type, &a.Timestamp, &a.Metadata); err != nil {
-			return nil, fmt.Errorf("scan activity: %w", err)
-		}
-		results = append(results, a)
 	}
 	return results, nil
 }

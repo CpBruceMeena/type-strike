@@ -5,39 +5,37 @@ import (
 	"fmt"
 
 	"github.com/cpbrucemeena/type-strike-backend/internal/models"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 // LeaderboardRepository handles database operations for the leaderboard.
 type LeaderboardRepository struct {
-	pool *pgxpool.Pool
+	db *gorm.DB
 }
 
 // NewLeaderboardRepository creates a new LeaderboardRepository.
-func NewLeaderboardRepository(pool *pgxpool.Pool) *LeaderboardRepository {
-	return &LeaderboardRepository{pool: pool}
+func NewLeaderboardRepository(db *gorm.DB) *LeaderboardRepository {
+	return &LeaderboardRepository{db: db}
 }
 
 // GetTop returns the top N leaderboard entries ordered by XP descending.
 func (r *LeaderboardRepository) GetTop(ctx context.Context, limit int) ([]models.LeaderboardEntry, int, error) {
-	// Get total count
-	var totalCount int
-	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM leaderboard_entries`).Scan(&totalCount)
-	if err != nil {
+	db := r.db.WithContext(ctx)
+
+	var totalCount int64
+	if err := db.Table("leaderboard_entries").Count(&totalCount).Error; err != nil {
 		return nil, 0, fmt.Errorf("count leaderboard: %w", err)
 	}
 
-	// Get top entries with computed rank
-	rows, err := r.pool.Query(ctx, `
-		SELECT
-			player_id, player_name, level, xp, total_stars,
+	rawSQL := `
+		SELECT player_id, player_name, level, xp, total_stars,
 			levels_cleared, best_wpm, updated_at,
 			ROW_NUMBER() OVER (ORDER BY xp DESC, total_stars DESC, best_wpm DESC) AS rank
 		FROM leaderboard_entries
 		ORDER BY xp DESC, total_stars DESC, best_wpm DESC
 		LIMIT $1
-	`, limit)
+	`
+	rows, err := db.Raw(rawSQL, limit).Rows()
 	if err != nil {
 		return nil, 0, fmt.Errorf("query leaderboard top: %w", err)
 	}
@@ -55,45 +53,41 @@ func (r *LeaderboardRepository) GetTop(ctx context.Context, limit int) ([]models
 		entries = append(entries, e)
 	}
 
-	return entries, totalCount, nil
+	return entries, int(totalCount), nil
 }
 
 // GetPlayerRank returns a player's leaderboard entry with nearby competitors.
 func (r *LeaderboardRepository) GetPlayerRank(ctx context.Context, playerID int) (*models.PlayerRank, error) {
-	// Get the player's own entry with rank
-	var entry models.LeaderboardEntry
-	err := r.pool.QueryRow(ctx, `
-		SELECT
-			player_id, player_name, level, xp, total_stars,
-			levels_cleared, best_wpm, updated_at,
-			rank
+	db := r.db.WithContext(ctx)
+
+	rawSQL := `
+		SELECT player_id, player_name, level, xp, total_stars,
+			levels_cleared, best_wpm, updated_at, rank
 		FROM (
 			SELECT *, ROW_NUMBER() OVER (ORDER BY xp DESC, total_stars DESC, best_wpm DESC) AS rank
 			FROM leaderboard_entries
 		) sub
 		WHERE player_id = $1
-	`, playerID).Scan(
-		&entry.PlayerID, &entry.PlayerName, &entry.Level, &entry.XP, &entry.TotalStars,
-		&entry.LevelsCleared, &entry.BestWPM, &entry.UpdatedAt, &entry.Rank,
-	)
-	if err == pgx.ErrNoRows {
-		return nil, nil
-	}
+	`
+	var entry models.LeaderboardEntry
+	err := db.Raw(rawSQL, playerID).Scan(&entry).Error
 	if err != nil {
 		return nil, fmt.Errorf("get player rank: %w", err)
 	}
+	if entry.PlayerID == 0 {
+		return nil, nil
+	}
 
-	// Get 2 players above (exclude self at low ranks)
-	rowsAbove, err := r.pool.Query(ctx, `
-		SELECT
-			player_id, player_name, level, xp, total_stars,
+	aboveSQL := `
+		SELECT player_id, player_name, level, xp, total_stars,
 			levels_cleared, best_wpm, updated_at,
 			ROW_NUMBER() OVER (ORDER BY xp DESC, total_stars DESC, best_wpm DESC) AS rank
 		FROM leaderboard_entries
 		WHERE player_id != $2
 		ORDER BY xp DESC, total_stars DESC, best_wpm DESC
 		OFFSET GREATEST(0, $1 - 3) LIMIT 2
-	`, entry.Rank, playerID)
+	`
+	rowsAbove, err := db.Raw(aboveSQL, entry.Rank, playerID).Rows()
 	if err != nil {
 		return nil, fmt.Errorf("get players above: %w", err)
 	}
@@ -111,16 +105,15 @@ func (r *LeaderboardRepository) GetPlayerRank(ctx context.Context, playerID int)
 		above = append(above, e)
 	}
 
-	// Get 2 players below
-	rowsBelow, err := r.pool.Query(ctx, `
-		SELECT
-			player_id, player_name, level, xp, total_stars,
+	belowSQL := `
+		SELECT player_id, player_name, level, xp, total_stars,
 			levels_cleared, best_wpm, updated_at,
 			ROW_NUMBER() OVER (ORDER BY xp DESC, total_stars DESC, best_wpm DESC) AS rank
 		FROM leaderboard_entries
 		ORDER BY xp DESC, total_stars DESC, best_wpm DESC
 		OFFSET $1 LIMIT 2
-	`, entry.Rank)
+	`
+	rowsBelow, err := db.Raw(belowSQL, entry.Rank).Rows()
 	if err != nil {
 		return nil, fmt.Errorf("get players below: %w", err)
 	}
@@ -146,27 +139,23 @@ func (r *LeaderboardRepository) GetPlayerRank(ctx context.Context, playerID int)
 }
 
 // GetDailyRankings returns aggregated daily challenge rankings for today.
-// Players are ranked by: completed challenges (desc), total WPM (desc), then accuracy (desc).
 func (r *LeaderboardRepository) GetDailyRankings(ctx context.Context, limit int) ([]models.LeaderboardEntry, int, error) {
-	// Get total count of unique players with daily challenges today
-	var totalCount int
-	err := r.pool.QueryRow(ctx, `
+	db := r.db.WithContext(ctx)
+
+	var totalCount int64
+	if err := db.Raw(`
 		SELECT COUNT(DISTINCT player_id)
 		FROM daily_challenges
 		WHERE challenge_date = CURRENT_DATE
-	`).Scan(&totalCount)
-	if err != nil {
+	`).Scan(&totalCount).Error; err != nil {
 		return nil, 0, fmt.Errorf("count daily leaderboard: %w", err)
 	}
 
-	// Aggregate daily challenge stats per player for today
-	rows, err := r.pool.Query(ctx, `
+	rawSQL := `
 		SELECT
 			dc.player_id,
 			COALESCE(p.title, '') AS player_name,
-			p.level,
-			p.xp,
-			p.total_stars,
+			p.level, p.xp, p.total_stars,
 			COUNT(*) FILTER (WHERE dc.completed = true)::int AS levels_cleared,
 			COALESCE(MAX(dc.current_best_wpm), 0) AS best_wpm,
 			NOW() AS updated_at,
@@ -181,7 +170,8 @@ func (r *LeaderboardRepository) GetDailyRankings(ctx context.Context, limit int)
 		GROUP BY dc.player_id, p.title, p.level, p.xp, p.total_stars
 		ORDER BY rank
 		LIMIT $1
-	`, limit)
+	`
+	rows, err := db.Raw(rawSQL, limit).Rows()
 	if err != nil {
 		return nil, 0, fmt.Errorf("query daily leaderboard: %w", err)
 	}
@@ -199,19 +189,17 @@ func (r *LeaderboardRepository) GetDailyRankings(ctx context.Context, limit int)
 		entries = append(entries, e)
 	}
 
-	return entries, totalCount, nil
+	return entries, int(totalCount), nil
 }
 
 // SyncPlayer refreshes or inserts a leaderboard entry for a specific player.
 func (r *LeaderboardRepository) SyncPlayer(ctx context.Context, playerID int) error {
-	_, err := r.pool.Exec(ctx, `
+	rawSQL := `
 		INSERT INTO leaderboard_entries (player_id, player_name, level, xp, total_stars, levels_cleared, best_wpm, updated_at)
 		SELECT
 			p.id,
 			COALESCE(p.title, ''),
-			p.level,
-			p.xp,
-			p.total_stars,
+			p.level, p.xp, p.total_stars,
 			(SELECT COUNT(*) FROM level_progress WHERE player_id = p.id AND completed = true),
 			(SELECT COALESCE(MAX(current_best_wpm), 0) FROM level_progress WHERE player_id = p.id)
 		FROM players p
@@ -224,8 +212,8 @@ func (r *LeaderboardRepository) SyncPlayer(ctx context.Context, playerID int) er
 			levels_cleared = EXCLUDED.levels_cleared,
 			best_wpm       = EXCLUDED.best_wpm,
 			updated_at     = NOW()
-	`, playerID)
-	if err != nil {
+	`
+	if err := r.db.WithContext(ctx).Exec(rawSQL, playerID).Error; err != nil {
 		return fmt.Errorf("sync leaderboard entry: %w", err)
 	}
 	return nil

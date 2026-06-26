@@ -9,7 +9,7 @@ export default function HomePage() {
   const router = useRouter();
 
   const modes = [
-    { key: "levels", label: "LEVELS", desc: "100 levels of fire", icon: "🗺️", href: "/map", accent: "#FF5020" },
+    { key: "levels", label: "LEVELS", desc: "100 levels of fire", icon: "🗺️", href: "/app/map", accent: "#FF5020" },
     { key: "coder", label: "CODER", desc: "Code snippets & DSA", icon: "👨‍💻", href: "/play/coder", accent: "#00E5FF" },
     { key: "contest", label: "CONTEST", desc: "1 • 3 • 5 min timed modes", icon: "⏱️", href: "/play/contest", accent: "#FFCC00" },
   ];
@@ -32,7 +32,7 @@ export default function HomePage() {
           variant="primary"
           size="xl"
           className="mb-8 w-full max-w-sm"
-          onClick={() => router.push("/map")}
+          onClick={() => router.push("/app/map")}
         >
           <span className="flex items-center gap-3">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -63,7 +63,7 @@ export default function HomePage() {
         {/* Daily Badge */}
         <Card
           hoverable
-          onClick={() => router.push("/daily-challenges")}
+          onClick={() => router.push("/app/daily-challenges")}
           className="mt-6 w-full max-w-sm"
         >
           <div className="flex items-center gap-3">

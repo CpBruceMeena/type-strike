@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
 import { api } from "@/lib/api";
+import { LEVEL_TOTAL_COUNT } from "@/lib/constants";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://typestrike.app";
 
@@ -91,7 +92,7 @@ export default function VictoryContent() {
     } else if (mode === "contest") {
       router.push("/play/contest");
     } else {
-      router.push("/map");
+      router.push("/app/map");
     }
   }, [mode, router]);
 
@@ -230,16 +231,40 @@ export default function VictoryContent() {
       </GlassPanel>
 
       {/* Actions */}
-      <div className="flex gap-3">
-        <Button variant="primary" size="lg" onClick={handlePlayAgain}>
-          PLAY AGAIN
-        </Button>
-        <Button variant="secondary" size="lg" onClick={() => router.push("/home")}>
-          HOME
-        </Button>
-        <Button variant="ghost" size="lg" onClick={() => router.back()}>
-          ← BACK
-        </Button>
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex gap-3">
+          <Button variant="primary" size="lg" onClick={handlePlayAgain}>
+            PLAY AGAIN
+          </Button>
+          <Button variant="secondary" size="lg" onClick={() => router.push("/app/home")}>
+            HOME
+          </Button>
+        </div>
+        <div className="flex gap-3">
+          {mode.startsWith("level-") && (() => {
+            const currentLevel = parseInt(mode.replace("level-", ""), 10);
+            const nextLevel = currentLevel + 1;
+            const hasNext = nextLevel <= LEVEL_TOTAL_COUNT;
+            if (!hasNext) return null;
+            return (
+              <button
+                onClick={() => router.push(`/play/level?id=${nextLevel}`)}
+                className="group relative rounded-xl px-6 py-2.5 text-xs font-bold tracking-[2px] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,204,0,0.3)]"
+                style={{
+                  background: "linear-gradient(135deg, #FFCC00, #FF6600)",
+                  color: "#000000",
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  NEXT LEVEL →
+                </span>
+              </button>
+            );
+          })()}
+          <Button variant="ghost" size="lg" onClick={() => router.back()}>
+            ← BACK
+          </Button>
+        </div>
       </div>
     </div>
   );

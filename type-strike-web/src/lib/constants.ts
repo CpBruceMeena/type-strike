@@ -51,6 +51,10 @@ export const GAME_MODES: GameModeConfig[] = [
   { key: "timed_5min", label: "5 MIN", description: "5-minute marathon", icon: "🔥", durationSeconds: 300 },
 ];
 
+// ── Level Config ────────────────────────────────────────
+
+export const LEVEL_TOTAL_COUNT = 100;
+
 // ── Stall Detection ─────────────────────────────────────
 
 export const STALL_TIMEOUT_MS = 3000;
