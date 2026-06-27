@@ -73,6 +73,80 @@ export function useGameplay(mode: GameMode, playerId?: number) {
     Array<{ wpm: number; raw: number; net: number; accuracy: number }>
   >([]);
 
+  // ── Handle Game Complete ─────────────────────────────
+
+  const handleGameComplete = useCallback(
+    async (result: GameResult) => {
+      // Submit to backend
+      try {
+        if (gameIdRef.current) {
+          const response = await api.completeGame(gameIdRef.current, {
+            player_id: pid,
+            wpm: result.wpm,
+            accuracy: result.accuracy,
+            correct_keystrokes: result.correctKeystrokes,
+            total_keystrokes: result.totalKeystrokes,
+            error_count: result.errorCount,
+            consistency: result.consistency,
+            max_combo: result.maxCombo,
+            completed: result.completed,
+          });
+
+          // Update state with final results
+          setState((s) => ({
+            ...s,
+            gameState: (result.completed ? "complete" : "failed") as GameState,
+            finalWpm: response.wpm,
+            finalAccuracy: response.accuracy,
+            stars: response.stars ?? 0,
+            elapsedMs: result.elapsedMs,
+            totalKeystrokes: result.totalKeystrokes,
+            correctKeystrokes: result.correctKeystrokes,
+            maxCombo: result.maxCombo,
+          }));
+
+          // Navigate to result page after a brief delay
+          const params = new URLSearchParams({
+            wpm: String(response.wpm),
+            accuracy: String(response.accuracy),
+            xp: String(response.xp_earned),
+            stars: String(response.stars ?? 0),
+            mode,
+            gameId: gameIdRef.current,
+          });
+          if (response.rank !== null && response.rank !== undefined) {
+            params.set("rank", String(response.rank));
+          }
+          if (response.upgrade?.upgraded) {
+            params.set("upgraded", "true");
+            params.set("newTier", response.upgrade.new_tier?.display_name ?? "");
+            params.set("newTierIcon", response.upgrade.new_tier?.icon ?? "🏆");
+            params.set("newTierColor", response.upgrade.new_tier?.color ?? "#FF5020");
+            if (response.upgrade.new_unlocks?.length > 0) {
+              params.set("newUnlocks", JSON.stringify(response.upgrade.new_unlocks));
+            }
+          }
+
+          setTimeout(() => {
+            const dest = result.completed ? "/victory" : "/failed";
+            router.push(`${dest}?${params.toString()}`);
+          }, 1200);
+        }
+      } catch (err) {
+        console.error("Failed to submit game result:", err);
+        setState((s) => ({
+          ...s,
+          gameState: "failed" as GameState,
+        }));
+      }
+
+      // Cleanup engine
+      engineRef.current?.destroy();
+      inputRef.current?.destroy();
+    },
+    [pid, mode, router]
+  );
+
   // ── Start Game ───────────────────────────────────────
 
   const startGame = useCallback(async () => {
@@ -189,7 +263,7 @@ export function useGameplay(mode: GameMode, playerId?: number) {
       console.error("Failed to start game:", err);
       setState((s) => ({ ...s, gameState: "failed" as GameState }));
     }
-  }, [mode, pid]);
+  }, [mode, pid, handleGameComplete]);
 
   // ── Countdown Sequence ───────────────────────────────
 
@@ -211,80 +285,7 @@ export function useGameplay(mode: GameMode, playerId?: number) {
     engine.start();
     inputRef.current?.attach();
 
-  }, []);
-
-  // ── Handle Game Complete ─────────────────────────────
-
-  const handleGameComplete = useCallback(
-    async (result: GameResult) => {
-      // Submit to backend
-      try {
-        if (gameIdRef.current) {
-          const response = await api.completeGame(gameIdRef.current, {
-            player_id: pid,
-            wpm: result.wpm,
-            accuracy: result.accuracy,
-            correct_keystrokes: result.correctKeystrokes,
-            total_keystrokes: result.totalKeystrokes,
-            error_count: result.errorCount,
-            consistency: result.consistency,
-            max_combo: result.maxCombo,
-            completed: result.completed,
-          });
-
-          // Update state with final results
-          setState((s) => ({
-            ...s,
-            gameState: (result.completed ? "complete" : "failed") as GameState,
-            finalWpm: response.wpm,
-            finalAccuracy: response.accuracy,
-            stars: response.stars ?? 0,
-            elapsedMs: result.elapsedMs,
-            totalKeystrokes: result.totalKeystrokes,
-            correctKeystrokes: result.correctKeystrokes,
-            maxCombo: result.maxCombo,
-          }));
-
-          // Navigate to result page after a brief delay
-          const params = new URLSearchParams({
-            wpm: String(response.wpm),
-            accuracy: String(response.accuracy),
-            xp: String(response.xp_earned),
-            stars: String(response.stars ?? 0),
-            mode,
-            gameId: gameIdRef.current,
-          });
-          if (response.rank !== null && response.rank !== undefined) {
-            params.set("rank", String(response.rank));
-          }
-          if (response.upgrade?.upgraded) {
-            params.set("upgraded", "true");
-            params.set("newTier", response.upgrade.new_tier?.display_name ?? "");
-            params.set("newTierIcon", response.upgrade.new_tier?.icon ?? "🏆");
-            params.set("newTierColor", response.upgrade.new_tier?.color ?? "#FF5020");
-            if (response.upgrade.new_unlocks?.length > 0) {
-              params.set("newUnlocks", JSON.stringify(response.upgrade.new_unlocks));
-            }
-          }
-
-          setTimeout(() => {
-            const dest = result.completed ? "/victory" : "/failed";
-            router.push(`${dest}?${params.toString()}`);
-          }, 1200);
-        }
-      } catch (err) {
-        console.error("Failed to submit game result:", err);
-        setState((s) => ({
-          ...s,
-          gameState: "failed" as GameState,
-        }));
-      }
-
-      // Cleanup engine
-      engineRef.current?.destroy();
-      inputRef.current?.destroy();  }, [pid, mode, router]);
-
-  // ── Cleanup on unmount ───────────────────────────────
+  }, []);  // ── Cleanup on unmount ───────────────────────────────
 
   useEffect(() => {
     return () => {

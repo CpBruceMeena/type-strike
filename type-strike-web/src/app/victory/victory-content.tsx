@@ -1,14 +1,249 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import Button from "@/components/ui/Button";
+import { useCallback, useEffect, useRef, useState } from "react";
 import GlassPanel from "@/components/ui/GlassPanel";
+import ConfettiAnimation from "@/components/effects/ConfettiAnimation";
 import TierUpgradeCelebration from "@/components/game/TierUpgradeCelebration";
 import { api } from "@/lib/api";
 import { LEVEL_TOTAL_COUNT } from "@/lib/constants";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://typestrike.app";
+
+// ── Trophy Glow ──────────────────────────────────────────
+
+function TrophyGlow() {
+  return (
+    <div className="relative flex items-center justify-center">
+      {/* Soft radial glow behind the trophy */}
+      <div
+        className="pointer-events-none absolute h-24 w-24 rounded-full opacity-40"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,204,0,0.5) 0%, rgba(255,204,0,0.15) 50%, transparent 70%)",
+          filter: "blur(10px)",
+          animation: "trophy-pulse 2s ease-in-out infinite",
+        }}
+      />
+      {/* Trophy */}
+      <div className="relative animate-scale-bounce text-5xl md:text-6xl">
+        🏆
+      </div>
+      <style>{`
+        @keyframes trophy-pulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.05); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Star Ribbon ───────────────────────────────────────────
+
+function StarRibbon({ starCount }: { starCount: number }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgba(255,204,0,0.15)] to-transparent" />
+      <div className="flex items-center gap-2">
+        {[1, 2, 3].map((s) => {
+          const filled = s <= starCount;
+          return (
+            <span
+              key={s}
+              className={`relative transition-all duration-500 ${
+                filled
+                  ? "scale-110 opacity-100"
+                  : "scale-90 opacity-20"
+              }`}
+              style={{
+                fontSize: filled ? "1.25rem" : "1.1rem",
+                filter: filled
+                  ? "drop-shadow(0 0 6px rgba(255,204,0,0.5))"
+                  : "none",
+                transitionDelay: filled ? `${(s - 1) * 150}ms` : "0ms",
+              }}
+            >
+              {filled ? "⭐" : "☆"}
+            </span>
+          );
+        })}
+      </div>
+      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgba(255,204,0,0.15)] to-transparent" />
+    </div>
+  );
+}
+
+// ── Stat Card ─────────────────────────────────────────────
+
+interface StatCardProps {
+  label: string;
+  value: string;
+  accent: string;
+  /** WPM gets the hero treatment */
+  large?: boolean;
+}
+
+function StatCard({ label, value, accent, large }: StatCardProps) {
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.06)] backdrop-blur-[12px] ${
+        large
+          ? "col-span-2 row-span-1 p-4"
+          : "col-span-1 p-3"
+      }`}
+      style={{
+        background: large
+          ? "linear-gradient(135deg, rgba(255,80,32,0.08), rgba(30,30,48,0.5))"
+          : "rgba(20,20,32,0.65)",
+        boxShadow: large ? "0 4px 24px rgba(255,80,32,0.15)" : "none",
+        borderTop: `2px solid ${accent}`,
+      }}
+    >
+      {/* Value */}
+      <p
+        className={`font-black tabular-nums leading-none ${
+          large ? "text-3xl md:text-4xl" : "text-xl md:text-2xl"
+        }`}
+        style={{ color: accent }}
+      >
+        {value}
+      </p>
+      {/* Label */}
+      <p
+        className={`mt-1 font-bold tracking-[1.5px] ${
+          large ? "text-[9px]" : "text-[8px]"
+        }`}
+        style={{ color: "var(--text-muted)" }}
+      >
+        {label}
+      </p>
+    </div>
+  );
+}
+
+// ── Performance Bar ───────────────────────────────────────
+
+function PerformanceBar({
+  percentile,
+  totalPlayers,
+  wpm,
+}: {
+  percentile: number;
+  totalPlayers: number;
+  wpm: number;
+}) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const [markerVisible, setMarkerVisible] = useState(false);
+
+  useEffect(() => {
+    // Trigger marker animation after mount
+    const t = setTimeout(() => setMarkerVisible(true), 400);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Determine color based on percentile
+  const barColor =
+    percentile >= 90
+      ? "linear-gradient(90deg, #FFCC00, #22FF44)"
+      : percentile >= 70
+      ? "linear-gradient(90deg, #FF5020, #FFCC00)"
+      : percentile >= 50
+      ? "linear-gradient(90deg, #FF5020, #FF6600)"
+      : "linear-gradient(90deg, #8844FF, #FF5020)";
+
+  return (
+    <div className="space-y-3">
+      {/* Top X% callout */}
+      <div className="text-center">            <p
+          className="text-2xl font-black tabular-nums leading-none md:text-3xl"
+          style={{
+            color:
+              percentile >= 90
+                ? "var(--accent-gold)"
+                : percentile >= 70
+                ? "var(--accent-primary)"
+                : "var(--text-body)",
+            textShadow:
+              percentile >= 90
+                ? "0 0 20px rgba(255,204,0,0.3)"
+                : "none",
+          }}
+        >
+          Top {percentile}%
+        </p>
+        <p className="mt-0.5 text-[9px] font-bold tracking-[2px]" style={{ color: "var(--text-muted)" }}>
+          OF {totalPlayers.toLocaleString()} PLAYERS
+        </p>
+      </div>
+
+      {/* Bar track */}
+      <div className="relative" ref={barRef}>
+        {/* Endpoint labels */}
+        <div className="mb-1 flex items-center justify-between text-[8px] font-bold tracking-[1px]" style={{ color: "var(--text-disabled)" }}>
+          <span>Slowest</span>
+          <span>Fastest</span>
+        </div>
+
+        {/* Bar track */}          <div
+          className="relative h-2 w-full overflow-hidden rounded-full"
+          style={{ background: "rgba(255,255,255,0.04)" }}
+        >
+          {/* Filled progress */}
+          <div
+            className="h-full rounded-full transition-all duration-1000 ease-out"
+            style={{
+              width: `${Math.max(2, percentile)}%`,
+              background: barColor,
+              boxShadow: `0 0 12px ${
+                percentile >= 90
+                  ? "rgba(255,204,0,0.4)"
+                  : "rgba(255,80,32,0.3)"
+              }`,
+            }}
+          />
+
+          {/* Avatar pin marker at user's position */}
+          {markerVisible && (
+            <div
+              className="absolute top-1/2 -translate-y-1/2 transition-all duration-700 ease-out"
+              style={{
+                left: `${Math.max(2, Math.min(98, percentile))}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {/* Pin stem */}
+              <div
+                className="mx-auto h-1 w-[2px] rounded-full"
+                style={{ background: "var(--accent-gold)" }}
+              />
+              {/* Avatar dot */}
+              <div
+                className="flex h-5 w-5 items-center justify-center rounded-full border-2 shadow-lg"
+                style={{
+                  borderColor: "var(--accent-gold)",
+                  background:
+                    "linear-gradient(135deg, var(--accent-primary), var(--accent-gold))",
+                  boxShadow: "0 0 12px rgba(255,204,0,0.4)",
+                }}
+              >
+                <span className="text-[9px]">⚡</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Below / Above counts */}
+        <div className="mt-1 flex items-center justify-between text-[9px]" style={{ color: "var(--text-disabled)" }}>
+          <span>{Math.round(totalPlayers * (1 - percentile / 100))} below</span>
+          <span>{Math.round(totalPlayers * (percentile / 100))} above</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────
 
 export default function VictoryContent() {
   const router = useRouter();
@@ -31,13 +266,17 @@ export default function VictoryContent() {
   })() : [];
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(upgraded);
+  const [showConfetti, setShowConfetti] = useState(true);
 
   const starCount = Math.max(0, parseInt(stars, 10) || 0);
 
+  // Auto-dismiss confetti after 1.2s
+  useEffect(() => {
+    const t = setTimeout(() => setShowConfetti(false), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
   // ── Dynamic OG meta tags (client-side update) ──
-  // Server-side generateMetadata handles OG tags for crawlers (Facebook, Twitter, Discord).
-  // This client-side effect updates them after SPA navigation, where the server head
-  // is not re-evaluated. Both are needed for full coverage.
   useEffect(() => {
     const ogUrl = `${BASE_URL}/api/og?victory=true&wpm=${wpm}&accuracy=${accuracy}&stars=${stars}&mode=${encodeURIComponent(mode)}`;
     const existing = document.querySelector('meta[property="og:image"]');
@@ -49,6 +288,7 @@ export default function VictoryContent() {
     document.title = `Victory — ${wpm} WPM | Type Strike`;
   }, [wpm, accuracy, stars, mode]);
 
+  // ── Leaderboard comparison data ──
   const [leaderboardData, setLeaderboardData] = useState<{
     totalPlayers: number;
     aboveCount: number;
@@ -107,52 +347,173 @@ export default function VictoryContent() {
     }
   }, [mode, router]);
 
-  const wpmPercentile =
-    wpm <= 30
-      ? "Beginner"
-      : wpm <= 50
-      ? "Average"
-      : wpm <= 70
-      ? "Good"
-      : wpm <= 90
-      ? "Fast"
-      : wpm <= 120
-      ? "Expert"
-      : "Elite";
+  const handleNextLevel = useCallback(() => {
+    if (mode.startsWith("level-")) {
+      const currentLevel = parseInt(mode.replace("level-", ""), 10);
+      const nextLevel = currentLevel + 1;
+      if (nextLevel <= LEVEL_TOTAL_COUNT) {
+        router.push(`/play/level?id=${nextLevel}`);
+      }
+    }
+  }, [mode, router]);
+
+  const hasNextLevel =
+    mode.startsWith("level-") &&
+    parseInt(mode.replace("level-", ""), 10) + 1 <= LEVEL_TOTAL_COUNT;
 
   return (
-    <div className="relative z-10 flex min-h-dvh w-full flex-col items-center justify-center px-6">
-      {/* Victory icon */}
-      <div className="mb-3 text-7xl">🏆</div>
+    <>
+      {/* Confetti celebration — auto-dismisses after 1.2s */}
+      <ConfettiAnimation
+        active={showConfetti}
+        duration={1200}
+        count={60}
+        colors={["#FFCC00", "#FF5020", "#CC44FF", "#00E5FF", "#22FF44"]}
+      />
 
-      <h1
-        className="mb-1 text-4xl font-black tracking-[8px] md:text-5xl"
-        style={{ color: "var(--accent-gold)", textShadow: "0 0 40px rgba(255,204,0,0.3)" }}
-      >
-        VICTORY
-      </h1>
+      <div className="relative z-10 flex h-screen w-full flex-col items-center justify-center px-4 py-4 overflow-hidden">
+        {/* ── Main card: max-w-[480px] centered ── */}
+        <div className="flex w-full max-w-[480px] flex-col gap-4">
+          {/* ── Hero Section ── */}
+          <GlassPanel glow="gold" blur="md" depth={2} className="px-5 py-5 text-center">
+            <div className="space-y-2.5">
+              {/* Trophy with radial glow */}
+              <TrophyGlow />
 
-      {mode && (
-        <p className="mb-8 text-xs font-bold tracking-[4px]" style={{ color: "var(--text-muted)" }}>
-          {mode.toUpperCase()}
-        </p>
-      )}
+              {/* VICTORY title — larger, display weight */}
+              <div className="space-y-1">
+                <h1
+                  className="text-4xl font-black tracking-[10px] md:text-5xl"
+                  style={{
+                    color: "var(--accent-gold)",
+                    textShadow: "0 0 30px rgba(255,204,0,0.25)",
+                    fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                    fontStretch: "condensed",
+                  }}
+                >
+                  VICTORY
+                </h1>
+                {mode && (
+                  <p
+                    className="text-[10px] font-bold tracking-[4px]"
+                    style={{ color: "rgba(255,255,255,0.35)" }}
+                  >
+                    {mode.toUpperCase()}
+                  </p>
+                )}
+              </div>
 
-      {/* Stars */}
-      <div className="mb-8 flex gap-3">
-        {[1, 2, 3].map((s) => (
-          <span
-            key={s}
-            className={`text-4xl transition-all duration-500 ${
-              s <= starCount ? "opacity-100 scale-110" : "opacity-20 scale-90"
-            }`}
-            style={{
-              filter: s <= starCount ? "drop-shadow(0 0 8px rgba(255,204,0,0.5))" : "none",
-            }}
-          >
-            ⭐
-          </span>
-        ))}
+              {/* Stars as decorative ribbon */}
+              <StarRibbon starCount={starCount} />
+            </div>
+          </GlassPanel>
+
+          {/* ── Stats Row ── */}
+          <GlassPanel glow="gold" blur="md" depth={2} className="p-4">
+            <div className="grid grid-cols-3 gap-2">
+              {/* WPM — largest visual weight, spans 2 cols */}
+              <StatCard
+                label="WPM"
+                value={String(wpm)}
+                accent="var(--accent-primary)"
+                large
+              />
+              <div className="flex flex-col gap-2">
+                <StatCard
+                  label="ACC"
+                  value={`${(accuracy * 100).toFixed(0)}%`}
+                  accent="var(--accent-gold)"
+                />
+                <StatCard
+                  label="XP"
+                  value={`+${xp}`}
+                  accent="var(--electric-cyan)"
+                />
+              </div>
+            </div>              {/* Rank display (conditionally shown) */}
+            {rank && (
+              <div className="mt-3 text-center">
+                <p
+                  className="text-base font-black tabular-nums"
+                  style={{ color: "var(--plasma-purple)" }}
+                >
+                  #{rank}
+                </p>
+                <p className="text-[8px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
+                  GLOBAL RANK
+                </p>
+              </div>
+            )}
+          </GlassPanel>
+
+          {/* ── Performance Comparison ── */}
+          <GlassPanel glow="magma" blur="md" depth={2} className="p-4">
+            <p className="mb-3 text-[9px] font-bold tracking-[2px]" style={{ color: "var(--text-muted)" }}>
+              PERFORMANCE COMPARISON
+            </p>
+
+            {leaderboardData ? (
+              <PerformanceBar
+                percentile={leaderboardData.percentile}
+                totalPlayers={leaderboardData.totalPlayers}
+                wpm={wpm}
+              />
+            ) : (
+              <p className="text-center text-[10px]" style={{ color: "var(--text-disabled)" }}>
+                Loading comparison data…
+              </p>
+            )}
+          </GlassPanel>
+
+          {/* ── Actions ── */}
+          <div className="space-y-3">
+            {/* Next Level — full-width gradient CTA */}
+            {hasNextLevel && (
+              <button
+                onClick={handleNextLevel}
+                className="group relative w-full overflow-hidden rounded-xl py-3 text-xs font-extrabold tracking-[3px] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{
+                  background: "linear-gradient(135deg, #FFCC00, #FF6600)",
+                  color: "#000000",
+                  boxShadow: "0 0 30px rgba(255,204,0,0.25)",
+                }}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span className="text-base">→</span>
+                  <span>NEXT LEVEL</span>
+                </span>
+                {/* Shimmer overlay */}
+                <div
+                  className="absolute inset-0 -translate-x-full transition-transform duration-700 group-hover:translate-x-full"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+                  }}
+                />
+              </button>
+            )}
+
+            {/* Play Again + Home — ghost/outline row */}
+            <div className="flex gap-2">
+              <button
+                onClick={handlePlayAgain}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[rgba(255,255,255,0.1)] py-3 text-xs font-extrabold tracking-[2px] transition-all hover:border-[rgba(255,255,255,0.2)] hover:bg-white/5 active:scale-[0.97]"
+                style={{ color: "var(--text-body)" }}
+              >
+                <span>⚡</span>
+                <span>PLAY AGAIN</span>
+              </button>
+              <button
+                onClick={() => router.push("/app/home")}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[rgba(255,255,255,0.1)] py-3 text-xs font-extrabold tracking-[2px] transition-all hover:border-[rgba(255,255,255,0.2)] hover:bg-white/5 active:scale-[0.97]"
+                style={{ color: "var(--text-body)" }}
+              >
+                <span>⌂</span>
+                <span>HOME</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tier Upgrade Celebration Modal */}
@@ -164,166 +525,6 @@ export default function VictoryContent() {
         newUnlocks={newUnlocks}
         onDismiss={() => setShowUpgradeModal(false)}
       />
-
-      {/* Stats panel */}
-      <GlassPanel glow="gold" blur="md" depth={2} className="mb-6 w-full max-w-lg p-6">
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: "WPM", value: String(wpm), color: "var(--accent-primary)" },
-            { label: "ACC", value: `${(accuracy * 100).toFixed(0)}%`, color: "var(--accent-gold)" },
-            { label: "XP", value: `+${xp}`, color: "var(--electric-cyan)" },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-xl bg-black/20 p-4 text-center">
-              <p className="text-2xl font-black tabular-nums md:text-3xl" style={{ color: stat.color }}>
-                {stat.value}
-              </p>
-              <p className="mt-1 text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Rank display */}
-        {rank && (
-          <div className="mt-4 text-center">
-            <p className="text-lg font-black tabular-nums" style={{ color: "var(--plasma-purple)" }}>
-              #{rank}
-            </p>
-            <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
-              GLOBAL RANK
-            </p>
-          </div>
-        )}
-      </GlassPanel>
-
-      {/* Performance Comparison */}
-      <GlassPanel glow="magma" blur="md" depth={2} className="mb-6 w-full max-w-lg p-4">
-        <p className="mb-3 text-[10px] font-bold tracking-[2px]" style={{ color: "var(--text-muted)" }}>
-          PERFORMANCE COMPARISON
-        </p>
-
-        {/* Rating badge */}
-        <div className="mb-3 text-center">
-          <span
-            className="inline-block rounded-full px-5 py-1.5 text-sm font-black tracking-[3px]"
-            style={{
-              background: `linear-gradient(135deg, ${wpmPercentile === "Elite" ? "#FFCC00" : wpmPercentile === "Expert" ? "#CC44FF" : wpmPercentile === "Fast" ? "#FF6600" : wpmPercentile === "Good" ? "#22FF44" : "#888888"}22, transparent)`,
-              color: wpmPercentile === "Elite" ? "#FFCC00" : wpmPercentile === "Expert" ? "#CC44FF" : wpmPercentile === "Fast" ? "#FF6600" : wpmPercentile === "Good" ? "#22FF44" : "var(--text-muted)",
-              border: `1px solid ${wpmPercentile === "Elite" ? "rgba(255,204,0,0.3)" : wpmPercentile === "Expert" ? "rgba(204,68,255,0.3)" : wpmPercentile === "Fast" ? "rgba(255,102,0,0.3)" : wpmPercentile === "Good" ? "rgba(34,255,68,0.3)" : "rgba(136,136,136,0.3)"}`,
-            }}
-          >
-            {wpmPercentile}
-          </span>
-        </div>
-
-        {/* Comparison bar */}
-        {leaderboardData ? (
-          <div>
-            <div className="flex items-center justify-between text-[9px]" style={{ color: "var(--text-muted)" }}>
-              <span>{leaderboardData.belowCount} below</span>
-              <span className="font-bold" style={{ color: "var(--accent-gold)" }}>
-                Top {leaderboardData.percentile}%
-              </span>
-              <span>{leaderboardData.aboveCount} above</span>
-            </div>
-            <div
-              className="mt-1 h-2 w-full overflow-hidden rounded-full"
-              style={{ background: "rgba(255,255,255,0.06)" }}
-            >
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: `${leaderboardData.percentile}%`,
-                  background: `linear-gradient(90deg, #FF5020, #FFCC00${leaderboardData.percentile > 70 ? ", #22FF44" : ""})`,
-                  boxShadow: "0 0 10px rgba(255,80,32,0.4)",
-                }}
-              />
-            </div>
-            <p className="mt-1 text-[9px] text-center" style={{ color: "var(--text-muted)" }}>
-              out of {leaderboardData.totalPlayers} players
-            </p>
-          </div>
-        ) : (
-          <p className="text-center text-[10px]" style={{ color: "var(--text-disabled)" }}>
-            Loading comparison data…
-          </p>
-        )}
-      </GlassPanel>
-
-      {/* Actions */}
-      <GlassPanel glow="none" blur="sm" depth={1} className="w-full max-w-lg p-4">
-        <div className="flex flex-col gap-2">
-          {/* Next Level — prominent CTA for level mode */}
-          {mode.startsWith("level-") && (() => {
-            const currentLevel = parseInt(mode.replace("level-", ""), 10);
-            const nextLevel = currentLevel + 1;
-            const hasNext = nextLevel <= LEVEL_TOTAL_COUNT;
-            if (!hasNext) return null;
-            return (
-              <button
-                onClick={() => {
-                  router.push(`/play/level?id=${nextLevel}`);
-                }}
-                className="group relative w-full overflow-hidden rounded-xl py-3.5 text-sm font-extrabold tracking-[3px] transition-all hover:scale-[1.02] active:scale-[0.98]"
-                style={{
-                  background: "linear-gradient(135deg, #FFCC00, #FF6600)",
-                  color: "#000000",
-                  boxShadow: "0 0 24px rgba(255,204,0,0.3)",
-                }}
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <span>→</span>
-                  <span>NEXT LEVEL</span>
-                </span>
-                {/* Shimmer overlay */}
-                <div
-                  className="absolute inset-0 -translate-x-full transition-transform duration-700 group-hover:translate-x-full"
-                  style={{
-                    background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)",
-                  }}
-                />
-              </button>
-            );
-          })()}
-
-          {/* Play Again + Home — side by side */}
-          <div className="flex gap-2">
-            <Button
-              variant="primary"
-              size="md"
-              fullWidth
-              onClick={handlePlayAgain}
-            >
-              <span className="flex items-center justify-center gap-1.5">
-                <span>⚡</span>
-                <span>PLAY AGAIN</span>
-              </span>
-            </Button>
-            <Button
-              variant="secondary"
-              size="md"
-              fullWidth
-              onClick={() => router.push("/app/home")}
-            >
-              <span className="flex items-center justify-center gap-1.5">
-                <span>⌂</span>
-                <span>HOME</span>
-              </span>
-            </Button>
-          </div>
-
-          {/* Back — ghost, centered */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold tracking-[2px] transition-all hover:brightness-125"
-            style={{ color: "var(--text-muted)" }}
-          >
-            <span>←</span>
-            <span>BACK</span>
-          </button>
-        </div>
-      </GlassPanel>
-    </div>
+    </>
   );
 }

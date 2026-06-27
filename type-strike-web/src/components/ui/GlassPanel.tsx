@@ -8,6 +8,7 @@ interface GlassPanelProps {
   className?: string;
   as?: "div" | "section" | "article" | "button";
   onClick?: (e: React.MouseEvent) => void;
+  style?: React.CSSProperties;
 }
 
 const BLUR_MAP = {
@@ -32,6 +33,7 @@ export default function GlassPanel({
   className = "",
   as: Tag = "div",
   onClick,
+  style,
 }: GlassPanelProps) {
   const depthStyles = [
     "bg-[rgba(20,20,32,0.85)]",
@@ -61,6 +63,7 @@ export default function GlassPanel({
   return (
     <Tag
       onClick={onClick}
+      style={style}
       className={`relative overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.08)] ${depthStyles[depth - 1]} ${BLUR_MAP[blur]} ${GLOW_STYLES[glow]} transition-all duration-200 ${className}`}
     >
       <RimElement />

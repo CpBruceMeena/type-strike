@@ -135,9 +135,9 @@ func (h *PlayerHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if existing != nil {
 		// Update display_name if provided and different
 		if req.DisplayName != "" && existing.DisplayName != req.DisplayName {
-			updateReq := models.UpdatePlayerRequest{}
-			updateReq.Title = &req.DisplayName
-			h.repo.Player.Update(r.Context(), existing.ID, updateReq)
+			if err := h.repo.Player.UpdateDisplayName(r.Context(), existing.ID, req.DisplayName); err != nil {
+				log.Printf("failed to update display name: %v", err)
+			}
 			existing.DisplayName = req.DisplayName
 		}
 		writeJSON(w, http.StatusOK, models.RegisterPlayerResponse{
