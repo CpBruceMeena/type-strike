@@ -6,7 +6,7 @@ import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { usePlayer } from "@/hooks/usePlayer";
 import ProgressionSummary from "@/components/game/ProgressionSummary";
 import { useAchievements } from "@/hooks/useAchievements";
-import AnimatedFireIcon from "@/components/effects/AnimatedFireIcon";
+import TypeStrikeLogo from "@/components/brand/TypeStrikeLogo";
 
 const SEEN_COUNT_KEY = "typestrike_seen_achievement_count";
 
@@ -52,11 +52,9 @@ export default function Sidebar() {
         borderColor: "var(--border)",
       }}
     >
-      {/* Brand */}
-      <div className="flex items-center gap-1.5 px-5 pt-5 pb-4">
-        <AnimatedFireIcon size={22} />
-        <span className="text-sm font-bold tracking-[3px] text-text-body">TYPE</span>
-        <span className="text-sm font-black tracking-[3px] text-accent-primary">STRIKE</span>
+      {/* Brand — 2D logo with fire animation */}
+      <div className="px-5 pt-5 pb-4">
+        <TypeStrikeLogo />
       </div>
 
       {/* Divider */}
