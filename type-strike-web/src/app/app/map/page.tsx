@@ -6,12 +6,15 @@ import TopBar from "@/components/layout/TopBar";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
-import { TIERS } from "@/lib/constants";
+import { TIERS, DEFAULT_PLAYER_ID } from "@/lib/constants";
 import { api } from "@/lib/api";
+import { usePlayer } from "@/hooks/usePlayer";
 import type { LevelDetail } from "@/lib/types";
 
 export default function MapPage() {
   const router = useRouter();
+  const { playerId, isLoading: playerLoading } = usePlayer();
+  const pid = playerId ?? DEFAULT_PLAYER_ID;
   const [levels, setLevels] = useState<LevelDetail[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<LevelDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +41,7 @@ export default function MapPage() {
   useEffect(() => {
     async function fetchLevels() {
       try {
-        const data = await api.getAllLevels(1);
+        const data = await api.getAllLevels(pid);
         processLevelData(data);
       } catch {
         // Fallback: no data
@@ -53,7 +56,7 @@ export default function MapPage() {
     // Silently re-fetch when page becomes visible again (e.g. after completing a level)
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        api.getAllLevels(1).then(processLevelData).catch(() => {});
+        api.getAllLevels(pid).then(processLevelData).catch(() => {});
       }
     };
 
@@ -62,7 +65,7 @@ export default function MapPage() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [pid]);
 
   const handleLevelClick = useCallback((level: LevelDetail) => {
     setSelectedLevel(level);

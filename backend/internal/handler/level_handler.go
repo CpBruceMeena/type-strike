@@ -76,11 +76,26 @@ func (h *LevelHandler) UpdateProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("[LEVEL_COMPLETE] player=%d level=%d wpm=%d acc=%.2f stars=%d completed=%v",
+		playerID, levelID, req.WPM, req.Accuracy, req.Stars, req.Completed)
+
 	progress, upgradeResult, err := h.executeLevelComplete(r.Context(), playerID, levelID, req)
 	if err != nil {
-		log.Printf("level complete transaction failed: player=%d level=%d err=%v", playerID, levelID, err)
+		log.Printf("[LEVEL_COMPLETE_ERROR] player=%d level=%d err=%v", playerID, levelID, err)
 		writeError(w, http.StatusInternalServerError, "UPDATE_FAILED", "Failed to update level progress")
 		return
+	}
+
+	log.Printf("[LEVEL_COMPLETE_OK] player=%d level=%d stars=%d best_wpm=%d best_acc=%.2f attempts=%d upgrades=%v",
+		playerID, levelID, progress.Stars, progress.BestWPM, progress.BestAccuracy, progress.Attempts,
+		upgradeResult != nil && upgradeResult.Upgraded)
+
+	if upgradeResult != nil && upgradeResult.Upgraded {
+		log.Printf("[TIER_UPGRADE] player=%d from=%q to=%q unlocks=%v",
+			playerID,
+			upgradeResult.PreviousTier.DisplayName,
+			upgradeResult.NewTier.DisplayName,
+			upgradeResult.NewUnlocks)
 	}
 
 	resp := models.LevelCompleteResponse{
