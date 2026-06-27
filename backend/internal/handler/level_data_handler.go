@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -92,7 +92,7 @@ func (h *LevelDataHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		if playerID, err := strconv.Atoi(playerIDStr); err == nil {
 			progress, err := h.repo.LevelProgress.GetByPlayerAndLevel(r.Context(), playerID, levelID)
 			if err != nil {
-				log.Printf("failed to fetch progress for player %d, level %d: %v", playerID, levelID, err)
+				slog.Default().Error("failed to fetch progress", "player_id", playerID, "level_id", levelID, "error", err)
 			}
 			if progress != nil {
 				detail = config.ToLevelDetail(progress)

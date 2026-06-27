@@ -33,6 +33,11 @@ import type {
   TierUpgradeResponse,
   RankTier,
   AllTiersDetailResponse,
+  AllAchievementsResponse,
+  CheckAchievementsResult,
+  UnlockedCountResponse,
+  AchievementUnlockEvent,
+  PlayerAchievement,
 } from "./types";
 
 // ── Configuration ───────────────────────────────────────
@@ -334,5 +339,40 @@ export const api = {
 
   getTierDetails(): Promise<AllTiersDetailResponse> {
     return request<AllTiersDetailResponse>("api/v1/tiers/detail");
+  },
+
+  // ── Achievements ────────────────────────────────
+  getAchievements(playerId: number): Promise<AllAchievementsResponse> {
+    return request<AllAchievementsResponse>(
+      `api/v1/players/${playerId}/achievements`
+    );
+  },
+
+  checkAchievements(
+    playerId: number,
+    data: {
+      wpm?: number;
+      accuracy?: number;
+      max_combo?: number;
+      levels_cleared?: number;
+      streak_count?: number;
+      contest_rank?: number;
+    }
+  ): Promise<CheckAchievementsResult> {
+    return request<CheckAchievementsResult>(
+      `api/v1/players/${playerId}/achievements/check`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  getAchievementUnlockCount(
+    playerId: number
+  ): Promise<UnlockedCountResponse> {
+    return request<UnlockedCountResponse>(
+      `api/v1/players/${playerId}/achievements/count`
+    );
   },
 };

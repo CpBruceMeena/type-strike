@@ -3,13 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"math"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/cpbrucemeena/type-strike-backend/internal/data"
 	"github.com/cpbrucemeena/type-strike-backend/internal/models"
 	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
 	"github.com/go-chi/chi/v5"
@@ -61,7 +59,7 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 		// Contest mode: use or create today's contest paragraph
 		contest, _, err := h.repo.Contest.GetOrCreateDailyContest(r.Context(), generateContestParagraph())
 		if err != nil {
-			log.Printf("failed to get/create contest: %v", err)
+			slog.Default().Error("failed to get/create contest", "player_id", req.PlayerID, "error", err)
 			writeError(w, http.StatusInternalServerError, "CONTEST_FAILED", "Failed to initialize contest")
 			return
 		}
@@ -85,7 +83,7 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Game.CreateSession(r.Context(), session); err != nil {
-		log.Printf("failed to create game session: %v", err)
+		slog.Default().Error("failed to create game session", "player_id", req.PlayerID, "mode", req.Mode, "error", err)
 		writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create game session")
 		return
 	}
@@ -142,7 +140,7 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	// Update the session
 	updated, err := h.repo.Game.CompleteSession(r.Context(), gameID, req, xpEarned)
 	if err != nil {
-		log.Printf("failed to complete game session: %v", err)
+		slog.Default().Error("failed to complete game session", "game_id", gameID, "error", err)
 		writeError(w, http.StatusInternalServerError, "COMPLETE_FAILED", "Failed to complete game session")
 		return
 	}
@@ -150,35 +148,35 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	// Award XP to player
 	if xpEarned > 0 {
 		if _, _, err := h.repo.Player.AddXP(r.Context(), req.PlayerID, xpEarned); err != nil {
-			log.Printf("failed to award XP: %v", err)
+			slog.Default().Error("failed to award XP", "player_id", req.PlayerID, "error", err)
 		}
 		// Update progression total XP counter
 		if err := h.repo.Progression.UpdateTotalXPEarned(r.Context(), req.PlayerID, xpEarned); err != nil {
-			log.Printf("failed to update total xp earned: %v", err)
+			slog.Default().Error("failed to update total xp earned", "player_id", req.PlayerID, "error", err)
 		}
 	}
 
 	// Check for tier upgrade
 	upgradeResult, err := h.repo.Progression.CheckAndProcessUpgrade(r.Context(), req.PlayerID)
 	if err != nil {
-		log.Printf("failed to check tier upgrade: %v", err)
+		slog.Default().Error("failed to check tier upgrade", "player_id", req.PlayerID, "error", err)
 	}
 
 	// Update streak
 	if _, err := h.repo.Player.UpdateStreak(r.Context(), req.PlayerID); err != nil {
-		log.Printf("failed to update streak: %v", err)
+		slog.Default().Error("failed to update streak", "player_id", req.PlayerID, "error", err)
 	}
 
 	// Sync leaderboard
 	if err := h.repo.Leaderboard.SyncPlayer(r.Context(), req.PlayerID); err != nil {
-		log.Printf("failed to sync leaderboard: %v", err)
+		slog.Default().Error("failed to sync leaderboard", "player_id", req.PlayerID, "error", err)
 	}
 
 	// Update timed leaderboard if applicable
 	var rank *int
 	if isTimedMode(session.Mode) {
 		if err := h.repo.Game.UpsertTimedLeaderboard(r.Context(), req.PlayerID, session.Mode, req.WPM, req.Accuracy, gameID); err != nil {
-			log.Printf("failed to upsert timed leaderboard: %v", err)
+			slog.Default().Error("failed to upsert timed leaderboard", "player_id", req.PlayerID, "error", err)
 		}
 		// Get player's rank in this mode
 		if entry, err := h.repo.Game.GetPlayerTimedRank(r.Context(), req.PlayerID, session.Mode); err == nil && entry != nil {
@@ -192,7 +190,7 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		if err == nil && contest != nil {				hasEntered, _ := h.repo.Contest.HasPlayerEntered(r.Context(), contest.ID, req.PlayerID)
 			if !hasEntered {					entry, err := h.repo.Contest.InsertEntry(r.Context(), contest.ID, req.PlayerID, gameID, req.WPM, req.Accuracy)
 				if err != nil {
-					log.Printf("failed to insert contest entry: %v", err)
+					slog.Default().Error("failed to insert contest entry", "player_id", req.PlayerID, "error", err)
 				} else {
 					contestRank = &entry.Rank
 				}
@@ -209,9 +207,36 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		Rank:     rank,
 	}
 
+	// ── Check Achievements ─────────────────────────
+	// Build achievement check params from game results
+	achParams := repository.AchievementCheckParams{
+		WPM:      req.WPM,
+		Accuracy: req.Accuracy,
+		MaxCombo: req.MaxCombo,
+	}
+
+	// Fetch levels cleared count and streak for achievement checks
+	levelsCleared, _ := h.repo.LevelProgress.GetCompletedCount(r.Context(), req.PlayerID)
+	achParams.LevelsCleared = levelsCleared
+
+	if player, err := h.repo.Player.GetByID(r.Context(), req.PlayerID); err == nil && player != nil {
+		achParams.StreakCount = player.StreakCount
+	}
+
+	if contestRank != nil {
+		achParams.ContestRank = *contestRank
+	}
+
+	achievementResult := h.repo.Achievement.CheckAllAchievements(r.Context(), req.PlayerID, achParams)
+
 	// Include tier upgrade info if an upgrade occurred
 	if upgradeResult != nil && upgradeResult.Upgraded {
 		resp.Upgrade = upgradeResult
+	}
+
+	// Include achievement unlocks in response
+	if achievementResult != nil && len(achievementResult.NewUnlocks) > 0 {
+		resp.AchievementUnlocks = achievementResult.NewUnlocks
 	}
 
 	// Override rank with contest rank if applicable
@@ -222,152 +247,4 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// GetHistory handles GET /api/v1/games/history
-// Returns a player's game history with optional mode filter.
-func (h *GameHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
-	playerIDStr := r.URL.Query().Get("player_id")
-	playerID, err := strconv.Atoi(playerIDStr)
-	if err != nil || playerID < 1 {
-		writeError(w, http.StatusBadRequest, "INVALID_PLAYER_ID", "Valid player_id is required")
-		return
-	}
 
-	mode := r.URL.Query().Get("mode")
-	limitStr := r.URL.Query().Get("limit")
-	offsetStr := r.URL.Query().Get("offset")
-
-	limit := 20
-	if limitStr != "" {
-		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
-			limit = parsed
-		}
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	offset := 0
-	if offsetStr != "" {
-		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
-			offset = parsed
-		}
-	}
-
-	entries, total, err := h.repo.Game.GetHistory(r.Context(), playerID, mode, limit, offset)
-	if err != nil {
-		log.Printf("failed to fetch game history: %v", err)
-		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch game history")
-		return
-	}
-
-	if entries == nil {
-		entries = []models.GameHistoryEntry{}
-	}
-
-	writeJSON(w, http.StatusOK, models.GameHistoryResponse{
-		Games: entries,
-		Total: total,
-	})
-}
-
-// GetTimedLeaderboard handles GET /api/v1/leaderboard/timed
-func (h *GameHandler) GetTimedLeaderboard(w http.ResponseWriter, r *http.Request) {
-	mode := r.URL.Query().Get("mode")
-	if mode == "" || !isTimedMode(mode) {
-		writeError(w, http.StatusBadRequest, "INVALID_MODE", "Valid timed mode is required (timed_1min, timed_3min, timed_5min)")
-		return
-	}
-
-	limitStr := r.URL.Query().Get("limit")
-	limit := 50
-	if limitStr != "" {
-		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
-			limit = parsed
-		}
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	entries, totalCount, err := h.repo.Game.GetTimedLeaderboard(r.Context(), mode, limit)
-	if err != nil {
-		log.Printf("failed to fetch timed leaderboard: %v", err)
-		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch timed leaderboard")
-		return
-	}
-
-	if entries == nil {
-		entries = []models.TimedLeaderboardEntry{}
-	}
-
-	writeJSON(w, http.StatusOK, models.TimedLeaderboardResponse{
-		Entries:    entries,
-		TotalCount: totalCount,
-	})
-}
-
-// ── Helpers ──────────────────────────────────────────
-
-func isTimedMode(mode string) bool {
-	switch mode {
-	case models.ModeTimed1Min, models.ModeTimed3Min, models.ModeTimed5Min:
-		return true
-	}
-	return false
-}
-
-func computeGameXP(wpm int, accuracy float64, mode string) int {
-	base := int(math.Max(10, float64(wpm)*0.5))
-	accBonus := int(math.Floor(accuracy*100-80)) * 2
-	modeMultiplier := 1.0
-	switch mode {
-	case models.ModeTimed3Min:
-		modeMultiplier = 1.5
-	case models.ModeTimed5Min:
-		modeMultiplier = 2.0
-	case models.ModeContest:
-		modeMultiplier = 2.5
-	}
-	return int(float64(base+int(math.Max(0, float64(accBonus)))) * modeMultiplier)
-}
-
-func generateTimedParagraph(mode string) string {
-	// Generate a harder paragraph with numbers, special chars, capitals
-	// For timed modes, we use the level generator at a high difficulty
-	levelID := 90 // Obsidian-level difficulty
-	if mode == models.ModeTimed3Min {
-		levelID = 95
-	} else if mode == models.ModeTimed5Min {
-		levelID = 100
-	}
-	config := data.GetLevel(levelID)
-	if config != nil {
-		return config.Paragraph
-	}
-	return "The molten core accelerates beyond known limits. Type with fury and strike with fire at maximum velocity. Precision and speed define the ultimate warrior in this arena of flame and obsidian."
-}
-
-func generateContestParagraph() string {
-	// Use different content each day based on day of year, cycling through different types
-	dayOfYear := time.Now().YearDay()
-	weekOfYear := dayOfYear / 7
-
-	// Cycle through content types based on the week:
-	// Week 0: Fun facts, Week 1: Tech facts, Week 2: Short stories, Week 3: Science facts, Week 4: Coding
-	// This ensures contest content varies week to week
-	contentType := weekOfYear % 5
-
-	levelID := 76 + (dayOfYear % 25)
-	config := data.GetLevel(levelID)
-	if config != nil {
-		// Use the primary paragraph but add a header based on content type
-		contentLabels := []string{"Did you know? ", "In the world of technology, ", "", "Scientific fact: ", "Algorithm challenge: "}
-		label := contentLabels[contentType]
-		if label != "" {
-			return label + config.Paragraph
-		}
-		return config.Paragraph
-	}
-	// Fallback with a fun fact
-	return "The human brain processes images in as little as thirteen milliseconds, much faster than the one hundred milliseconds it takes to process text. This is why visual information is often easier to remember than written words."
-}

@@ -25,6 +25,7 @@ import type { ITextProvider } from "@/engine/interfaces";
 import { ContestTextProvider, FreePracticeTextProvider } from "@/engine/implementations";
 import type { GameMode, GameplayUIState, GameState } from "@/lib/types";
 import type { GameResult } from "@/engine/interfaces";
+import { showAchievementToast } from "@/components/achievements/AchievementToast";
 
 // ── Initial State ──────────────────────────────────────
 
@@ -117,6 +118,13 @@ export function useGameplay(mode: GameMode, playerId?: number) {
           if (response.rank !== null && response.rank !== undefined) {
             params.set("rank", String(response.rank));
           }
+          // Show achievement unlock toasts
+          if (response.achievement_unlocks?.length) {
+            response.achievement_unlocks.forEach((event) => {
+              showAchievementToast(event);
+            });
+          }
+
           if (response.upgrade?.upgraded) {
             params.set("upgraded", "true");
             params.set("newTier", response.upgrade.new_tier?.display_name ?? "");

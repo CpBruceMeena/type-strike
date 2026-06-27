@@ -24,3 +24,9 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 func writeError(w http.ResponseWriter, status int, code, message string) {
 	writeJSON(w, status, APIError{Code: code, Message: message})
 }
+
+// decodeJSON decodes a JSON request body into the given target.
+// Returns an error if the body cannot be decoded.
+func decodeJSON(r *http.Request, target interface{}) error {
+	return json.NewDecoder(r.Body).Decode(target)
+}

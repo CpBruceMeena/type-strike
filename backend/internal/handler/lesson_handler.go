@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -31,7 +31,7 @@ func (h *LessonHandler) GetAllProgress(w http.ResponseWriter, r *http.Request) {
 
 	progress, err := h.repo.LessonProgress.GetAllForPlayer(r.Context(), playerID)
 	if err != nil {
-		log.Printf("failed to fetch lesson progress: %v", err)
+		slog.Default().Error("failed to fetch lesson progress", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch lesson progress")
 		return
 	}
@@ -95,7 +95,7 @@ func (h *LessonHandler) UpdateProgress(w http.ResponseWriter, r *http.Request) {
 
 	progress, err := h.repo.LessonProgress.Upsert(r.Context(), playerID, lessonID, req)
 	if err != nil {
-		log.Printf("lesson progress upsert failed: player=%d lesson=%d err=%v", playerID, lessonID, err)
+		slog.Default().Error("lesson progress upsert failed", "player_id", playerID, "lesson_id", lessonID, "error", err)
 		writeError(w, http.StatusInternalServerError, "UPDATE_FAILED", "Failed to update lesson progress")
 		return
 	}

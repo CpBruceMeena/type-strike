@@ -80,6 +80,8 @@ Thumbs.db
 backend/scripts/seed_levels
 backend/server.log
 
+# ── Database migrations (applied externally / auto-apply on start) ──
+backend/migrations/*.sql
 # ── Clerk auth migration (WIP — skip for now) ──────
 backend/migrations/005_clerk_auth.sql
 

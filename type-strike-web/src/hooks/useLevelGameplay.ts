@@ -28,6 +28,7 @@ import {
 import { computeStars } from "@/lib/utils";
 import type { GameplayUIState, GameState, LevelDetail } from "@/lib/types";
 import type { GameResult } from "@/engine/interfaces";
+import { showAchievementToast } from "@/components/achievements/AchievementToast";
 
 // ── Initial State ──────────────────────────────────────
 
@@ -106,6 +107,12 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
         });
         if (levelResp.upgrade?.upgraded) {
           levelUpgrade = levelResp.upgrade;
+        }
+        // Show achievement unlock toasts
+        if (levelResp.achievement_unlocks?.length) {
+          levelResp.achievement_unlocks.forEach((event) => {
+            showAchievementToast(event);
+          });
         }
       } catch (err) {
         console.error("Failed to submit level result:", err);
