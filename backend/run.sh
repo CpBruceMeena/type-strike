@@ -128,14 +128,15 @@ cmd_start() {
     kill_port
   fi
 
-  preflight	if [ "$DO_SEED" = true ]; then
-		seed_levels
-	fi
+  preflight
+  if [ "$DO_SEED" = true ]; then
+    seed_levels
+  fi
 
-	if [ "$SEED_ONLY" = true ]; then
-		ok "Seed complete. Exiting."
-		exit 0
-	fi
+  if [ "$SEED_ONLY" = true ]; then
+    ok "Seed complete. Exiting."
+    exit 0
+  fi
 
   export DATABASE_URL="$DB_URL"
   export SERVER_PORT="$SERVER_PORT"

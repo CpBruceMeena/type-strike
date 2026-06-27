@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
+import TopBar from "@/components/layout/TopBar";
 import {
   DIFFICULTIES,
   ALL_LANGUAGES,
@@ -10,23 +10,56 @@ import {
   getFilteredSnippets,
   getSnippetPool,
   pickRandomSnippet,
+  getCompletedSnippetKeys,
 } from "@/lib/coder-data";
 
-// ── Stateless Snippet Card ──────────────────────────────
+// ── Completion key helper ────────────────────────────────
+
+function snippetKey(difficulty: string, language: string, title: string): string {
+  return `${difficulty}:${language}:${title}`;
+}
+
+// ── Difficulty Bar Component ─────────────────────────────
+
+function DifficultyBars({ level, color }: { level: number; color: string }) {
+  return (
+    <div className="flex items-center gap-[3px]">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-1 rounded-full transition-all duration-300"
+          style={{
+            width: i < level ? 18 : 18,
+            background: i < level ? color : "rgba(255,255,255,0.08)",
+            boxShadow: i < level ? `0 0 6px ${color}50` : "none",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Snippet Card ─────────────────────────────────────────
 
 function SnippetCard({
   snippet,
   index,
+  difficultyKey,
   difficultyColor,
   difficultyIcon,
   difficultyLabel,
+  difficultyLevel,
+  isCompleted,
   onClick,
 }: {
   snippet: { title: string; language: string; code: string };
   index: number;
+  difficultyKey: string;
   difficultyColor: string;
   difficultyIcon: string;
   difficultyLabel: string;
+  difficultyLevel: number;
+  isCompleted: boolean;
   onClick: () => void;
 }) {
   const langColor = LANGUAGE_COLORS[snippet.language] ?? "#888888";
@@ -40,10 +73,16 @@ function SnippetCard({
       onClick={onClick}
       className="group relative flex flex-col overflow-hidden rounded-2xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
       style={{
-        background: "rgba(18,18,30,0.85)",
-        borderColor: "rgba(255,255,255,0.06)",
+        background: isCompleted
+          ? "rgba(18,18,30,0.75)"
+          : "rgba(18,18,30,0.85)",
+        borderColor: isCompleted
+          ? `${difficultyColor}18`
+          : "rgba(255,255,255,0.06)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 2px 20px rgba(0,0,0,0.3)",
+        boxShadow: isCompleted
+          ? "0 1px 12px rgba(0,0,0,0.2)"
+          : "0 2px 20px rgba(0,0,0,0.3)",
       }}
     >
       {/* Hover glow */}
@@ -52,7 +91,27 @@ function SnippetCard({
         style={{ background: langColor }}
       />
 
-      {/* Top row: labels */}
+      {/* Difficulty progress bars */}
+      <div className="relative mb-3 flex items-center justify-between">
+        <DifficultyBars level={difficultyLevel} color={difficultyColor} />
+        {isCompleted && (
+          <span
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[9px] font-bold tracking-[1px]"
+            style={{
+              background: `${difficultyColor}14`,
+              color: difficultyColor,
+              border: `1px solid ${difficultyColor}25`,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5L4 7L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            DONE
+          </span>
+        )}
+      </div>
+
+      {/* Top row: difficulty + language badges */}
       <div className="relative mb-3 flex items-center justify-between">
         <span
           className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[9px] font-bold tracking-[1.5px] uppercase"
@@ -72,7 +131,10 @@ function SnippetCard({
             border: `1px solid ${langColor}25`,
           }}
         >
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: langColor }} />
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: langColor, boxShadow: `0 0 4px ${langColor}60` }}
+          />
           {snippet.language}
         </span>
       </div>
@@ -96,7 +158,6 @@ function SnippetCard({
         style={{ background: "rgba(0,0,0,0.4)" }}
       >
         <div className="flex">
-          {/* Line numbers */}
           <div
             className="select-none border-r px-2 py-2.5 text-right text-[9px] leading-[1.7]"
             style={{
@@ -110,7 +171,6 @@ function SnippetCard({
               <div key={i}>{i + 1}</div>
             ))}
           </div>
-          {/* Code */}
           <pre
             className="flex-1 overflow-hidden p-2.5 text-[10px] leading-[1.7]"
             style={{
@@ -130,13 +190,28 @@ function SnippetCard({
         )}
       </div>
 
-      {/* CTA */}
+      {/* CTA — always visible */}
       <div
-        className="relative mt-3 flex items-center gap-1.5 text-[10px] font-bold tracking-[1px] opacity-0 transition-all duration-200 group-hover:opacity-100"
-        style={{ color: langColor }}
+        className="relative mt-3 flex items-center justify-between"
       >
-        <span>Start typing</span>
-        <span className="text-xs transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+        <span
+          className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-[1px] transition-all duration-200 group-hover:translate-x-0.5"
+          style={{
+            color: langColor,
+            opacity: isCompleted ? 0.6 : 1,
+          }}
+        >
+          <span>Start typing</span>
+          <span className="text-xs transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+        </span>
+        {isCompleted && (
+          <span
+            className="inline-flex items-center gap-1 text-[9px] font-bold tracking-[1px] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            style={{ color: "rgba(255,255,255,0.3)" }}
+          >
+            Practice again →
+          </span>
+        )}
       </div>
     </button>
   );
@@ -148,6 +223,7 @@ export default function CoderHubPage() {
   const router = useRouter();
   const [activeDifficulty, setActiveDifficulty] = useState("easy");
   const [activeLanguage, setActiveLanguage] = useState<string | null>(null);
+  const [completedSet, setCompletedSet] = useState<Set<string>>(getCompletedSnippetKeys);
 
   const currentSnippets = useMemo(
     () => getFilteredSnippets(activeDifficulty, activeLanguage ?? undefined),
@@ -157,7 +233,20 @@ export default function CoderHubPage() {
   const difficultyInfo = DIFFICULTIES.find((d) => d.key === activeDifficulty)!;
   const diffColor = difficultyInfo.color;
 
-  // Count per language
+  // Sorted: uncompleted first, completed last
+  const sortedSnippets = useMemo(() => {
+    const completed = currentSnippets.filter((s) =>
+      completedSet.has(snippetKey(activeDifficulty, s.language, s.title))
+    );
+    const uncompleted = currentSnippets.filter((s) =>
+      !completedSet.has(snippetKey(activeDifficulty, s.language, s.title))
+    );
+    return { all: currentSnippets, uncompleted, completed };
+  }, [currentSnippets, completedSet, activeDifficulty]);
+
+  // Difficulty level: 1 = easy, 2 = medium, 3 = hard
+  const difficultyLevel = DIFFICULTIES.findIndex((d) => d.key === activeDifficulty) + 1;
+
   const languageCounts = useMemo(() => {
     const pool = getSnippetPool(activeDifficulty);
     const counts: Record<string, number> = {};
@@ -167,6 +256,7 @@ export default function CoderHubPage() {
 
   const totalPool = getSnippetPool(activeDifficulty);
   const totalSnippets = totalPool.length;
+  const completedCount = sortedSnippets.completed.length;
 
   function startSnippet(difficulty: string, index?: number) {
     const params = new URLSearchParams({ difficulty });
@@ -184,29 +274,22 @@ export default function CoderHubPage() {
   }
 
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col min-w-0 h-dvh overflow-hidden">
-        <div className="relative flex flex-1 flex-col overflow-y-auto">
-          {/* Header */}
-          <header className="flex items-center justify-between border-b px-5 py-3.5" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
-            <button
-              onClick={() => router.push("/app/home")}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-text-body hover:text-text-white transition-colors"
-              aria-label="Back to home"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            <span className="text-xs font-bold tracking-[2px] uppercase" style={{ color: "var(--text-white)" }}>
-              Code Arena
-            </span>
-
+    <div className="flex flex-1 flex-col">
+      {/* ── Header ─────────────────────────────── */}
+      <TopBar
+        showBack
+        title="CODER"
+        backHref="/app/home"
+        rightAction={
+          <div className="flex items-center gap-2">
+            {completedCount > 0 && (
+              <span className="hidden text-[10px] tabular-nums sm:block" style={{ color: "var(--text-muted)" }}>
+                <span style={{ color: diffColor }}>{completedCount}</span>/{totalSnippets} done
+              </span>
+            )}
             <button
               onClick={startRandom}
-              className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-[10px] font-bold tracking-[1px] transition-all hover:brightness-125 active:scale-95"
+              className="flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[9px] font-bold tracking-[1px] transition-all hover:brightness-125 active:scale-95"
               style={{
                 background: `${diffColor}14`,
                 color: diffColor,
@@ -216,149 +299,222 @@ export default function CoderHubPage() {
               <span>🎲</span>
               <span className="hidden sm:inline">Random</span>
             </button>
-          </header>
+          </div>
+        }
+      />
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-8">
+      {/* ── Content ─────────────────────────────────── */}
+      <div className="flex-1 px-4 py-5 md:px-8 md:py-6">
+        <div className="mx-auto w-full max-w-6xl">
 
-              {/* Hero */}
-              <div className="mb-8 text-center">
-                <h1
-                  className="text-3xl font-black tracking-tight md:text-4xl"
-                  style={{ color: "var(--text-white)" }}
-                >
-                  Master <span style={{ color: "var(--electric-cyan)" }}>Code</span>
-                </h1>
-                <p className="mt-1.5 text-xs tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  Type real-world algorithms & data structures from top company interviews
-                </p>
-              </div>
-
-              {/* ── Filter Bar ───────────────────────────── */}
-              <div
-                className="mb-7 rounded-2xl border p-1.5"
-                style={{
-                  background: "rgba(12,12,22,0.8)",
-                  borderColor: "rgba(255,255,255,0.05)",
-                }}
-              >
-                {/* Difficulty segmented control */}
-                <div className="mb-2 flex gap-1">
-                  {DIFFICULTIES.map((diff) => {
-                    const isActive = activeDifficulty === diff.key;
-                    return (
-                      <button
-                        key={diff.key}
-                        onClick={() => { setActiveDifficulty(diff.key); setActiveLanguage(null); }}
-                        className="relative flex-1 rounded-xl py-2.5 text-[11px] font-bold tracking-[1.5px] transition-all duration-200"
-                        style={{
-                          background: isActive ? `${diff.color}16` : "transparent",
-                          color: isActive ? diff.color : "var(--text-muted)",
-                        }}
-                      >
-                        {isActive && (
-                          <span
-                            className="absolute inset-0 rounded-xl"
-                            style={{ boxShadow: `inset 0 0 0 1px ${diff.color}30` }}
-                          />
-                        )}
-                        <span className="mr-1.5">{diff.icon}</span>
-                        {diff.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Divider */}
-                <div className="mx-2 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
-
-                {/* Language pills */}
-                <div className="mt-2 flex flex-wrap gap-1 px-1 pb-1">
+          {/* ── Difficulty + Language ────────────────── */}
+          <div
+            className="mb-6 rounded-2xl border p-1.5"
+            style={{
+              background: "rgba(12,12,22,0.8)",
+              borderColor: "rgba(255,255,255,0.05)",
+            }}
+          >
+            {/* Difficulty — visual progression */}
+            <div className="mb-2 flex gap-1">
+              {DIFFICULTIES.map((diff, i) => {
+                const isActive = activeDifficulty === diff.key;
+                const level = i + 1;
+                return (
                   <button
-                    onClick={() => setActiveLanguage(null)}
-                    className="rounded-lg px-3 py-1.5 text-[10px] font-bold tracking-[1px] transition-all duration-200"
+                    key={diff.key}
+                    onClick={() => { setActiveDifficulty(diff.key); setActiveLanguage(null); }}
+                    className="relative flex flex-1 flex-col items-center gap-1.5 rounded-xl py-3 text-[11px] font-bold tracking-[1.5px] transition-all duration-200"
                     style={{
-                      background: activeLanguage === null ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)",
-                      color: activeLanguage === null ? "var(--text-white)" : "var(--text-label)",
+                      background: isActive ? `${diff.color}16` : "transparent",
+                      color: isActive ? diff.color : "var(--text-muted)",
                     }}
                   >
-                    All
+                    {isActive && (
+                      <span
+                        className="absolute inset-0 rounded-xl"
+                        style={{ boxShadow: `inset 0 0 0 1px ${diff.color}30` }}
+                      />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{diff.icon}</span>
+                      <span>{diff.label}</span>
+                    </div>
+                    <DifficultyBars level={level} color={diff.color} />
                   </button>
-                  {ALL_LANGUAGES.map((lang) => {
-                    const count = languageCounts[lang];
-                    if (!count) return null;
-                    const isActive = activeLanguage === lang;
-                    const c = LANGUAGE_COLORS[lang];
-                    return (
-                      <button
-                        key={lang}
-                        onClick={() => setActiveLanguage(isActive ? null : lang)}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-bold tracking-[0.5px] transition-all duration-200"
-                        style={{
-                          background: isActive ? `${c}18` : "rgba(255,255,255,0.03)",
-                          color: isActive ? c : "var(--text-label)",
-                          border: `1px solid ${isActive ? `${c}35` : "rgba(255,255,255,0.05)"}`,
-                        }}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
-                        {lang}
-                        <span className="ml-px opacity-50">{count}</span>
-                      </button>
-                    );
-                  })}
+                );
+              })}
+            </div>
+
+            {/* Divider */}
+            <div className="mx-2 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+
+            {/* Language pills — redesigned */}
+            <div className="mt-2 flex flex-wrap gap-1.5 px-1.5 pb-1.5">
+              <button
+                onClick={() => setActiveLanguage(null)}
+                className="rounded-lg px-3 py-1.5 text-[10px] font-bold tracking-[1px] transition-all duration-200"
+                style={{
+                  background: activeLanguage === null
+                    ? "rgba(255,255,255,0.1)"
+                    : "transparent",
+                  color: activeLanguage === null
+                    ? "var(--text-white)"
+                    : "var(--text-label)",
+                  border: `1px solid ${
+                    activeLanguage === null
+                      ? "rgba(255,255,255,0.15)"
+                      : "rgba(255,255,255,0.05)"
+                  }`,
+                }}
+              >
+                All
+              </button>
+              {ALL_LANGUAGES.map((lang) => {
+                const count = languageCounts[lang];
+                if (!count) return null;
+                const isActive = activeLanguage === lang;
+                const c = LANGUAGE_COLORS[lang];
+                return (
+                  <button
+                    key={lang}
+                    onClick={() => setActiveLanguage(isActive ? null : lang)}
+                    className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-[10px] font-bold tracking-[0.5px] transition-all duration-200"
+                    style={{
+                      background: isActive ? `${c}18` : "transparent",
+                      color: isActive ? c : "var(--text-label)",
+                      border: `1px solid ${
+                        isActive ? `${c}40` : "rgba(255,255,255,0.06)"
+                      }`,
+                      boxShadow: isActive ? `0 0 12px ${c}15` : "none",
+                    }}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{
+                        background: c,
+                        boxShadow: isActive ? `0 0 6px ${c}80` : "none",
+                      }}
+                    />
+                    <span>{lang}</span>
+                    <span
+                      className="ml-0.5 rounded-md px-1.5 py-[1px] text-[8px] font-bold"
+                      style={{
+                        background: isActive ? `${c}20` : "rgba(255,255,255,0.06)",
+                        color: isActive ? c : "rgba(255,255,255,0.35)",
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Snippets ─────────────────────────────── */}
+          {currentSnippets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No snippets match this combination</p>
+              <button
+                onClick={() => setActiveLanguage(null)}
+                className="mt-3 text-[11px] font-bold tracking-[1px] underline underline-offset-4 opacity-60 hover:opacity-100 transition-opacity"
+                style={{ color: "var(--electric-cyan)" }}
+              >
+                Clear filter
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Section label with counts */}
+              <div className="mb-3 flex items-center gap-2">
+                <h2 className="text-[11px] font-bold tracking-[2px] uppercase" style={{ color: "var(--text-label)" }}>
+                  {activeLanguage ?? "All"} Snippets
+                </h2>
+                <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+                <div className="flex items-center gap-2">
+                  {completedCount > 0 && (
+                    <span className="text-[10px] tabular-nums" style={{ color: diffColor }}>
+                      {completedCount} done
+                    </span>
+                  )}
+                  <span className="text-[10px] tabular-nums" style={{ color: "var(--text-muted)" }}>
+                    {currentSnippets.length} total
+                  </span>
                 </div>
               </div>
 
-              {/* ── Snippets ─────────────────────────────── */}
-              {currentSnippets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>No snippets match this combination</p>
-                  <button
-                    onClick={() => setActiveLanguage(null)}
-                    className="mt-3 text-[11px] font-bold tracking-[1px] underline underline-offset-4 opacity-60 hover:opacity-100 transition-opacity"
-                    style={{ color: "var(--electric-cyan)" }}
-                  >
-                    Clear filter
-                  </button>
-                </div>
-              ) : (
+              {/* Grid — uncompleted */}
+              {sortedSnippets.uncompleted.length > 0 && (
                 <>
-                  {/* Section label */}
-                  <div className="mb-3 flex items-center gap-2">
-                    <h2 className="text-[11px] font-bold tracking-[2px] uppercase" style={{ color: "var(--text-label)" }}>
-                      {activeLanguage ?? "All"} Snippets
-                    </h2>
-                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
-                    <span className="text-[10px] tabular-nums" style={{ color: "var(--text-muted)" }}>
-                      {currentSnippets.length} available
-                    </span>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    {sortedSnippets.uncompleted.map((snippet) => {
+                      const actualIndex = currentSnippets.indexOf(snippet);
+                      return (
+                        <SnippetCard
+                          key={snippetKey(activeDifficulty, snippet.language, snippet.title)}
+                          snippet={snippet}
+                          index={actualIndex}
+                          difficultyKey={activeDifficulty}
+                          difficultyColor={diffColor}
+                          difficultyIcon={difficultyInfo.icon}
+                          difficultyLabel={difficultyInfo.label}
+                          difficultyLevel={difficultyLevel}
+                          isCompleted={false}
+                          onClick={() => startSnippet(activeDifficulty, actualIndex)}
+                        />
+                      );
+                    })}
                   </div>
 
-                  {/* Grid */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                    {currentSnippets.map((snippet, index) => (
-                      <SnippetCard
-                        key={`${snippet.language}-${index}`}
-                        snippet={snippet}
-                        index={index}
-                        difficultyColor={diffColor}
-                        difficultyIcon={difficultyInfo.icon}
-                        difficultyLabel={difficultyInfo.label}
-                        onClick={() => startSnippet(activeDifficulty, index)}
-                      />
-                    ))}
-                  </div>
+                  {/* Completed separator */}
+                  {sortedSnippets.completed.length > 0 && (
+                    <div className="my-8 flex items-center gap-3">
+                      <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-bold tracking-[2px] uppercase" style={{ color: "var(--text-muted)" }}>
+                          {completedCount} completed
+                        </span>
+                        <span className="text-[8px] tracking-[1px]" style={{ color: "rgba(255,255,255,0.15)" }}>
+                          Tap to practice again
+                        </span>
+                      </div>
+                      <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+                    </div>
+                  )}
                 </>
               )}
 
-              {/* Footer */}
-              <div className="mt-10 text-center">
-                <p className="text-[9px] tracking-[2px]" style={{ color: "rgba(255,255,255,0.12)" }}>
-                  Real code · Multi-line indentation · Semi-colons &amp; parentheses required · Accuracy &gt; speed
-                </p>
-              </div>
-            </div>
+              {/* Grid — completed */}
+              {sortedSnippets.completed.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {sortedSnippets.completed.map((snippet) => {
+                    const actualIndex = currentSnippets.indexOf(snippet);
+                    return (
+                      <SnippetCard
+                        key={`done-${snippetKey(activeDifficulty, snippet.language, snippet.title)}`}
+                        snippet={snippet}
+                        index={actualIndex}
+                        difficultyKey={activeDifficulty}
+                        difficultyColor={diffColor}
+                        difficultyIcon={difficultyInfo.icon}
+                        difficultyLabel={difficultyInfo.label}
+                        difficultyLevel={difficultyLevel}
+                        isCompleted={true}
+                        onClick={() => startSnippet(activeDifficulty, actualIndex)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Footer */}
+          <div className="mt-10 text-center">
+            <p className="text-[9px] tracking-[2px]" style={{ color: "rgba(255,255,255,0.12)" }}>
+              Real code · Multi-line indentation · Semi-colons &amp; parentheses required · Accuracy &gt; speed
+            </p>
           </div>
         </div>
       </div>

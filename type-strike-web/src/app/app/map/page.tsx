@@ -119,7 +119,7 @@ export default function MapPage() {
         )}
 
         <div className="mx-auto w-full max-w-4xl space-y-6">
-          {TIERS.filter((t) => t.key !== "beyond").map((tier) => (
+          {TIERS.map((tier) => (
             <div key={tier.key}>
               <div className="mb-3 flex items-center gap-3">
                 <div className="h-4 w-1 rounded-full" style={{ backgroundColor: tier.color }} />

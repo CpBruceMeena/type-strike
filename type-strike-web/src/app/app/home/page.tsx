@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import TopBar from "@/components/layout/TopBar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { usePlayer } from "@/hooks/usePlayer";
 
 export default function HomePage() {
   const router = useRouter();
+  const { player, isLoading: playerLoading } = usePlayer();
 
   const modes = [
     { key: "levels", label: "LEVELS", desc: "100 levels of fire", icon: "🗺️", href: "/app/map", accent: "#FF5020" },
@@ -19,12 +21,20 @@ export default function HomePage() {
       <TopBar streakCount={0} />
 
       <div className="flex flex-1 flex-col items-center justify-center px-4 md:px-8">
-        {/* Player Crest */}
+        {/* Player Crest — dynamic from player data */}
         <div className="mb-6 text-center md:mb-8">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-accent-primary to-accent-primary-dark shadow-lg shadow-accent-primary/30 md:h-24 md:w-24">
-            <span className="text-3xl font-black text-text-white md:text-4xl">1</span>
+            {playerLoading ? (
+              <div className="h-8 w-8 animate-pulse rounded-full bg-white/10" />
+            ) : (
+              <span className="text-3xl font-black text-text-white md:text-4xl">{player?.level ?? 1}</span>
+            )}
           </div>
-          <p className="mt-2 text-xs font-bold tracking-[4px] text-text-body md:text-sm">RECRUIT</p>
+          {playerLoading ? (
+            <div className="mx-auto mt-2 h-3 w-16 animate-pulse rounded bg-white/10" />
+          ) : (
+            <p className="mt-2 text-xs font-bold tracking-[4px] text-text-body md:text-sm">{player?.title ?? "RECRUIT"}</p>
+          )}
         </div>
 
         {/* Hero Button */}
