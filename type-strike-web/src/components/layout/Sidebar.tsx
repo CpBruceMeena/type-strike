@@ -6,6 +6,7 @@ import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { usePlayer } from "@/hooks/usePlayer";
 import ProgressionSummary from "@/components/game/ProgressionSummary";
 import { useAchievements } from "@/hooks/useAchievements";
+import AnimatedFireIcon from "@/components/effects/AnimatedFireIcon";
 
 const SEEN_COUNT_KEY = "typestrike_seen_achievement_count";
 
@@ -53,7 +54,7 @@ export default function Sidebar() {
     >
       {/* Brand */}
       <div className="flex items-center gap-1.5 px-5 pt-5 pb-4">
-        <span className="text-lg">🔥</span>
+        <AnimatedFireIcon size={22} />
         <span className="text-sm font-bold tracking-[3px] text-text-body">TYPE</span>
         <span className="text-sm font-black tracking-[3px] text-accent-primary">STRIKE</span>
       </div>
@@ -108,18 +109,7 @@ export default function Sidebar() {
       <div className="mx-4 mb-2 mt-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
       {isSignedIn ? (
         <div className="flex items-center gap-3 px-3 py-2">
-          {user.imageUrl ? (
-            <img
-              src={user.imageUrl}
-              alt={user.fullName || "Profile"}
-              className="h-8 w-8 rounded-full border border-white/10 object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary text-xs font-black text-white">
-              {user.firstName?.[0] || user.username?.[0] || "?"}
-            </div>
-          )}
+          <UserButton />
           <div className="flex min-w-0 flex-col">
             <span className="truncate text-[11px] font-bold tracking-[1px] text-text-white">
               {user.firstName || user.username}
@@ -127,9 +117,6 @@ export default function Sidebar() {
             <span className="truncate text-[9px] tracking-[1px] text-text-muted">
               {user.primaryEmailAddress?.emailAddress}
             </span>
-          </div>
-          <div className="ml-auto">
-            <UserButton />
           </div>
         </div>
       ) : (

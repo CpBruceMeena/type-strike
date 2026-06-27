@@ -15,6 +15,7 @@ import {
 import type { ITextProvider } from "@/engine/interfaces";
 import { usePlayer } from "@/hooks/usePlayer";
 import GameplayUI from "@/components/game/GameplayUI";
+import { markSnippetCompleted } from "@/lib/coder-data";
 import type { GameplayUIState, GameState } from "@/lib/types";
 import type { GameResult } from "@/engine/interfaces";
 import { DEFAULT_PLAYER_ID } from "@/lib/constants";
@@ -61,6 +62,8 @@ function CoderSessionContent() {
   const [dataPoints, setDataPoints] = useState<
     Array<{ wpm: number; raw: number; net: number; accuracy: number }>
   >([]);
+  const [snippetTitle, setSnippetTitle] = useState<string | null>(null);
+  const snippetTitleRef = useRef<string | null>(null);
 
   const engineRef = useRef<TypingEngine | null>(null);
   const inputRef = useRef<KeyboardInputSource | null>(null);
@@ -98,6 +101,12 @@ function CoderSessionContent() {
       const meta = textProvider.getMetadata();
       const snippetLanguage = meta.language as string | undefined;
       const snippetColor = meta.languageColor as string | undefined;
+
+      const snippetTitle = meta.title as string | undefined;
+      if (snippetTitle) {
+        setSnippetTitle(snippetTitle);
+        snippetTitleRef.current = snippetTitle;
+      }
 
       setState((s) => ({
         ...s,
@@ -183,6 +192,11 @@ function CoderSessionContent() {
     async (result: GameResult) => {
       const xp = computeXpEarned(result.wpm, result.accuracy, null);
 
+      // Mark snippet as completed in localStorage
+      if (result.completed && snippetTitleRef.current) {
+        markSnippetCompleted(difficulty, language ?? "unknown", snippetTitleRef.current);
+      }
+
       setState((s) => ({
         ...s,
         gameState: (result.completed ? "complete" : "failed") as GameState,
@@ -201,7 +215,6 @@ function CoderSessionContent() {
         mode: `coder_${difficulty}`,
       });
 
-      // Also try to submit to backend if available (non-blocking)
       setTimeout(() => {
         const dest = result.completed ? "/victory" : "/failed";
         router.push(`${dest}?${params.toString()}`);
@@ -210,7 +223,7 @@ function CoderSessionContent() {
       engineRef.current?.destroy();
       inputRef.current?.destroy();
     },
-    [difficulty, router]
+    [difficulty, language, router]
   );
 
   useEffect(() => {

@@ -30,7 +30,7 @@ export const TIERS: TierConfig[] = [
   { key: "igneious", label: "IGNEOUS", startLevel: 26, endLevel: 50, color: "#FF6600" },
   { key: "magma_core", label: "MAGMA CORE", startLevel: 51, endLevel: 75, color: "#CC44FF" },
   { key: "obsidian", label: "OBSIDIAN", startLevel: 76, endLevel: 100, color: "#CCCCCC" },
-  { key: "beyond", label: "BEYOND", startLevel: 101, endLevel: Infinity, color: "#FFCC00" },
+  { key: "beyond", label: "BEYOND", startLevel: 101, endLevel: 125, color: "#FFCC00" },
 ];
 
 // ── Game Mode Config ────────────────────────────────────

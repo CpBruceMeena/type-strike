@@ -52,7 +52,9 @@ export default function ProfilePage() {
                     {user.firstName} {user.lastName}
                   </h2>
                   <p className="text-sm text-text-muted">{user.primaryEmailAddress?.emailAddress}</p>
-                  <p className="text-xs text-text-muted">@{user.username}</p>
+                  {user.username && (
+                    <p className="text-xs text-text-muted">@{user.username}</p>
+                  )}
                   <p className="text-xs text-text-disabled">
                     Joined {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "recently"}
                   </p>

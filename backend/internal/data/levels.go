@@ -132,7 +132,7 @@ var tierRange = map[string][2]int{
 	TierIgneous:   {26, 50},
 	TierMagmaCore: {51, 75},
 	TierObsidian:  {76, 100},
-	TierBeyond:    {101, -1}, // -1 means unlimited — levels are generated dynamically
+	TierBeyond:    {101, 125},
 }
 
 var emberNames = []string{
@@ -375,13 +375,48 @@ var codeSnippets = []string{
 	"def word_break(s, word_dict): word_set = set(word_dict) dp = [False] * (len(s) + 1) dp[0] = True for i in range(1, len(s) + 1): for j in range(i): if dp[j] and s[j:i] in word_set: dp[i] = True break return dp[len(s)]",
 }
 
+// Beyond challenges — advanced informational paragraphs with complex vocabulary, numbers, and technical depth
+var beyondChallenges = []string{
+	`Quantum computing leverages superposition and entanglement to perform calculations exponentially faster than classical computers for specific problem classes. A quantum bit or qubit can exist in a superposition of both zero and one simultaneously enabling massive parallelism. Shor's algorithm for factorization and Grover's algorithm for unstructured search are among the most famous quantum algorithms.`,
+	`The CAP theorem states that distributed data stores can only guarantee two of three properties simultaneously: consistency meaning every read receives the most recent write, availability meaning every request receives a non-error response, and partition tolerance meaning the system continues to operate despite network failures between nodes. This fundamental trade-off shapes all distributed system architectures.`,
+	`Machine learning classification algorithms include logistic regression, decision trees, random forests, support vector machines, and neural networks. Each has distinct strengths: random forests handle high-dimensional data well, SVMs excel at binary classification with clear margins, and neural networks capture complex non-linear relationships in large datasets through multiple hidden layers.`,
+	`The human genome project successfully sequenced all three billion base pairs of human DNA over thirteen years at a total cost of approximately three billion dollars. Today, whole genome sequencing costs under one thousand dollars and takes less than twenty-four hours thanks to next-generation sequencing technologies like Illumina's sequencing by synthesis method.`,
+	`Dijkstra's algorithm finds the shortest path between nodes in a weighted graph by iteratively selecting the unvisited node with the smallest known distance and updating its neighbors. The algorithm runs in O(V squared) time with a simple array implementation but can be optimized to O(E log V) using a Fibonacci heap priority queue.`,
+	`Rust programming language guarantees memory safety without a garbage collector through its ownership system where each value has exactly one owner at any time. The borrow checker enforces that references never outlive the data they point to, eliminating entire classes of bugs like use-after-free, double free, and data races at compile time rather than runtime.`,
+	`TCP slow start is a congestion control algorithm that gradually increases the sending rate until packet loss is detected. The sender maintains a congestion window that starts at one maximum segment size and doubles every round trip time until it reaches the slow start threshold or experiences packet loss, at which point it switches to congestion avoidance.`,
+	`The butterfly effect in chaos theory describes how small changes in initial conditions can lead to vastly different outcomes in deterministic nonlinear systems. Edward Lorenz discovered this principle in nineteen sixty-one while running weather simulations and found that rounding a value from zero point five zero six to zero point five one zero completely changed the forecast.`,
+	`PostgreSQL is an advanced object-relational database management system that supports ACID transactions, multi-version concurrency control, point-in-time recovery, tablespaces, asynchronous replication, nested transactions, online or hot backups, and a sophisticated query planner optimizer with support for GiST, GIN, and BRIN indexes.`,
+	`Public key cryptography uses asymmetric key pairs where the public key can be freely distributed while the private key remains secret. RSA encryption relies on the practical difficulty of factoring the product of two large prime numbers, while elliptic curve cryptography achieves equivalent security with significantly smaller key sizes, making it ideal for mobile devices and constrained environments.`,
+	`Functional programming emphasizes pure functions without side effects, immutable data structures, and function composition as the primary building blocks of software. Languages like Haskell, Scala, and Elixir implement concepts such as higher-order functions, monads for handling side effects, lazy evaluation, and algebraic data types to write declarative, composable code.`,
+	`The OSI model divides computer networking into seven abstraction layers: physical, data link, network, transport, session, presentation, and application. Each layer provides services to the layer above it while shielding that layer from the implementation details of lower layers, enabling modular protocol design and interoperability between different vendors and technologies.`,
+	`Neural network architectures have evolved from simple perceptrons to deep convolutional networks for image processing, recurrent networks with long short-term memory for sequential data, and transformer models with self-attention mechanisms that revolutionized natural language processing through architectures like BERT and the GPT family.`,
+	`The Riemann hypothesis, one of seven millennium prize problems, concerns the distribution of prime numbers and states that all non-trivial zeros of the Riemann zeta function have a real part equal to one half. First formulated by Bernhard Riemann in eighteen fifty-nine, it remains unproven and carries a one million dollar prize for its solution.`,
+	`Kubernetes orchestrates containerized applications across clusters of machines by automating deployment, scaling, and management. Its control plane includes the API server, etcd distributed key-value store, scheduler, and controller manager while worker nodes run pods managed by the kubelet agent and kube-proxy for networking.`,
+	`The time complexity of sorting algorithms varies significantly: bubble sort runs in quadratic time making it impractical for large datasets, merge sort guarantees O(n log n) in all cases using divide-and-conquer, quicksort averages O(n log n) but degrades to quadratic on already sorted arrays, and counting sort achieves linear time for integer data with limited range.`,
+	`Blockchain technology implements a distributed ledger where transactions are grouped into blocks cryptographically chained together using hash pointers. Each block contains a timestamp, transaction data, and the hash of the previous block, making it computationally infeasible to alter historical records without controlling over half of the network's mining power.`,
+	`Signal processing fundamentals include the Fourier transform which decomposes a signal into its constituent frequencies, convolution which describes how the shape of one signal is modified by another, and sampling theory which dictates that a continuous signal must be sampled at least twice its highest frequency to avoid aliasing according to the Nyquist-Shannon theorem.`,
+	`Compilers transform high-level source code into executable machine code through several phases: lexical analysis breaks source code into tokens, syntax analysis builds a parse tree, semantic analysis checks type correctness, intermediate code generation produces platform-independent representation, optimization improves performance, and code generation produces target machine instructions.`,
+	`The four color theorem states that any map on a plane can be colored using at most four colors such that adjacent regions never share the same color. First conjectured in eighteen fifty-two, it became the first major theorem proven using a computer in nineteen seventy-six by Kenneth Appel and Wolfgang Haken who checked over nineteen hundred configurations.`,
+	`Distributed consensus algorithms like Paxos and Raft enable a group of machines to agree on a sequence of values despite failures. Raft achieves consensus through leader election where nodes vote for a leader, log replication where the leader broadcasts entries to followers, and safety mechanisms ensuring that if any node commits an entry all nodes eventually commit the same entry.`,
+	`Relational database normalization reduces data redundancy and improves integrity through normal forms. First normal form eliminates duplicate columns and requires atomic values, second normal form removes partial dependencies on composite keys, third normal form eliminates transitive dependencies, and Boyce-Codd normal form ensures every determinant is a candidate key.`,
+	`Graph theory concepts underpin countless algorithms and applications: trees are connected acyclic graphs used in hierarchical data structures, bipartite graphs model relationships between two distinct sets, directed acyclic graphs represent dependencies in scheduling and build systems, and weighted graphs capture costs for shortest path and minimum spanning tree problems.`,
+	`Genetic algorithms belong to the evolutionary computation family and solve optimization problems by mimicking natural selection. A population of candidate solutions undergoes selection where fitter individuals reproduce, crossover where parent chromosomes recombine, and mutation where random changes maintain diversity, iterating until convergence on high-quality solutions.`,
+	`The lambda calculus, introduced by Alonzo Church in the nineteen thirties, forms the theoretical foundation of functional programming. It defines computation through function abstraction and application using variable binding and substitution. The Church-Turing thesis asserts that any effectively computable function can be computed by a Turing machine or expressed in lambda calculus.`,
+	`Content delivery networks distribute content across geographically dispersed servers to reduce latency and improve availability. When a user requests content, the CDN routes the request to the nearest edge server using anycast routing. Edge caching stores frequently accessed content, and origin pull fetches uncached content from the origin server before serving it to the client.`,
+	`The pigeonhole principle states that if n items are placed into m containers and n exceeds m, then at least one container must contain more than one item. This seemingly simple principle has profound applications in computer science including proving that lossless compression cannot guarantee compression for all inputs, analyzing hash collisions, and establishing lower bounds.`,
+	`Apache Kafka is a distributed event streaming platform capable of handling trillions of events per day. It organizes data into topics partitioned across brokers for horizontal scalability, achieves fault tolerance through replication across configurable in-sync replicas, and guarantees at-least-once delivery semantics with exactly-once processing available through transactional producers and consumers.`,
+	`The actor model of concurrent computation treats actors as the fundamental unit of computation that can create other actors, send messages to known addresses, and designate how to handle the next message. Unlike shared-memory concurrency, actors communicate exclusively through asynchronous messages with no shared state, eliminating data races and simplifying distributed system design.`,
+	`DNA replication follows the semi-conservative model where each new DNA molecule consists of one original strand and one newly synthesized strand. The enzyme DNA polymerase adds nucleotides in the five prime to three prime direction, with the leading strand synthesized continuously and the lagging strand produced in short Okazaki fragments later joined by DNA ligase.`,
+	`WebAuthn is a web standard for passwordless authentication using public key cryptography. When registering, a user's authenticator device generates a key pair, retains the private key securely, and sends the public key to the server. During authentication, the server sends a challenge that the authenticator signs with the private key, proving possession without transmitting secrets.`,
+}
+
 // All pools by difficulty tier
 var contentPools = [][]string{
-	funFacts,        // Tier 0 (Ember) — easiest, short fun facts
-	techFacts,       // Tier 1 (Igneous)
-	shortStories,    // Tier 2 (Magma Core)
-	scienceFacts,    // Tier 3 (Obsidian) — harder vocabulary
-	codeSnippets,    // Tier 4 (Beyond) — code snippets for high levels
+	funFacts,          // Tier 0 (Ember) — easiest, short fun facts
+	techFacts,         // Tier 1 (Igneous)
+	shortStories,      // Tier 2 (Magma Core)
+	scienceFacts,      // Tier 3 (Obsidian) — harder vocabulary
+	beyondChallenges,  // Tier 4 (Beyond) — hard paragraphs with numbers, symbols, mixed case
 }
 
 // ── Paragraph Generation ─────────────────────────────────
@@ -399,7 +434,7 @@ func genParagraph(levelID int) string {
 	// Levels 26-50: Tech facts (medium)
 	// Levels 51-75: Short stories (narrative, medium-long)
 	// Levels 76-100: Science facts (complex vocabulary)
-	// 101+: Coding/DSA snippets (code syntax)
+	// 101+: Beyond — hard paragraphs with numbers, symbols, mixed case
 	var pool []string
 	switch {
 	case levelID <= 25:
@@ -478,11 +513,11 @@ func GenerateFreshLevels() []LevelConfig {
 func generateLevels() []LevelConfig {
 	var levels []LevelConfig
 
-	tierKeys := []string{TierEmber, TierIgneous, TierMagmaCore, TierObsidian}
-	tierNames := [][]string{emberNames, igneousNames, magmaCoreNames, obsidianNames}
-	tierDiffs := []int{1, 2, 3, 4}
-	tierWPM := [][2]int{{30, 40}, {40, 55}, {55, 70}, {70, 85}}
-	tierAcc := [][2]int{{85, 88}, {88, 92}, {90, 93}, {92, 95}}
+	tierKeys := []string{TierEmber, TierIgneous, TierMagmaCore, TierObsidian, TierBeyond}
+	tierNames := [][]string{emberNames, igneousNames, magmaCoreNames, obsidianNames, beyondNames[:25]}
+	tierDiffs := []int{1, 2, 3, 4, 5}
+	tierWPM := [][2]int{{30, 40}, {40, 55}, {55, 70}, {70, 85}, {85, 100}}
+	tierAcc := [][2]int{{85, 88}, {88, 92}, {90, 93}, {92, 95}, {95, 97}}
 
 	for ti, name := range tierKeys {
 		start, end := tierRange[name][0], tierRange[name][1]

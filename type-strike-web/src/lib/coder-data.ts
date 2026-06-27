@@ -300,6 +300,42 @@ const HARD_SNIPPETS: CodeSnippet[] = [
   },
 ];
 
+// ── Completion Tracking ──────────────────────────────────
+
+const COMPLETED_KEY = "typestrike_coder_completed_v2";
+
+/**
+ * Mark a snippet as completed in localStorage.
+ * Called from the session page when a user finishes a coder run.
+ */
+export function markSnippetCompleted(difficulty: string, language: string, title: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(COMPLETED_KEY);
+    const completed: string[] = raw ? JSON.parse(raw) : [];
+    const key = `${difficulty}:${language}:${title}`;
+    if (!completed.includes(key)) {
+      completed.push(key);
+      localStorage.setItem(COMPLETED_KEY, JSON.stringify(completed));
+    }
+  } catch {
+    // Silently fail
+  }
+}
+
+/**
+ * Get the set of completed snippet keys from localStorage.
+ */
+export function getCompletedSnippetKeys(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(COMPLETED_KEY);
+    return new Set<string>(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
 // ── Accessors ─────────────────────────────────────────────
 
 export const SNIPPET_POOLS: Record<string, CodeSnippet[]> = {

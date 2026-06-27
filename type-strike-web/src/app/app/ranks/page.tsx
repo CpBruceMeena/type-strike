@@ -37,7 +37,7 @@ export default function RanksPage() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <TopBar title="RANKS" />
+      <TopBar showBack title="RANKS" />
 
       <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-6 md:px-0">
         {/* Player Rank Summary */}

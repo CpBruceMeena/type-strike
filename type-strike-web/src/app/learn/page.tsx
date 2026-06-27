@@ -9,7 +9,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
+import TopBar from "@/components/layout/TopBar";
 import { LESSONS, LESSON_CATEGORIES, getLessonsByCategory, FINGER_COLORS, KEY_FINGER_MAP } from "@/lib/lessons";
 import { api } from "@/lib/api";
 import { DEFAULT_PLAYER_ID } from "@/lib/constants";
@@ -43,34 +43,19 @@ export default function LessonsHubPage() {
   const progressPercent = LESSONS.length > 0 ? Math.round((completedCount / LESSONS.length) * 100) : 0;
 
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col min-w-0 h-dvh overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center justify-between px-4 py-3 md:px-6">
-          <button
-            onClick={() => router.push("/app/home")}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-text-body hover:text-text-white transition-colors"
-            aria-label="Back to home"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <span className="text-xs font-bold tracking-[2px] uppercase" style={{ color: "var(--text-white)" }}>
-            LEARNING LESSONS
-          </span>
-          <div className="w-9" />
-        </header>
+    <div className="flex flex-1 flex-col">
+      <TopBar showBack title="LEARN" backHref="/app/home" />
 
-      {/* Title */}
-      <div className="mb-6 px-4 md:px-6">
-        <div className="mb-2 text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#22DD44]/10">
-            <span className="text-3xl">🎓</span>
+      <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
+        <div className="mx-auto w-full max-w-2xl">
+
+        {/* Title */}
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#22DD44]/10">
+            <span className="text-2xl">🎓</span>
           </div>
           <h1
-            className="text-3xl font-black tracking-[6px] md:text-4xl"
+            className="text-2xl font-black tracking-[6px]"
             style={{ color: "#22DD44" }}
           >
             LEARN
@@ -78,9 +63,11 @@ export default function LessonsHubPage() {
           <p className="mt-1 text-xs tracking-[3px]" style={{ color: "var(--text-muted)" }}>
             Master touch typing from the ground up
           </p>
-        </div>          {/* Progress summary */}
+        </div>
+
+        {/* Progress summary */}
         <div
-          className="mx-auto mt-4 max-w-lg rounded-xl p-4"
+          className="mb-6 rounded-xl p-4"
           style={{
             background: "rgba(34,221,68,0.04)",
             border: "1px solid rgba(34,221,68,0.1)",
@@ -112,11 +99,8 @@ export default function LessonsHubPage() {
             </span>
           </div>
         </div>
-      </div>
 
-      {/* Lessons Grid */}
-      <div className="flex-1 overflow-y-auto px-4 pb-8 md:px-6">
-        <div className="mx-auto max-w-2xl space-y-8">
+        {/* Lessons Grid */}
           {(Object.entries(grouped) as [keyof typeof grouped, typeof grouped[keyof typeof grouped]][]).map(
             ([category, lessons]) => {
               const catInfo = LESSON_CATEGORIES[category];
@@ -261,7 +245,6 @@ export default function LessonsHubPage() {
             }
           )}
         </div>
-      </div>
       </div>
     </div>
   );
