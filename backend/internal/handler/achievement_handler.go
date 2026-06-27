@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -30,7 +30,7 @@ func (h *AchievementHandler) GetAllAchievements(w http.ResponseWriter, r *http.R
 
 	response, err := h.repo.Achievement.GetAllPlayerAchievements(r.Context(), playerID)
 	if err != nil {
-		log.Printf("failed to fetch achievements for player %d: %v", playerID, err)
+		slog.Default().Error("failed to fetch achievements", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch achievements")
 		return
 	}
@@ -98,14 +98,14 @@ func (h *AchievementHandler) GetUnlockedCount(w http.ResponseWriter, r *http.Req
 
 	unlockedCount, err := h.repo.Achievement.GetUnlockedCount(r.Context(), playerID)
 	if err != nil {
-		log.Printf("failed to get unlocked count for player %d: %v", playerID, err)
+		slog.Default().Error("failed to get unlocked count", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch unlock count")
 		return
 	}
 
 	totalCount, err := h.repo.Achievement.GetTotalAchievementCount(r.Context())
 	if err != nil {
-		log.Printf("failed to get achievement total count: %v", err)
+		slog.Default().Error("failed to get achievement total count", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch achievement count")
 		return
 	}

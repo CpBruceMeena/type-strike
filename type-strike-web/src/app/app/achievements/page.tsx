@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useAchievements } from "@/hooks/useAchievements";
@@ -9,6 +9,9 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
 import type { PlayerAchievement } from "@/lib/types";
+
+// Must match the key used in Sidebar.tsx for tracking seen achievements
+const SEEN_COUNT_KEY = "typestrike_seen_achievement_count";
 
 // ── Category Config ─────────────────────────────────────
 
@@ -43,6 +46,16 @@ export default function FeatsPage() {
     totalCount,
     loading,
   } = useAchievements(playerId);
+
+  // When the achievements page loads, save the current unlock count to localStorage
+  // so the sidebar badge stops showing the notification until new achievements arrive
+  useEffect(() => {
+    if (!loading && unlockedCount > 0) {
+      try {
+        localStorage.setItem(SEEN_COUNT_KEY, String(unlockedCount));
+      } catch {}
+    }
+  }, [loading, unlockedCount]);
 
   const [selectedAchievement, setSelectedAchievement] = useState<PlayerAchievement | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);

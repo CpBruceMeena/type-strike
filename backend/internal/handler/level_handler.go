@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"math"
 	"net/http"
 	"strconv"
@@ -76,26 +76,39 @@ func (h *LevelHandler) UpdateProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[LEVEL_COMPLETE] player=%d level=%d wpm=%d acc=%.2f stars=%d completed=%v",
-		playerID, levelID, req.WPM, req.Accuracy, req.Stars, req.Completed)
+	slog.Default().Info("level complete",
+		"player_id", playerID,
+		"level_id", levelID,
+		"wpm", req.WPM,
+		"accuracy", req.Accuracy,
+		"stars", req.Stars,
+		"completed", req.Completed,
+	)
 
 	progress, upgradeResult, err := h.executeLevelComplete(r.Context(), playerID, levelID, req)
 	if err != nil {
-		log.Printf("[LEVEL_COMPLETE_ERROR] player=%d level=%d err=%v", playerID, levelID, err)
+		slog.Default().Error("level complete error", "player_id", playerID, "level_id", levelID, "error", err)
 		writeError(w, http.StatusInternalServerError, "UPDATE_FAILED", "Failed to update level progress")
 		return
 	}
 
-	log.Printf("[LEVEL_COMPLETE_OK] player=%d level=%d stars=%d best_wpm=%d best_acc=%.2f attempts=%d upgrades=%v",
-		playerID, levelID, progress.Stars, progress.BestWPM, progress.BestAccuracy, progress.Attempts,
-		upgradeResult != nil && upgradeResult.Upgraded)
+	slog.Default().Info("level complete success",
+		"player_id", playerID,
+		"level_id", levelID,
+		"stars", progress.Stars,
+		"best_wpm", progress.BestWPM,
+		"best_accuracy", progress.BestAccuracy,
+		"attempts", progress.Attempts,
+		"upgraded", upgradeResult != nil && upgradeResult.Upgraded,
+	)
 
 	if upgradeResult != nil && upgradeResult.Upgraded {
-		log.Printf("[TIER_UPGRADE] player=%d from=%q to=%q unlocks=%v",
-			playerID,
-			upgradeResult.PreviousTier.DisplayName,
-			upgradeResult.NewTier.DisplayName,
-			upgradeResult.NewUnlocks)
+		slog.Default().Info("tier upgrade",
+		"player_id", playerID,
+		"from", upgradeResult.PreviousTier.DisplayName,
+		"to", upgradeResult.NewTier.DisplayName,
+		"unlocks", upgradeResult.NewUnlocks,
+	)
 	}
 
 	// ── Check Achievements ─────────────────────────
@@ -173,7 +186,7 @@ func (h *LevelHandler) executeLevelComplete(ctx context.Context, playerID, level
 
 		// Update streak after level completion (non-fatal if it fails)
 		if _, err := h.repo.Player.UpdateStreak(ctx, playerID); err != nil {
-			log.Printf("streak update failed (non-fatal): player=%d err=%v", playerID, err)
+			slog.Default().Warn("streak update failed", "player_id", playerID, "error", err)
 		}
 
 		return nil
@@ -188,18 +201,18 @@ func (h *LevelHandler) executeLevelComplete(ctx context.Context, playerID, level
 		xpEarned := computeLevelXP(req.WPM, req.Accuracy)
 		if xpEarned > 0 {
 			if _, _, err := h.repo.Player.AddXP(ctx, playerID, xpEarned); err != nil {
-				log.Printf("failed to award level XP: %v", err)
+				slog.Default().Error("failed to award level XP", "player_id", playerID, "error", err)
 			}
 			// Update progression total XP counter
 			if err := h.repo.Progression.UpdateTotalXPEarned(ctx, playerID, xpEarned); err != nil {
-				log.Printf("failed to update total xp earned: %v", err)
+				slog.Default().Error("failed to update total xp earned", "player_id", playerID, "error", err)
 			}
 		}
 
 		// Check for tier upgrade
 		result, err := h.repo.Progression.CheckAndProcessUpgrade(ctx, playerID)
 		if err != nil {
-			log.Printf("failed to check tier upgrade: %v", err)
+			slog.Default().Error("failed to check tier upgrade", "player_id", playerID, "error", err)
 		} else {
 			upgradeResult = result
 		}

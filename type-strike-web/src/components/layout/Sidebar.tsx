@@ -7,6 +7,18 @@ import { usePlayer } from "@/hooks/usePlayer";
 import ProgressionSummary from "@/components/game/ProgressionSummary";
 import { useAchievements } from "@/hooks/useAchievements";
 
+const SEEN_COUNT_KEY = "typestrike_seen_achievement_count";
+
+function getSeenCount(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const val = localStorage.getItem(SEEN_COUNT_KEY);
+    return val ? parseInt(val, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
 const NAV_ITEMS = [
   { label: "STRIKE", href: "/app/home", icon: "⚡", accent: "#FF5020" },
   { label: "MAP", href: "/app/map", icon: "🗺️", accent: "#FF6600" },
@@ -25,6 +37,11 @@ export default function Sidebar() {
   const { isSignedIn, user } = useUser();
   const { playerId } = usePlayer();
   const { unlockedCount } = useAchievements(playerId);
+
+  // Only show badge for unseen achievements (new since last visit to the feats page)
+  // Reads from localStorage on each render — Sidebar stays mounted in layout,
+  // so useState would freeze the count. The re-render on navigation picks up updates.
+  const unseenCount = Math.max(0, unlockedCount - getSeenCount());
 
   return (
     <aside
@@ -67,7 +84,7 @@ export default function Sidebar() {
               )}
               <span className="text-base">{item.icon}</span>
               <span>{item.label}</span>
-              {item.label === "FEATS" && unlockedCount > 0 && (
+              {item.label === "FEATS" && unseenCount > 0 && (
                 <span
                   className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[8px] font-bold leading-none"
                   style={{
@@ -76,7 +93,7 @@ export default function Sidebar() {
                     boxShadow: "0 0 8px rgba(204,68,255,0.5)",
                   }}
                 >
-                  {unlockedCount}
+                  {unseenCount}
                 </span>
               )}
             </Link>

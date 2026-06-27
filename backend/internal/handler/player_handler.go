@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -136,7 +136,7 @@ func (h *PlayerHandler) Register(w http.ResponseWriter, r *http.Request) {
 		// Update display_name if provided and different
 		if req.DisplayName != "" && existing.DisplayName != req.DisplayName {
 			if err := h.repo.Player.UpdateDisplayName(r.Context(), existing.ID, req.DisplayName); err != nil {
-				log.Printf("failed to update display name: %v", err)
+				slog.Default().Error("failed to update display name", "error", err)
 			}
 			existing.DisplayName = req.DisplayName
 		}
@@ -150,7 +150,7 @@ func (h *PlayerHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Create new player
 	player, err := h.repo.Player.CreatePlayerByEmail(r.Context(), req.Email, req.DisplayName)
 	if err != nil {
-		log.Printf("failed to create player by email %s: %v", req.Email, err)
+		slog.Default().Error("failed to create player by email", "email", req.Email, "error", err)
 		writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create player")
 		return
 	}
@@ -178,17 +178,17 @@ func (h *PlayerHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 
 	activity, err := h.repo.Activity.GetRecent(r.Context(), id, 3)
 	if err != nil {
-		log.Printf("failed to fetch recent activity for player %d: %v", id, err)
+		slog.Default().Error("failed to fetch recent activity", "player_id", id, "error", err)
 	}
 
 	settings, err := h.repo.Settings.GetAll(r.Context(), id)
 	if err != nil {
-		log.Printf("failed to fetch settings for player %d: %v", id, err)
+		slog.Default().Error("failed to fetch settings", "player_id", id, "error", err)
 	}
 
 	clearedCount, err := h.repo.LevelProgress.GetCompletedCount(r.Context(), id)
 	if err != nil {
-		log.Printf("failed to fetch completed count for player %d: %v", id, err)
+		slog.Default().Error("failed to fetch completed count", "player_id", id, "error", err)
 	}
 
 	nextLevelXP := models.XPForNextLevel(player.Level)

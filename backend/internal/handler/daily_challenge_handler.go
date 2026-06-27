@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"math"
 	"net/http"
 	"strconv"
@@ -45,7 +45,7 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 	// Try to fetch existing challenges for today
 	challenges, err := h.repo.DailyChallenge.GetChallengesForDate(r.Context(), playerID, today)
 	if err != nil {
-		log.Printf("failed to fetch daily challenges: %v", err)
+		slog.Default().Error("failed to fetch daily challenges", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch daily challenges")
 		return
 	}
@@ -96,7 +96,7 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 
 	// Insert into DB
 	if err := h.repo.DailyChallenge.InsertChallenges(r.Context(), playerID, today, challengeModels); err != nil {
-		log.Printf("failed to insert daily challenges: %v", err)
+		slog.Default().Error("failed to insert daily challenges", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "GENERATE_FAILED", "Failed to generate daily challenges")
 		return
 	}
@@ -104,7 +104,7 @@ func (h *DailyChallengeHandler) GetOrGenerate(w http.ResponseWriter, r *http.Req
 	// Re-fetch to get the persisted records with IDs
 	challenges, err = h.repo.DailyChallenge.GetChallengesForDate(r.Context(), playerID, today)
 	if err != nil {
-		log.Printf("failed to re-fetch daily challenges: %v", err)
+		slog.Default().Error("failed to re-fetch daily challenges", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch generated challenges")
 		return
 	}
@@ -172,7 +172,7 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 	// Update progress
 	updated, err := h.repo.DailyChallenge.UpdateChallengeProgress(r.Context(), challengeID, playerID, req.WPM, req.Accuracy)
 	if err != nil {
-		log.Printf("failed to update challenge progress: %v", err)
+		slog.Default().Error("failed to update challenge progress", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "UPDATE_FAILED", "Failed to update challenge progress")
 		return
 	}
@@ -209,13 +209,13 @@ func (h *DailyChallengeHandler) SubmitResult(w http.ResponseWriter, r *http.Requ
 
 		// Award XP and stars (with streak bonus applied)
 		if err := h.repo.DailyChallenge.AwardChallengeReward(r.Context(), playerID, rewardedXP, rewardedStars); err != nil {
-			log.Printf("failed to award challenge reward: %v", err)
+			slog.Default().Error("failed to award challenge reward", "player_id", playerID, "error", err)
 			resp.Message = "Challenge completed but reward delivery failed. Please try again."
 		}
 
 		// Update streak after completing a challenge
 		if _, err := h.repo.Player.UpdateStreak(r.Context(), playerID); err != nil {
-			log.Printf("failed to update streak on challenge complete: %v", err)
+			slog.Default().Error("failed to update streak on challenge complete", "player_id", playerID, "error", err)
 		}
 	} else if updated.Completed {
 		resp.Message = "Already completed today! Great consistency."

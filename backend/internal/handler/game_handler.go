@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"math"
 	"net/http"
 	"strconv"
@@ -61,7 +61,7 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 		// Contest mode: use or create today's contest paragraph
 		contest, _, err := h.repo.Contest.GetOrCreateDailyContest(r.Context(), generateContestParagraph())
 		if err != nil {
-			log.Printf("failed to get/create contest: %v", err)
+			slog.Default().Error("failed to get/create contest", "player_id", req.PlayerID, "error", err)
 			writeError(w, http.StatusInternalServerError, "CONTEST_FAILED", "Failed to initialize contest")
 			return
 		}
@@ -85,7 +85,7 @@ func (h *GameHandler) Start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Game.CreateSession(r.Context(), session); err != nil {
-		log.Printf("failed to create game session: %v", err)
+		slog.Default().Error("failed to create game session", "player_id", req.PlayerID, "mode", req.Mode, "error", err)
 		writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create game session")
 		return
 	}
@@ -142,7 +142,7 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	// Update the session
 	updated, err := h.repo.Game.CompleteSession(r.Context(), gameID, req, xpEarned)
 	if err != nil {
-		log.Printf("failed to complete game session: %v", err)
+		slog.Default().Error("failed to complete game session", "game_id", gameID, "error", err)
 		writeError(w, http.StatusInternalServerError, "COMPLETE_FAILED", "Failed to complete game session")
 		return
 	}
@@ -150,35 +150,35 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	// Award XP to player
 	if xpEarned > 0 {
 		if _, _, err := h.repo.Player.AddXP(r.Context(), req.PlayerID, xpEarned); err != nil {
-			log.Printf("failed to award XP: %v", err)
+			slog.Default().Error("failed to award XP", "player_id", req.PlayerID, "error", err)
 		}
 		// Update progression total XP counter
 		if err := h.repo.Progression.UpdateTotalXPEarned(r.Context(), req.PlayerID, xpEarned); err != nil {
-			log.Printf("failed to update total xp earned: %v", err)
+			slog.Default().Error("failed to update total xp earned", "player_id", req.PlayerID, "error", err)
 		}
 	}
 
 	// Check for tier upgrade
 	upgradeResult, err := h.repo.Progression.CheckAndProcessUpgrade(r.Context(), req.PlayerID)
 	if err != nil {
-		log.Printf("failed to check tier upgrade: %v", err)
+		slog.Default().Error("failed to check tier upgrade", "player_id", req.PlayerID, "error", err)
 	}
 
 	// Update streak
 	if _, err := h.repo.Player.UpdateStreak(r.Context(), req.PlayerID); err != nil {
-		log.Printf("failed to update streak: %v", err)
+		slog.Default().Error("failed to update streak", "player_id", req.PlayerID, "error", err)
 	}
 
 	// Sync leaderboard
 	if err := h.repo.Leaderboard.SyncPlayer(r.Context(), req.PlayerID); err != nil {
-		log.Printf("failed to sync leaderboard: %v", err)
+		slog.Default().Error("failed to sync leaderboard", "player_id", req.PlayerID, "error", err)
 	}
 
 	// Update timed leaderboard if applicable
 	var rank *int
 	if isTimedMode(session.Mode) {
 		if err := h.repo.Game.UpsertTimedLeaderboard(r.Context(), req.PlayerID, session.Mode, req.WPM, req.Accuracy, gameID); err != nil {
-			log.Printf("failed to upsert timed leaderboard: %v", err)
+			slog.Default().Error("failed to upsert timed leaderboard", "player_id", req.PlayerID, "error", err)
 		}
 		// Get player's rank in this mode
 		if entry, err := h.repo.Game.GetPlayerTimedRank(r.Context(), req.PlayerID, session.Mode); err == nil && entry != nil {
@@ -192,7 +192,7 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		if err == nil && contest != nil {				hasEntered, _ := h.repo.Contest.HasPlayerEntered(r.Context(), contest.ID, req.PlayerID)
 			if !hasEntered {					entry, err := h.repo.Contest.InsertEntry(r.Context(), contest.ID, req.PlayerID, gameID, req.WPM, req.Accuracy)
 				if err != nil {
-					log.Printf("failed to insert contest entry: %v", err)
+					slog.Default().Error("failed to insert contest entry", "player_id", req.PlayerID, "error", err)
 				} else {
 					contestRank = &entry.Rank
 				}
@@ -282,7 +282,7 @@ func (h *GameHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 
 	entries, total, err := h.repo.Game.GetHistory(r.Context(), playerID, mode, limit, offset)
 	if err != nil {
-		log.Printf("failed to fetch game history: %v", err)
+		slog.Default().Error("failed to fetch game history", "player_id", r.URL.Query().Get("player_id"), "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch game history")
 		return
 	}
@@ -318,7 +318,7 @@ func (h *GameHandler) GetTimedLeaderboard(w http.ResponseWriter, r *http.Request
 
 	entries, totalCount, err := h.repo.Game.GetTimedLeaderboard(r.Context(), mode, limit)
 	if err != nil {
-		log.Printf("failed to fetch timed leaderboard: %v", err)
+		slog.Default().Error("failed to fetch timed leaderboard", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch timed leaderboard")
 		return
 	}

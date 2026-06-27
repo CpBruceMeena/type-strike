@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -37,7 +37,7 @@ func (h *LeaderboardHandler) GetTop(w http.ResponseWriter, r *http.Request) {
 
 	entries, totalCount, err := h.repo.Leaderboard.GetTop(r.Context(), limit)
 	if err != nil {
-		log.Printf("failed to fetch leaderboard: %v", err)
+		slog.Default().Error("failed to fetch leaderboard", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch leaderboard")
 		return
 	}
@@ -59,7 +59,7 @@ func (h *LeaderboardHandler) GetPlayerRank(w http.ResponseWriter, r *http.Reques
 
 	playerRank, err := h.repo.Leaderboard.GetPlayerRank(r.Context(), playerID)
 	if err != nil {
-		log.Printf("failed to fetch player rank: %v", err)
+		slog.Default().Error("failed to fetch player rank", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch player rank")
 		return
 	}
@@ -87,7 +87,7 @@ func (h *LeaderboardHandler) GetDailyTop(w http.ResponseWriter, r *http.Request)
 
 	entries, totalCount, err := h.repo.Leaderboard.GetDailyRankings(r.Context(), limit)
 	if err != nil {
-		log.Printf("failed to fetch daily leaderboard: %v", err)
+		slog.Default().Error("failed to fetch daily leaderboard", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch daily leaderboard")
 		return
 	}
@@ -111,7 +111,7 @@ func (h *LeaderboardHandler) Sync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Leaderboard.SyncPlayer(r.Context(), req.PlayerID); err != nil {
-		log.Printf("failed to sync leaderboard for player %d: %v", req.PlayerID, err)
+		slog.Default().Error("failed to sync leaderboard", "player_id", req.PlayerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "SYNC_FAILED", "Failed to sync leaderboard entry")
 		return
 	}

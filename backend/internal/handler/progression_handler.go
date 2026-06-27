@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -31,7 +31,7 @@ func (h *ProgressionHandler) GetProgression(w http.ResponseWriter, r *http.Reque
 
 	progression, err := h.repo.Progression.GetProgression(r.Context(), playerID)
 	if err != nil {
-		log.Printf("failed to get progression for player %d: %v", playerID, err)
+		slog.Default().Error("failed to get progression", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch progression data")
 		return
 	}
@@ -50,7 +50,7 @@ func (h *ProgressionHandler) CheckUpgrade(w http.ResponseWriter, r *http.Request
 
 	result, err := h.repo.Progression.CheckAndProcessUpgrade(r.Context(), playerID)
 	if err != nil {
-		log.Printf("failed to check tier upgrade for player %d: %v", playerID, err)
+		slog.Default().Error("failed to check tier upgrade", "player_id", playerID, "error", err)
 		writeError(w, http.StatusInternalServerError, "UPGRADE_FAILED", "Failed to check tier upgrade")
 		return
 	}
@@ -63,7 +63,7 @@ func (h *ProgressionHandler) CheckUpgrade(w http.ResponseWriter, r *http.Request
 func (h *ProgressionHandler) GetAllTiers(w http.ResponseWriter, r *http.Request) {
 	tiers, err := h.repo.Progression.GetAllTiers(r.Context())
 	if err != nil {
-		log.Printf("failed to fetch all tiers: %v", err)
+		slog.Default().Error("failed to fetch all tiers", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch tiers")
 		return
 	}
@@ -80,7 +80,7 @@ func (h *ProgressionHandler) GetAllTiers(w http.ResponseWriter, r *http.Request)
 func (h *ProgressionHandler) GetTierDetails(w http.ResponseWriter, r *http.Request) {
 	response, err := h.repo.Progression.GetAllTiersWithDetails(r.Context())
 	if err != nil {
-		log.Printf("failed to fetch tier details: %v", err)
+		slog.Default().Error("failed to fetch tier details", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch tier details")
 		return
 	}

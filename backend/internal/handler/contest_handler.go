@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -31,7 +31,7 @@ func (h *ContestHandler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 
 	contest, err := h.repo.Contest.GetActiveContest(r.Context())
 	if err != nil {
-		log.Printf("failed to get active contest: %v", err)
+		slog.Default().Error("failed to get active contest", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to get active contest")
 		return
 	}
@@ -40,7 +40,7 @@ func (h *ContestHandler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 		// No active contest — create one for today
 		contest, _, err = h.repo.Contest.GetOrCreateDailyContest(r.Context(), generateContestParagraph())
 		if err != nil {
-			log.Printf("failed to create daily contest: %v", err)
+			slog.Default().Error("failed to create daily contest", "error", err)
 			writeError(w, http.StatusInternalServerError, "CREATE_FAILED", "Failed to create daily contest")
 			return
 		}
@@ -49,7 +49,7 @@ func (h *ContestHandler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	// Get player's entry if any
 	playerEntry, err := h.repo.Contest.GetPlayerEntry(r.Context(), contest.ID, playerID)
 	if err != nil {
-		log.Printf("failed to get player contest entry: %v", err)
+		slog.Default().Error("failed to get player contest entry", "error", err)
 		// Non-fatal — player may not have entered yet
 	}
 
@@ -102,7 +102,7 @@ func (h *ContestHandler) GetLeaderboard(w http.ResponseWriter, r *http.Request) 
 
 	entries, totalCount, err := h.repo.Contest.GetLeaderboard(r.Context(), contestID, limit)
 	if err != nil {
-		log.Printf("failed to fetch contest leaderboard: %v", err)
+		slog.Default().Error("failed to fetch contest leaderboard", "error", err)
 		writeError(w, http.StatusInternalServerError, "FETCH_FAILED", "Failed to fetch contest leaderboard")
 		return
 	}

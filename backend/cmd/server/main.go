@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"github.com/cpbrucemeena/type-strike-backend/internal/config"
 	"github.com/cpbrucemeena/type-strike-backend/internal/database"
 	"github.com/cpbrucemeena/type-strike-backend/internal/handler"
+	"github.com/cpbrucemeena/type-strike-backend/internal/middleware"
 	"github.com/cpbrucemeena/type-strike-backend/internal/repository"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -23,14 +25,21 @@ import (
 func main() {
 	cfg := config.Load()
 
+	// ── Structured Logger ──────────────────────────────
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})))
+	logger := slog.Default()
+
 	rand.Seed(time.Now().UnixNano())
 	// Connect to PostgreSQL
-	log.Println("Connecting to PostgreSQL...")
+	logger.Info("connecting to database", "url", cfg.DatabaseURL)
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
+		logger.Error("failed to connect to database", "error", err)
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	log.Println("Connected to PostgreSQL successfully")
+	logger.Info("connected to PostgreSQL successfully")
 
 	// Initialize repositories
 	repos := repository.NewRepositories(db)
@@ -63,10 +72,11 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	// Middleware
+	// Middleware (order matters: RequestID → RealIP → ExtractPlayerID → Logger → Recoverer → Timeout)
 	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.RealIP)
-	r.Use(chimiddleware.Logger)
+	r.Use(middleware.ExtractPlayerID)
+	r.Use(middleware.Logger(logger))
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.Timeout(30 * time.Second))
 
@@ -184,17 +194,18 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
-		log.Println("Shutting down server...")
+		logger.Info("shutting down server...")
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownCancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
+			logger.Error("server shutdown error", "error", err)
 			log.Fatalf("Server shutdown error: %v", err)
 		}
 	}()
 
-	log.Printf("type-strike backend server starting on %s", cfg.Addr())
+	logger.Info("server starting", "addr", cfg.Addr())
 	fmt.Printf(`
   ╔═══════════════════════════════════════╗
   ║      type-strike backend server       ║
@@ -203,8 +214,9 @@ func main() {
 `, cfg.Addr())
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.Error("server error", "error", err)
 		log.Fatalf("Server error: %v", err)
 	}
 
-	log.Println("Server stopped gracefully")
+	logger.Info("server stopped gracefully")
 }
