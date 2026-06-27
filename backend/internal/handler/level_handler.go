@@ -98,11 +98,31 @@ func (h *LevelHandler) UpdateProgress(w http.ResponseWriter, r *http.Request) {
 			upgradeResult.NewUnlocks)
 	}
 
+	// ── Check Achievements ─────────────────────────
+	achParams := repository.AchievementCheckParams{
+		WPM:      req.WPM,
+		Accuracy: req.Accuracy,
+	}
+
+	// Fetch combo and streak data from game session history if available
+	if player, err := h.repo.Player.GetByID(r.Context(), playerID); err == nil && player != nil {
+		achParams.StreakCount = player.StreakCount
+	}
+
+	// Count total levels cleared
+	levelsCleared, _ := h.repo.LevelProgress.GetCompletedCount(r.Context(), playerID)
+	achParams.LevelsCleared = levelsCleared
+
+	achievementResult := h.repo.Achievement.CheckAllAchievements(r.Context(), playerID, achParams)
+
 	resp := models.LevelCompleteResponse{
 		LevelProgress: progress,
 	}
 	if upgradeResult != nil && upgradeResult.Upgraded {
 		resp.Upgrade = upgradeResult
+	}
+	if achievementResult != nil && len(achievementResult.NewUnlocks) > 0 {
+		resp.AchievementUnlocks = achievementResult.NewUnlocks
 	}
 
 	writeJSON(w, http.StatusOK, resp)

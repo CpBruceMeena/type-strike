@@ -209,9 +209,36 @@ func (h *GameHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		Rank:     rank,
 	}
 
+	// ── Check Achievements ─────────────────────────
+	// Build achievement check params from game results
+	achParams := repository.AchievementCheckParams{
+		WPM:      req.WPM,
+		Accuracy: req.Accuracy,
+		MaxCombo: req.MaxCombo,
+	}
+
+	// Fetch levels cleared count and streak for achievement checks
+	levelsCleared, _ := h.repo.LevelProgress.GetCompletedCount(r.Context(), req.PlayerID)
+	achParams.LevelsCleared = levelsCleared
+
+	if player, err := h.repo.Player.GetByID(r.Context(), req.PlayerID); err == nil && player != nil {
+		achParams.StreakCount = player.StreakCount
+	}
+
+	if contestRank != nil {
+		achParams.ContestRank = *contestRank
+	}
+
+	achievementResult := h.repo.Achievement.CheckAllAchievements(r.Context(), req.PlayerID, achParams)
+
 	// Include tier upgrade info if an upgrade occurred
 	if upgradeResult != nil && upgradeResult.Upgraded {
 		resp.Upgrade = upgradeResult
+	}
+
+	// Include achievement unlocks in response
+	if achievementResult != nil && len(achievementResult.NewUnlocks) > 0 {
+		resp.AchievementUnlocks = achievementResult.NewUnlocks
 	}
 
 	// Override rank with contest rank if applicable

@@ -1,6 +1,7 @@
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import ParticleField from "@/components/effects/ParticleField";
+import AchievementToast from "@/components/achievements/AchievementToast";
 
 export default function MainLayout({
   children,
@@ -10,6 +11,7 @@ export default function MainLayout({
   return (
     <>
       <ParticleField />
+      <AchievementToast />
       <div className="relative z-10 flex h-dvh">
         {/* Desktop sidebar */}
         <Sidebar />

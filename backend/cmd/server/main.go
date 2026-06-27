@@ -48,6 +48,7 @@ func main() {
 	contestHandler := handler.NewContestHandler(repos)
 	lessonHandler := handler.NewLessonHandler(repos)
 	progressionHandler := handler.NewProgressionHandler(repos)
+	achievementHandler := handler.NewAchievementHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -159,6 +160,13 @@ func main() {
 		r.Route("/tiers", func(r chi.Router) {
 			r.Get("/", progressionHandler.GetAllTiers)
 			r.Get("/detail", progressionHandler.GetTierDetails)
+		})
+
+		// Achievements
+		r.Route("/players/{playerId}/achievements", func(r chi.Router) {
+			r.Get("/", achievementHandler.GetAllAchievements)
+			r.Get("/count", achievementHandler.GetUnlockedCount)
+			r.Post("/check", achievementHandler.CheckAchievements)
 		})
 	})
 

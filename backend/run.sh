@@ -75,28 +75,7 @@ kill_port() {
   ok "Port $SERVER_PORT freed"
 }
 
-# ── Migration & Seed ───────────────────────────────────────
-run_migrations() {
-  echo -e "${YELLOW}▶ Running database migrations...${NC}"
-
-  TABLE_CHECK=$(psql "$DB_URL" -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'players');" 2>/dev/null | tr -d '[:space:]')
-
-  if [ "$TABLE_CHECK" != "t" ]; then
-    echo "  Running 001_init.sql..."
-    psql "$DB_URL" -f migrations/001_init.sql -q
-  else
-    ok "001_init.sql already applied"
-  fi
-
-  TABLE_CHECK=$(psql "$DB_URL" -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'levels');" 2>/dev/null | tr -d '[:space:]')
-
-  if [ "$TABLE_CHECK" != "t" ]; then
-    echo "  Running 002_levels.sql..."
-    psql "$DB_URL" -f migrations/002_levels.sql -q
-  else
-    ok "002_levels.sql already applied"
-  fi
-}
+# ── Seed ───────────────────────────────────────────────────
 
 seed_levels() {
   echo -e "${YELLOW}▶ Seeding level configurations...${NC}"
@@ -149,17 +128,14 @@ cmd_start() {
     kill_port
   fi
 
-  preflight
-  run_migrations
+  preflight	if [ "$DO_SEED" = true ]; then
+		seed_levels
+	fi
 
-  if [ "$DO_SEED" = true ]; then
-    seed_levels
-  fi
-
-  if [ "$SEED_ONLY" = true ]; then
-    ok "Seed complete. Exiting."
-    exit 0
-  fi
+	if [ "$SEED_ONLY" = true ]; then
+		ok "Seed complete. Exiting."
+		exit 0
+	fi
 
   export DATABASE_URL="$DB_URL"
   export SERVER_PORT="$SERVER_PORT"
@@ -343,22 +319,19 @@ case "${1:-}" in
     ;;
   clean)
     cmd_clean
-    ;;
-  --seed|--seed-only)
-    # Backwards compatibility: seed then optionally start
-    if [ "$1" = "--seed-only" ]; then
-      shift
-      preflight
-      run_migrations
-      seed_levels
-      exit 0
-    fi
-    shift
-    preflight
-    run_migrations
-    seed_levels
-    cmd_start
-    ;;
+    ;;	--seed|--seed-only)
+		# Backwards compatibility: seed then optionally start
+		if [ "$1" = "--seed-only" ]; then
+			shift
+			preflight
+			seed_levels
+			exit 0
+		fi
+		shift
+		preflight
+		seed_levels
+		cmd_start
+		;;
   *)
     if [ $# -eq 0 ]; then
       # Backwards compatibility: no args = start the server

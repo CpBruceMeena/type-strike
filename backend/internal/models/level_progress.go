@@ -25,8 +25,9 @@ type UpdateLevelProgressRequest struct {
 	Completed    bool    `json:"completed"`
 }
 
-// LevelCompleteResponse wraps level progress with optional tier upgrade info.
+// LevelCompleteResponse wraps level progress with optional tier upgrade info and achievement unlocks.
 type LevelCompleteResponse struct {
 	*LevelProgress
-	Upgrade *TierUpgradeResponse `json:"upgrade,omitempty"`
+	Upgrade            *TierUpgradeResponse      `json:"upgrade,omitempty"`
+	AchievementUnlocks []AchievementUnlockEvent  `json:"achievement_unlocks,omitempty"`
 }

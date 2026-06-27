@@ -77,6 +77,7 @@ export interface LevelCompleteResponse {
   attempts: number;
   last_played_at: string;
   upgrade?: TierUpgradeResponse | null;
+  achievement_unlocks?: AchievementUnlockEvent[];
 }
 
 export interface CompleteLevelRequest {
@@ -224,6 +225,7 @@ export interface GameCompleteResponse {
   stars: number | null;
   rank: number | null;
   upgrade?: TierUpgradeResponse | null;
+  achievement_unlocks?: AchievementUnlockEvent[];
 }
 
 export interface GameHistoryEntry {
@@ -397,6 +399,55 @@ export interface TierDetail {
 
 export interface AllTiersDetailResponse {
   tiers: TierDetail[];
+}
+
+// ── Achievements ───────────────────────────────────────
+
+export interface AchievementDef {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  max_progress: number;
+}
+
+export interface PlayerAchievement {
+  id: number;
+  achievement_id: number;
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  progress: number;
+  max_progress: number;
+  unlocked: boolean;
+  unlocked_at: string | null;
+}
+
+export interface AllAchievementsResponse {
+  achievements: PlayerAchievement[];
+  unlocked_count: number;
+  total_count: number;
+}
+
+export interface AchievementUnlockEvent {
+  achievement_key: string;
+  achievement_name: string;
+  description: string;
+  icon: string;
+  category: string;
+}
+
+export interface CheckAchievementsResult {
+  new_unlocks: AchievementUnlockEvent[];
+}
+
+export interface UnlockedCountResponse {
+  unlocked_count: number;
+  total_count: number;
 }
 
 // ── Game State (web UI) ─────────────────────────────────
