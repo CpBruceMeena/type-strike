@@ -18,6 +18,7 @@ type Repositories struct {
 	LessonProgress  *LessonProgressRepository
 	Progression     *ProgressionRepository
 	Achievement     *AchievementRepository
+	Streak          *StreakRepository
 }
 
 // NewRepositories creates all repository instances from a single GORM DB connection.
@@ -35,5 +36,6 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		LessonProgress:  NewLessonProgressRepository(db),
 		Progression:     NewProgressionRepository(db),
 		Achievement:     NewAchievementRepository(db),
+		Streak:          NewStreakRepository(db),
 	}
 }

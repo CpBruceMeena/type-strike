@@ -36,8 +36,9 @@ import type {
   AllAchievementsResponse,
   CheckAchievementsResult,
   UnlockedCountResponse,
-  AchievementUnlockEvent,
-  PlayerAchievement,
+  StreakInfoResponse,
+  ClaimRewardResponse,
+  UseStreakFreezeResponse,
 } from "./types";
 
 // ── Configuration ───────────────────────────────────────
@@ -373,6 +374,27 @@ export const api = {
   ): Promise<UnlockedCountResponse> {
     return request<UnlockedCountResponse>(
       `api/v1/players/${playerId}/achievements/count`
+    );
+  },
+
+  // ── Streak Rewards ────────────────────────────────
+  getStreakInfo(playerId: number): Promise<StreakInfoResponse> {
+    return request<StreakInfoResponse>(
+      `api/v1/players/${playerId}/streak`
+    );
+  },
+
+  claimDailyReward(playerId: number): Promise<ClaimRewardResponse> {
+    return request<ClaimRewardResponse>(
+      `api/v1/players/${playerId}/streak/claim`,
+      { method: "POST" }
+    );
+  },
+
+  useStreakFreeze(playerId: number): Promise<UseStreakFreezeResponse> {
+    return request<UseStreakFreezeResponse>(
+      `api/v1/players/${playerId}/streak/freeze`,
+      { method: "POST" }
     );
   },
 };
