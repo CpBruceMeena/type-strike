@@ -79,6 +79,83 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
     Array<{ wpm: number; raw: number; net: number; accuracy: number }>
   >([]);
 
+  // ── Handle Game Complete ─────────────────────────────
+
+  const handleGameComplete = useCallback(
+    async (result: GameResult) => {
+      // Calculate stars — read from ref to avoid stale closure
+      const detail = levelDetailRef.current;
+      let stars = 0;
+      if (detail) {
+        stars = computeStars(
+          result.wpm,
+          result.accuracy,
+          detail,
+          result.errorCount
+        );
+      }
+
+      // Submit to backend via completeLevel — captures upgrade info from response
+      let levelUpgrade: TierUpgradeResponse | null = null;
+      try {
+        const levelResp = await api.completeLevel(pid, levelId, {
+          wpm: result.wpm,
+          accuracy: result.accuracy,
+          stars,
+          completed: result.completed,
+        });
+        if (levelResp.upgrade?.upgraded) {
+          levelUpgrade = levelResp.upgrade;
+        }
+      } catch (err) {
+        console.error("Failed to submit level result:", err);
+      }
+
+      // Update state
+      setState((s) => ({
+        ...s,
+        gameState: (result.completed ? "complete" : "failed") as GameState,
+        finalWpm: result.wpm,
+        finalAccuracy: result.accuracy,
+        stars,
+        elapsedMs: result.elapsedMs,
+        totalKeystrokes: result.totalKeystrokes,
+        correctKeystrokes: result.correctKeystrokes,
+        maxCombo: result.maxCombo,
+      }));
+
+      // Navigate to result page
+      const xpEarned = result.xpEarned;
+      const params = new URLSearchParams({
+        wpm: String(result.wpm),
+        accuracy: String(result.accuracy),
+        xp: String(xpEarned),
+        stars: String(stars),
+        mode: `level-${levelId}`,
+      });
+
+      if (levelUpgrade?.upgraded) {
+        params.set("upgraded", "true");
+        params.set("newTier", levelUpgrade.new_tier?.display_name ?? "");
+        params.set("newTierIcon", levelUpgrade.new_tier?.icon ?? "🏆");
+        params.set("newTierColor", levelUpgrade.new_tier?.color ?? "#FF5020");
+        if (levelUpgrade.new_unlocks?.length > 0) {
+          params.set("newUnlocks", JSON.stringify(levelUpgrade.new_unlocks));
+        }
+      }
+
+      setTimeout(() => {
+        const dest = result.completed ? "/victory" : "/failed";
+        router.push(`${dest}?${params.toString()}`);
+      }, 1200);
+
+      // Cleanup
+      engineRef.current?.destroy();
+      inputRef.current?.destroy();
+    },
+    [levelId, pid, router]
+  );
+
   // ── Start Game ───────────────────────────────────────
 
   const startGame = useCallback(async () => {
@@ -187,7 +264,7 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
       console.error("Failed to start level game:", err);
       setState((s) => ({ ...s, gameState: "failed" as GameState }));
     }
-  }, [levelId, pid]);
+  }, [levelId, pid, handleGameComplete]);
 
   // ── Countdown Sequence ───────────────────────────────
 
@@ -207,83 +284,6 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
     engine.start();
     inputRef.current?.attach();
   }, []);
-
-  // ── Handle Game Complete ─────────────────────────────
-
-  const handleGameComplete = useCallback(
-    async (result: GameResult) => {
-      // Calculate stars — read from ref to avoid stale closure
-      const detail = levelDetailRef.current;
-      let stars = 0;
-      if (detail) {
-        stars = computeStars(
-          result.wpm,
-          result.accuracy,
-          detail,
-          result.errorCount
-        );
-      }
-
-      // Submit to backend via completeLevel — captures upgrade info from response
-      let levelUpgrade: TierUpgradeResponse | null = null;
-      try {
-        const levelResp = await api.completeLevel(pid, levelId, {
-          wpm: result.wpm,
-          accuracy: result.accuracy,
-          stars,
-          completed: result.completed,
-        });
-        if (levelResp.upgrade?.upgraded) {
-          levelUpgrade = levelResp.upgrade;
-        }
-      } catch (err) {
-        console.error("Failed to submit level result:", err);
-      }
-
-      // Update state
-      setState((s) => ({
-        ...s,
-        gameState: (result.completed ? "complete" : "failed") as GameState,
-        finalWpm: result.wpm,
-        finalAccuracy: result.accuracy,
-        stars,
-        elapsedMs: result.elapsedMs,
-        totalKeystrokes: result.totalKeystrokes,
-        correctKeystrokes: result.correctKeystrokes,
-        maxCombo: result.maxCombo,
-      }));
-
-      // Navigate to result page
-      const xpEarned = result.xpEarned;
-      const params = new URLSearchParams({
-        wpm: String(result.wpm),
-        accuracy: String(result.accuracy),
-        xp: String(xpEarned),
-        stars: String(stars),
-        mode: `level-${levelId}`,
-      });
-
-      if (levelUpgrade?.upgraded) {
-        params.set("upgraded", "true");
-        params.set("newTier", levelUpgrade.new_tier?.display_name ?? "");
-        params.set("newTierIcon", levelUpgrade.new_tier?.icon ?? "🏆");
-        params.set("newTierColor", levelUpgrade.new_tier?.color ?? "#FF5020");
-        if (levelUpgrade.new_unlocks?.length > 0) {
-          params.set("newUnlocks", JSON.stringify(levelUpgrade.new_unlocks));
-        }
-      }
-
-      setTimeout(() => {
-        const dest = result.completed ? "/victory" : "/failed";
-        router.push(`${dest}?${params.toString()}`);
-      }, 1200);
-
-      // Cleanup
-      engineRef.current?.destroy();
-      inputRef.current?.destroy();
-    },
-    [levelId, pid, router]
-  );
 
   // ── Cleanup on unmount ───────────────────────────────
 

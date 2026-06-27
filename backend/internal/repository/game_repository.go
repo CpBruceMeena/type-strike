@@ -127,7 +127,7 @@ func (r *GameRepository) UpsertTimedLeaderboard(ctx context.Context, playerID in
 	db := r.db.WithContext(ctx)
 
 	var p models.Player
-	if err := db.Select("title").Where("id = ?", playerID).First(&p).Error; err != nil {
+	if err := db.Select("display_name").Where("id = ?", playerID).First(&p).Error; err != nil {
 		return fmt.Errorf("get player name: %w", err)
 	}
 
@@ -149,7 +149,7 @@ func (r *GameRepository) UpsertTimedLeaderboard(ctx context.Context, playerID in
 				ELSE leaderboard_timed.achieved_at
 			END
 	`
-	if err := db.Exec(rawSQL, mode, playerID, p.Title, wpm, accuracy, gameSessionID).Error; err != nil {
+	if err := db.Exec(rawSQL, mode, playerID, p.DisplayName, wpm, accuracy, gameSessionID).Error; err != nil {
 		return fmt.Errorf("upsert timed leaderboard: %w", err)
 	}
 	return nil

@@ -122,7 +122,7 @@ func (r *PlayerRepository) CreatePlayerByEmail(ctx context.Context, email, displ
 
 	p := models.Player{
 		Level:       1,
-		Title:       displayName,
+		Title:       "RECRUIT",
 		Email:       email,
 		PlayerTag:   tag,
 		DisplayName: displayName,
@@ -195,6 +195,8 @@ func (r *PlayerRepository) AddXP(ctx context.Context, playerID, xp int) (*models
 			}
 		}
 
+		p.XP = newXP
+
 		updates := map[string]interface{}{
 			"xp":             newXP,
 			"level":          p.Level,
@@ -206,6 +208,13 @@ func (r *PlayerRepository) AddXP(ctx context.Context, playerID, xp int) (*models
 		return nil, false, fmt.Errorf("add xp: %w", err)
 	}
 	return &p, leveledUp, nil
+}
+
+// UpdateDisplayName updates only the display_name of a player.
+func (r *PlayerRepository) UpdateDisplayName(ctx context.Context, playerID int, displayName string) error {
+	return r.db.WithContext(ctx).Model(&models.Player{}).
+		Where("id = ?", playerID).
+		Update("display_name", displayName).Error
 }
 
 // UpdateStreak updates the player's daily streak after playing a level.
