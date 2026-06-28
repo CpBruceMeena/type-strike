@@ -3,7 +3,6 @@
 import { useUser } from "@clerk/nextjs";
 import { SignInButton, SignUpButton, UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import TopBar from "@/components/layout/TopBar";
 
 export default function ProfilePage() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -28,7 +27,6 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-4 md:px-6 lg:px-8">
       <div className="flex flex-col gap-6">
-        <TopBar showBack title="PROFILE" />
 
         {isSignedIn ? (
           <div className="flex flex-col gap-6">

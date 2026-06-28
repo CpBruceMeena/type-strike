@@ -59,6 +59,7 @@ func main() {
 	progressionHandler := handler.NewProgressionHandler(repos)
 	achievementHandler := handler.NewAchievementHandler(repos)
 	streakHandler := handler.NewStreakHandler(repos)
+	statsHandler := handler.NewStatsHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -186,6 +187,9 @@ func main() {
 			r.Post("/claim", streakHandler.ClaimDailyReward)
 			r.Post("/freeze", streakHandler.UseStreakFreeze)
 		})
+
+		// Extended Player Stats (aggregated for home page)
+		r.Get("/players/{playerId}/extended-stats", statsHandler.GetExtendedStats)
 	})
 
 	// Start server

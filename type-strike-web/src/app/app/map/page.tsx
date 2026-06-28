@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import TopBar from "@/components/layout/TopBar";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
@@ -86,7 +85,6 @@ export default function MapPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar showBack title="LEVELS" />
 
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
         {/* Player Score Summary */}

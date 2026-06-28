@@ -57,6 +57,12 @@ type-strike-wireframe.html
 !type-strike-android/app/src/main/res/drawable/**/*.png
 screenshot_*.png
 
+# ── Draft / temp files ────────────────────────────
+coder.html
+index.html
+temp/
+website-*.zip
+
 # ── Android Keystore (DO NOT COMMIT) ───────────────────
 *.keystore
 *.jks

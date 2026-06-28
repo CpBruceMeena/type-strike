@@ -1,4 +1,4 @@
-import Sidebar from "@/components/layout/Sidebar";
+import Navbar from "@/components/layout/Navbar";
 import BottomNav from "@/components/layout/BottomNav";
 import ParticleField from "@/components/effects/ParticleField";
 import AchievementToast from "@/components/achievements/AchievementToast";
@@ -12,16 +12,14 @@ export default function MainLayout({
     <>
       <ParticleField />
       <AchievementToast />
-      <div className="relative z-10 flex h-dvh">
-        {/* Desktop sidebar */}
-        <Sidebar />
+      <div className="relative z-10 flex h-dvh flex-col">
+        {/* Global top navbar */}
+        <Navbar />
 
         {/* Main content area */}
-        <div className="flex flex-1 flex-col min-w-0 h-dvh overflow-hidden">
+        <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
           <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-6xl px-4 py-4 md:px-6 lg:px-8">
-              {children}
-            </div>
+            {children}
           </main>
           {/* Mobile bottom nav */}
           <div className="md:hidden">
