@@ -26,7 +26,6 @@ import type {
   ContestInfo,
   ContestLeaderboardResponse,
   TimedLeaderboardResponse,
-  PlayerExtendedStats,
   LessonProgress,
   UpdateLessonProgressRequest,
   ProgressionResponse,
@@ -282,8 +281,9 @@ export const api = {
   },
 
   // ── Web-specific: Extended Stats ────────────────────
-  getExtendedStats(playerId: number): Promise<PlayerExtendedStats> {
-    return request<PlayerExtendedStats>(
+  // Returns unknown — usePlayerStats sanitises the shape internally
+  getExtendedStats(playerId: number): Promise<Record<string, unknown>> {
+    return request<Record<string, unknown>>(
       `api/v1/players/${playerId}/extended-stats`
     );
   },

@@ -1,113 +1,164 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import TopBar from "@/components/layout/TopBar";
-import Card from "@/components/ui/Card";
-import StreakModal from "@/components/game/StreakModal";
+import StreakPanel from "@/components/game/StreakPanel";
+import SpotlightCard from "@/components/react-bits/SpotlightCard";
 import { usePlayer } from "@/hooks/usePlayer";
 import { api } from "@/lib/api";
-import type { StreakInfoResponse } from "@/lib/types";
+import type { StreakInfoResponse, DailyChallengesResponse } from "@/lib/types";
+
+// ── Loading Skeleton ───────────────────────────────────
+
+function SkeletonBlock({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-xl bg-neutral-800/40 ${className}`} />;
+}
+
+// ── Page ────────────────────────────────────────────────
 
 export default function DailyChallengesPage() {
-  const router = useRouter();
-  const { playerId } = usePlayer();
+  const { player, playerId } = usePlayer();
   const [streakInfo, setStreakInfo] = useState<StreakInfoResponse | null>(null);
-  const [streakModalOpen, setStreakModalOpen] = useState(false);
+  const [dailyChallenges, setDailyChallenges] = useState<DailyChallengesResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchStreak = useCallback(async () => {
+  // ── Calendar Stream: fetch streak info + daily challenges ──
+  const fetchStream = useCallback(async () => {
     if (!playerId) return;
+    setLoading(true);
     try {
-      const info = await api.getStreakInfo(playerId);
-      setStreakInfo(info);
+      const [streak, challenges] = await Promise.all([
+        api.getStreakInfo(playerId),
+        api.getDailyChallenges(playerId),
+      ]);
+      setStreakInfo(streak);
+      setDailyChallenges(challenges);
     } catch {
-      // Silently fail — streak info is non-critical
+      // Non-critical — UI renders with fallback data
+    } finally {
+      setLoading(false);
     }
   }, [playerId]);
 
+  // Auto-refresh on mount + poll every 60s for fresh data
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchStreak();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchStreak]);
+    fetchStream();
+    const interval = setInterval(fetchStream, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchStream]);
 
-  const challenges = [
-    { name: "Morning Blaze", target: "35 WPM / 85%", reward: "50 XP", icon: "🌅", href: "/play/1min" },
-    { name: "Midday Inferno", target: "50 WPM / 90%", reward: "100 XP", icon: "☀️", href: "/play/3min" },
-    { name: "Night Fury", target: "65 WPM / 93%", reward: "150 XP", icon: "🌙", href: "/play/5min" },
-  ];
+  const streakCount = streakInfo?.streak_count ?? player?.streak_count ?? 0;
+  const challengeList = dailyChallenges?.challenges ?? [];
 
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar showBack title="DAILY" />
 
-      <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
-        <div className="mx-auto w-full max-w-2xl space-y-4">
-          {/* Streak Badge — clickable to open StreakModal */}
-          <button
-            onClick={() => setStreakModalOpen(true)}
-            className="w-full text-left"
-          >
-            <Card className="flex items-center gap-3 bg-accent-gold/5 p-4 transition-all hover:bg-accent-gold/10">
-              <span className="text-xl">🔥</span>
-              <div className="flex-1">
-                <p className="text-xs font-bold tracking-[1px] text-text-white">
-                  {streakInfo ? `${streakInfo.streak_count} DAY STREAK` : "STREAK REWARDS"}
-                </p>
-                <p className="text-[10px] text-text-muted">
-                  {streakInfo
-                    ? `${streakInfo.total_days_claimed} days claimed • ❄️ ${streakInfo.streak_freezes} freezes`
-                    : "Tap to view your streak rewards"}
-                </p>
-              </div>
-              {streakInfo?.today_available && (
-                <span className="rounded-full bg-accent-primary px-2 py-0.5 text-[9px] font-bold tracking-[1px] text-white">
-                  CLAIM
+      <div className="flex-1 px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 lg:flex-row lg:items-stretch">
+
+          {/* ── Left Column: Streak Panel ────────────── */}
+          <div className="w-full lg:w-[420px] shrink-0 flex">
+            {loading && !streakInfo ? (
+              <SkeletonBlock className="h-[500px] w-full" />
+            ) : (
+              <StreakPanel
+                streakCount={streakCount}
+                streakInfo={streakInfo}
+                hideFooterLink
+              />
+            )}
+          </div>
+
+          {/* ── Right Column: Challenge Cards ─────────── */}
+          <div className="flex flex-1 flex-col gap-4 min-h-0">
+            {/* Section header */}
+            <div className="flex items-center justify-between">
+              <h2 className="m-0 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[3px] text-neutral-300">
+                <span className="inline-block h-2 w-2 rounded-full bg-orange-500" />
+                Today&apos;s Challenges
+              </h2>
+              {!loading && (
+                <span className="text-[10px] text-neutral-500">
+                  {streakCount} day streak · {challengeList.length} active
                 </span>
               )}
-              <span className="text-lg text-text-muted">→</span>
-            </Card>
-          </button>
+            </div>
 
-          {/* Challenge Cards */}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {challenges.map((c, i) => (
-              <button
-                key={i}
-                onClick={() => router.push(c.href)}
-                className="text-left"
+            {loading && challengeList.length === 0 ? (
+              <div className="flex flex-col gap-4">
+                {[1, 2, 3].map((i) => (
+                  <SkeletonBlock key={i} className="h-28 w-full" />
+                ))}
+              </div>
+            ) : challengeList.length === 0 ? (
+              <SpotlightCard
+                spotlightColor="rgba(249, 115, 22, 0.08)"
+                className="flex flex-col items-center justify-center gap-3 rounded-[22px] border border-neutral-800/60 bg-neutral-900/30 p-8 text-center min-h-[300px]"
               >
-                <Card hoverable className="flex flex-col gap-3 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-bg-surface-dark">
-                      <span className="text-lg">{c.icon}</span>
+                <span className="text-2xl">🎯</span>
+                <p className="text-sm font-bold text-neutral-100">No challenges today</p>
+                <p className="text-xs text-neutral-500">Check back tomorrow for new drills.</p>
+              </SpotlightCard>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {challengeList.slice(0, 3).map((ch) => (
+                  <SpotlightCard
+                    key={ch.id}
+                    spotlightColor="rgba(249, 115, 22, 0.10)"
+                    className="flex flex-col gap-3 rounded-[22px] border border-neutral-800/60 bg-neutral-900/30 p-5 transition-all hover:border-orange-500/20 hover:bg-neutral-900/40"
+                  >
+                    {/* Header row: icon + name + status */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-neutral-800/60 bg-neutral-950/40">
+                          <span className="text-lg">{ch.icon || "🎯"}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-bold text-neutral-100">
+                            {ch.challenge_name}
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-neutral-500">
+                            Target: {ch.target_wpm} WPM / {(ch.target_accuracy * 100).toFixed(0)}%
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Status badge */}
+                      <span
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                          ch.completed
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                            : "border-orange-500/20 bg-orange-500/10 text-orange-400"
+                        }`}
+                      >
+                        {ch.completed ? "Done" : "Active"}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-text-white">{c.name}</p>
-                      <p className="text-[10px] text-text-muted">Target: {c.target}</p>
+
+                    {/* Stats row */}
+                    <div className="flex items-center justify-between border-t border-neutral-800/40 pt-3">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400">
+                        <span>+{ch.reward_xp} XP</span>
+                        {ch.reward_stars > 0 && <span>· +{ch.reward_stars} ★</span>}
+                      </div>
+                      <div className="text-[10px] text-neutral-500">
+                        {ch.current_best_wpm > 0 ? (
+                          <span>
+                            Best: <strong className="text-neutral-300">{ch.current_best_wpm} WPM</strong>
+                          </span>
+                        ) : (
+                          <span>Not attempted</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-border/50 pt-2">
-                    <span className="text-xs font-bold text-accent-gold">{c.reward}</span>
-                    <span className="text-[10px] text-text-muted">0 WPM</span>
-                  </div>
-                </Card>
-              </button>
-            ))}
+                  </SpotlightCard>
+                ))}
+              </div>
+            )}
+
           </div>
+
         </div>
       </div>
-
-      {/* Streak Modal */}
-      <StreakModal
-        playerId={playerId}
-        open={streakModalOpen}
-        onClose={() => {
-          setStreakModalOpen(false);
-          fetchStreak();
-        }}
-      />
     </div>
   );
 }

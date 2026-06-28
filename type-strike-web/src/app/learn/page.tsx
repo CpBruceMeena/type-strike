@@ -9,7 +9,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import TopBar from "@/components/layout/TopBar";
 import { LESSONS, LESSON_CATEGORIES, getLessonsByCategory, FINGER_COLORS, KEY_FINGER_MAP } from "@/lib/lessons";
 import { api } from "@/lib/api";
 import { DEFAULT_PLAYER_ID } from "@/lib/constants";
@@ -44,7 +43,6 @@ export default function LessonsHubPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar showBack title="LEARN" backHref="/app/home" />
 
       <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto w-full max-w-2xl">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import TopBar from "@/components/layout/TopBar";
 import Card from "@/components/ui/Card";
 import GlassPanel from "@/components/ui/GlassPanel";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -192,8 +191,7 @@ export default function StatsPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col">
-        <TopBar showBack title="STATS" />
-        <div className="flex-1 px-4 py-4 md:px-0 md:py-6">
+          <div className="flex-1 px-4 py-4 md:px-0 md:py-6">
           <div className="mx-auto w-full max-w-3xl">
             <StatsSkeleton />
           </div>
@@ -205,8 +203,7 @@ export default function StatsPage() {
   if (error) {
     return (
       <div className="flex flex-1 flex-col">
-        <TopBar showBack title="STATS" />
-        <div className="flex flex-1 items-center justify-center p-8">
+          <div className="flex flex-1 items-center justify-center p-8">
           <GlassPanel glow="magma" blur="md" depth={2} className="p-8 text-center">
             <p className="mb-1 text-3xl">⚠️</p>
             <p className="mb-3 text-sm font-bold text-text-body">{error}</p>
@@ -225,8 +222,7 @@ export default function StatsPage() {
   if (!data) {
     return (
       <div className="flex flex-1 flex-col">
-        <TopBar showBack title="STATS" />
-        <div className="flex flex-1 items-center justify-center p-8">
+          <div className="flex flex-1 items-center justify-center p-8">
           <GlassPanel glow="none" blur="md" depth={2} className="p-8 text-center">
             <p className="mb-2 text-3xl">📊</p>
             <p className="text-sm font-bold text-text-body">No stats yet</p>
@@ -244,7 +240,6 @@ export default function StatsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar showBack title="STATS" />
 
       <div className="flex-1 px-4 py-4 md:px-0 md:py-6">
         <div className="mx-auto w-full max-w-3xl space-y-4">

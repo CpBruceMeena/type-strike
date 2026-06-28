@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import TopBar from "@/components/layout/TopBar";
 import {
   DIFFICULTIES,
   ALL_LANGUAGES,
@@ -276,32 +275,28 @@ export default function CoderHubPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* ── Header ─────────────────────────────── */}
-      <TopBar
-        showBack
-        title="CODER"
-        backHref="/app/home"
-        rightAction={
-          <div className="flex items-center gap-2">
-            {completedCount > 0 && (
-              <span className="hidden text-[10px] tabular-nums sm:block" style={{ color: "var(--text-muted)" }}>
-                <span style={{ color: diffColor }}>{completedCount}</span>/{totalSnippets} done
-              </span>
-            )}
-            <button
-              onClick={startRandom}
-              className="flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[9px] font-bold tracking-[1px] transition-all hover:brightness-125 active:scale-95"
-              style={{
-                background: `${diffColor}14`,
-                color: diffColor,
-                border: `1px solid ${diffColor}20`,
-              }}
-            >
-              <span>🎲</span>
-              <span className="hidden sm:inline">Random</span>
-            </button>
-          </div>
-        }
-      />
+      <div className="flex h-12 items-center justify-between px-4">
+        <span className="text-xs font-bold tracking-[2px] text-text-white uppercase">CODER</span>
+        <div className="flex items-center gap-2">
+          {completedCount > 0 && (
+            <span className="hidden text-[10px] tabular-nums sm:block" style={{ color: "var(--text-muted)" }}>
+              <span style={{ color: diffColor }}>{completedCount}</span>/{totalSnippets} done
+            </span>
+          )}
+          <button
+            onClick={startRandom}
+            className="flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[9px] font-bold tracking-[1px] transition-all hover:brightness-125 active:scale-95"
+            style={{
+              background: `${diffColor}14`,
+              color: diffColor,
+              border: `1px solid ${diffColor}20`,
+            }}
+          >
+            <span>🎲</span>
+            <span className="hidden sm:inline">Random</span>
+          </button>
+        </div>
+      </div>
 
       {/* ── Content ─────────────────────────────────── */}
       <div className="flex-1 px-4 py-5 md:px-8 md:py-6">

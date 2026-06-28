@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useAchievements } from "@/hooks/useAchievements";
-import TopBar from "@/components/layout/TopBar";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
 import type { PlayerAchievement } from "@/lib/types";
 
-// Must match the key used in Sidebar.tsx for tracking seen achievements
+// Used to track how many achievements the user has seen so we can
+// show/hide the unseen-count badge in the navigation.
 const SEEN_COUNT_KEY = "typestrike_seen_achievement_count";
 
 // ── Category Config ─────────────────────────────────────
@@ -136,7 +136,6 @@ export default function FeatsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar showBack title="FEATS" />
 
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto w-full max-w-4xl">

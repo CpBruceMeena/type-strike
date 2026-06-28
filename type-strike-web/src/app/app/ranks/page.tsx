@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import TopBar from "@/components/layout/TopBar";
 import GlassPanel from "@/components/ui/GlassPanel";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useProgression } from "@/hooks/useProgression";
@@ -37,7 +36,6 @@ export default function RanksPage() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <TopBar showBack title="RANKS" />
 
       <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-6 md:px-0">
         {/* Player Rank Summary */}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import TopBar from "@/components/layout/TopBar";
 import Card from "@/components/ui/Card";
 import GlassPanel from "@/components/ui/GlassPanel";
 import { usePlayer } from "@/hooks/usePlayer";
@@ -80,6 +79,7 @@ function EntryRow({
   entry: EntryShape;
   isSelf: boolean;
 }) {
+  const [imgError, setImgError] = useState(false);
   const rankColor =
     entry.rank === 1 ? "#FFCC00" : entry.rank === 2 ? "#C0C0C0" : entry.rank === 3 ? "#CD7F32" : "var(--text-muted)";
 
@@ -97,16 +97,28 @@ function EntryRow({
         {entry.rank <= 3 ? (["🥇", "🥈", "🥉"] as const)[entry.rank - 1] : `#${entry.rank}`}
       </span>
 
-      {/* Avatar */}
-      <div
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white"
-        style={{
-          background: isSelf
-            ? "linear-gradient(135deg, #FF5020, #FFCC00)"
-            : "linear-gradient(135deg, #2a2a3a, #1a1a28)",
-        }}
-      >
-        {entry.player_name?.[0]?.toUpperCase() || "?"}
+      {/* Avatar — image URL or initials fallback */}
+      <div className="h-9 w-9 shrink-0">
+        {!imgError ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(entry.player_name || "?")}&background=${isSelf ? "06b6d4" : "2a2a3a"}&color=fff&size=36&bold=true`}
+            alt={entry.player_name || "Player"}
+            className="h-9 w-9 rounded-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-black text-white"
+            style={{
+              background: isSelf
+                ? "linear-gradient(135deg, #06b6d4, #0ea5e9)"
+                : "linear-gradient(135deg, #2a2a3a, #1a1a28)",
+            }}
+          >
+            {entry.player_name?.[0]?.toUpperCase() || "?"}
+          </div>
+        )}
       </div>
 
       {/* Name */}
@@ -432,7 +444,6 @@ export default function LeaderboardPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar showBack title="LEADERBOARD" />
 
       {/* Tab strip — centered with content */}
       <div className="mx-auto w-full max-w-3xl px-4 pb-3 md:px-0">
