@@ -69,7 +69,7 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
     ...createInitialState(),
     levelId,
   }));
-  const [levelDetail, setLevelDetail] = useState<LevelDetail | null>(null);
+  const [, setLevelDetail] = useState<LevelDetail | null>(null);
   const levelDetailRef = useRef<LevelDetail | null>(null);
   const engineRef = useRef<TypingEngine | null>(null);
   const inputRef = useRef<KeyboardInputSource | null>(null);
@@ -139,6 +139,8 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
         xp: String(xpEarned),
         stars: String(stars),
         mode: `level-${levelId}`,
+        passWpm: String(detail?.pass_wpm ?? "?"),
+        passAccuracy: String(detail?.pass_accuracy ?? "?"),
       });
 
       if (levelUpgrade?.upgraded) {
@@ -152,7 +154,7 @@ export function useLevelGameplay(levelId: number, playerId?: number) {
       }
 
       setTimeout(() => {
-        const dest = result.completed ? "/victory" : "/failed";
+        const dest = stars > 0 ? "/victory" : "/failed";
         router.push(`${dest}?${params.toString()}`);
       }, 1200);
 

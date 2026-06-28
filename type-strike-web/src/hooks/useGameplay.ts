@@ -136,7 +136,13 @@ export function useGameplay(mode: GameMode, playerId?: number) {
           }
 
           setTimeout(() => {
-            const dest = result.completed ? "/victory" : "/failed";
+            // For level mode: 0 stars = failure regardless of completion
+            // For timed/contest modes: use completion status
+            const isLevelMode = mode.startsWith("level-");
+            const failed = isLevelMode
+              ? (response.stars ?? 0) <= 0
+              : !result.completed;
+            const dest = failed ? "/failed" : "/victory";
             router.push(`${dest}?${params.toString()}`);
           }, 1200);
         }

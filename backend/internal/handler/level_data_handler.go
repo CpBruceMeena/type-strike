@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// LevelDataHandler serves static level configuration data.
+// LevelDataHandler serves level configuration data from the database.
 type LevelDataHandler struct {
 	repo *repository.Repositories
 }
@@ -23,10 +23,57 @@ func NewLevelDataHandler(repo *repository.Repositories) *LevelDataHandler {
 
 // GetAll handles GET /api/v1/levels (optional ?player_id=N to include progress)
 func (h *LevelDataHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	configs := data.LevelConfigs
-	playerIDStr := r.URL.Query().Get("player_id")
+	// Try to fetch levels from the database first
+	dbLevels, err := h.repo.LevelConfig.GetAll(r.Context())
+	if err != nil || len(dbLevels) == 0 {
+		// Fallback to in-memory configs
+		slog.Default().Warn("falling back to in-memory level configs", "error", err)
+		configs := data.LevelConfigs
+		playerIDStr := r.URL.Query().Get("player_id")
 
-	// If player_id provided, pre-load all progress for this player
+		var progressMap map[int]*models.LevelProgress
+		if playerIDStr != "" {
+			if playerID, err := strconv.Atoi(playerIDStr); err == nil {
+				allProgress, err := h.repo.LevelProgress.GetAllForPlayer(r.Context(), playerID)
+				if err == nil {
+					progressMap = make(map[int]*models.LevelProgress, len(allProgress))
+					for i, p := range allProgress {
+						progressMap[p.LevelID] = &allProgress[i]
+					}
+				}
+			}
+		}
+
+		results := make([]map[string]interface{}, len(configs))
+		for i, c := range configs {
+			result := map[string]interface{}{
+				"id":            c.ID,
+				"name":          c.Name,
+				"tier":          c.Tier,
+				"difficulty":    c.Difficulty,
+				"pass_wpm":      c.PassWPM,
+				"pass_accuracy": c.PassAccuracy,
+				"paragraph":     c.Paragraph,
+			}
+			if progressMap != nil {
+				if p, ok := progressMap[c.ID]; ok {
+					if p.BestWPM > 0 {
+						result["player_best_wpm"] = p.BestWPM
+					}
+					if p.BestAccuracy > 0 {
+						result["player_best_acc"] = p.BestAccuracy
+					}
+					result["player_stars"] = p.Stars
+				}
+			}
+			results[i] = result
+		}
+		writeJSON(w, http.StatusOK, results)
+		return
+	}
+
+	// Load player progress if requested
+	playerIDStr := r.URL.Query().Get("player_id")
 	var progressMap map[int]*models.LevelProgress
 	if playerIDStr != "" {
 		if playerID, err := strconv.Atoi(playerIDStr); err == nil {
@@ -40,30 +87,26 @@ func (h *LevelDataHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	results := make([]map[string]interface{}, len(configs))
-	for i, c := range configs {
+	results := make([]map[string]interface{}, len(dbLevels))
+	for i, l := range dbLevels {
 		result := map[string]interface{}{
-			"id":            c.ID,
-			"name":          c.Name,
-			"tier":          c.Tier,
-			"difficulty":    c.Difficulty,
-			"pass_wpm":      c.PassWPM,
-			"pass_accuracy": c.PassAccuracy,
-			"paragraph":     c.Paragraph,
+			"id":            l.ID,
+			"name":          l.Name,
+			"tier":          l.Tier,
+			"difficulty":    l.Difficulty,
+			"pass_wpm":      l.PassWPM,
+			"pass_accuracy": l.PassAccuracy,
+			"paragraph":     l.Paragraph,
 		}
-		// Include player progress if available
 		if progressMap != nil {
-			if p, ok := progressMap[c.ID]; ok {
-				bestWPM := p.BestWPM
-				bestAcc := p.BestAccuracy
-				stars := p.Stars
-				if bestWPM > 0 {
-					result["player_best_wpm"] = bestWPM
+			if p, ok := progressMap[l.ID]; ok {
+				if p.BestWPM > 0 {
+					result["player_best_wpm"] = p.BestWPM
 				}
-				if bestAcc > 0 {
-					result["player_best_acc"] = bestAcc
+				if p.BestAccuracy > 0 {
+					result["player_best_acc"] = p.BestAccuracy
 				}
-				result["player_stars"] = stars
+				result["player_stars"] = p.Stars
 			}
 		}
 		results[i] = result
@@ -79,13 +122,44 @@ func (h *LevelDataHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Try to fetch from database first
+	dbLevel, err := h.repo.LevelConfig.GetByID(r.Context(), levelID)
+	if err == nil && dbLevel != nil {
+		// Found in DB — include player progress if requested
+		playerIDStr := r.URL.Query().Get("player_id")
+		var progress *models.LevelProgress
+		if playerIDStr != "" {
+			if playerID, err := strconv.Atoi(playerIDStr); err == nil {
+				progress, _ = h.repo.LevelProgress.GetByPlayerAndLevel(r.Context(), playerID, levelID)
+			}
+		}
+
+		detail := models.LevelDetail{
+			ID:           dbLevel.ID,
+			Name:         dbLevel.Name,
+			Tier:         dbLevel.Tier,
+			Difficulty:   dbLevel.Difficulty,
+			PassWPM:      dbLevel.PassWPM,
+			PassAccuracy: dbLevel.PassAccuracy,
+			Paragraph:    dbLevel.Paragraph,
+		}
+		if progress != nil {
+			detail.PlayerBestWPM = &progress.BestWPM
+			detail.PlayerBestAcc = &progress.BestAccuracy
+			detail.PlayerStars = &progress.Stars
+		}
+		writeJSON(w, http.StatusOK, detail)
+		return
+	}
+
+	// Fallback to in-memory config
+	slog.Default().Warn("level not found in DB, falling back to in-memory config", "level_id", levelID)
 	config := data.GetLevel(levelID)
 	if config == nil {
 		writeError(w, http.StatusNotFound, "LEVEL_NOT_FOUND", "Level not found")
 		return
 	}
 
-	// Try to get player progress if playerId query param is provided
 	playerIDStr := r.URL.Query().Get("player_id")
 	detail := config.ToLevelDetail(nil)
 	if playerIDStr != "" {
@@ -123,13 +197,34 @@ func (h *LevelDataHandler) GetNext(w http.ResponseWriter, r *http.Request) {
 		nextLevelID = 1
 	}
 
+	// Try DB first
+	dbLevel, dbErr := h.repo.LevelConfig.GetByID(r.Context(), nextLevelID)
+	if dbErr == nil && dbLevel != nil {
+		progress, _ := h.repo.LevelProgress.GetByPlayerAndLevel(r.Context(), playerID, nextLevelID)
+		detail := models.LevelDetail{
+			ID:           dbLevel.ID,
+			Name:         dbLevel.Name,
+			Tier:         dbLevel.Tier,
+			Difficulty:   dbLevel.Difficulty,
+			PassWPM:      dbLevel.PassWPM,
+			PassAccuracy: dbLevel.PassAccuracy,
+			Paragraph:    dbLevel.Paragraph,
+		}
+		if progress != nil {
+			detail.PlayerBestWPM = &progress.BestWPM
+			detail.PlayerBestAcc = &progress.BestAccuracy
+			detail.PlayerStars = &progress.Stars
+		}
+		writeJSON(w, http.StatusOK, detail)
+		return
+	}
+
+	// Fallback to in-memory
 	config := data.GetLevel(nextLevelID)
 	if config == nil {
 		config = data.GetLevel(1)
 	}
-
 	progress, _ := h.repo.LevelProgress.GetByPlayerAndLevel(r.Context(), playerID, config.ID)
 	detail := config.ToLevelDetail(progress)
-
 	writeJSON(w, http.StatusOK, detail)
 }

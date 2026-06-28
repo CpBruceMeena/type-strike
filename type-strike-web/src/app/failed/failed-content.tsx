@@ -120,6 +120,8 @@ export default function FailedContent() {
   const accuracy = searchParams.get("accuracy") ?? "—";
   const xp = searchParams.get("xp") ?? "0";
   const mode = searchParams.get("mode") ?? "";
+  const passWpm = searchParams.get("passWpm");
+  const passAccuracy = searchParams.get("passAccuracy");
 
   const accuracyFormatted =
     typeof accuracy === "string"
@@ -130,6 +132,16 @@ export default function FailedContent() {
       : accuracy;
 
   const wpmDisplay = typeof wpm === "string" ? (wpm === "—" ? "—" : wpm) : String(wpm);
+
+  const wpmNum = typeof wpm === "string" ? parseInt(wpm, 10) : 0;
+  const passWpmNum = passWpm ? parseInt(passWpm, 10) : null;
+  const accNum = typeof accuracy === "string" ? parseFloat(accuracy) : 0;
+  const passAccNum = passAccuracy ? parseInt(passAccuracy, 10) : null;
+  const validWpm = passWpmNum !== null && !isNaN(passWpmNum) && passWpmNum > 0;
+  const validAcc = passAccNum !== null && !isNaN(passAccNum) && passAccNum > 0;
+  const showRequirements = validWpm && validAcc;
+  const missingWpm = showRequirements ? Math.max(0, passWpmNum! - wpmNum) : null;
+  const missingAcc = showRequirements ? Math.max(0, passAccNum! - Math.round(accNum * 100)) : null;
 
   const handleRetry = useCallback(() => {
     if (mode.startsWith("level-")) {
@@ -219,6 +231,63 @@ export default function FailedContent() {
             <TipCard />
           </div>
         </GlassPanel>
+
+        {/* ── Requirements Breakdown ── */}
+        {showRequirements && (
+          <div
+            className="rounded-xl border border-[rgba(255,255,255,0.06)] p-3"
+            style={{ background: "rgba(255,34,0,0.04)" }}
+          >
+            <p className="mb-2 text-center text-[9px] font-bold tracking-[2px]" style={{ color: "var(--text-muted)" }}>
+              REQUIREMENTS
+            </p>
+            <div className="flex items-center justify-center gap-4 text-xs">
+              {/* WPM requirement */}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] font-bold tracking-[1px]" style={{ color: "var(--text-muted)" }}>WPM</span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm font-black ${wpmNum >= passWpmNum! ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {wpmNum}
+                  </span>
+                  <span className="text-[10px] text-neutral-600">/</span>
+                  <span className="text-sm font-black text-orange-400">{passWpmNum}</span>
+                </div>
+                {missingWpm !== null && missingWpm > 0 && (
+                  <span className="text-[9px] text-red-400">
+                    Need {missingWpm} more WPM
+                  </span>
+                )}
+                {wpmNum >= passWpmNum! && (
+                  <span className="text-[9px] text-emerald-400">✓ Met</span>
+                )}
+              </div>
+
+              {/* Accuracy requirement */}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] font-bold tracking-[1px]" style={{ color: "var(--text-muted)" }}>ACC</span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm font-black ${Math.round(accNum * 100) >= passAccNum! ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {Math.round(accNum * 100)}%
+                  </span>
+                  <span className="text-[10px] text-neutral-600">/</span>
+                  <span className="text-sm font-black text-orange-400">{passAccNum}%</span>
+                </div>
+                {missingAcc !== null && missingAcc > 0 && (
+                  <span className="text-[9px] text-red-400">
+                    Need {missingAcc}% more accuracy
+                  </span>
+                )}
+                {Math.round(accNum * 100) >= passAccNum! && (
+                  <span className="text-[9px] text-emerald-400">✓ Met</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Actions ── */}
         <div className="space-y-3">

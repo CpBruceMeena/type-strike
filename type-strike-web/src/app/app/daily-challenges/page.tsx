@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import StreakPanel from "@/components/game/StreakPanel";
 import SpotlightCard from "@/components/react-bits/SpotlightCard";
 import { usePlayer } from "@/hooks/usePlayer";
@@ -16,6 +17,7 @@ function SkeletonBlock({ className = "" }: { className?: string }) {
 // ── Page ────────────────────────────────────────────────
 
 export default function DailyChallengesPage() {
+  const router = useRouter();
   const { player, playerId } = usePlayer();
   const [streakInfo, setStreakInfo] = useState<StreakInfoResponse | null>(null);
   const [dailyChallenges, setDailyChallenges] = useState<DailyChallengesResponse | null>(null);
@@ -101,10 +103,13 @@ export default function DailyChallengesPage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {challengeList.slice(0, 3).map((ch) => (
-                  <SpotlightCard
+                  <button
                     key={ch.id}
-                    spotlightColor="rgba(249, 115, 22, 0.10)"
-                    className="flex flex-col gap-3 rounded-[22px] border border-neutral-800/60 bg-neutral-900/30 p-5 transition-all hover:border-orange-500/20 hover:bg-neutral-900/40"
+                    onClick={() => router.push(`/play/level?id=${ch.level_id}`)}
+                    className="flex flex-col gap-3 rounded-[22px] border border-neutral-800/60 bg-neutral-900/30 p-5 text-left transition-all hover:border-orange-500/20 hover:bg-neutral-900/40 active:scale-[0.98]"
+                    style={{
+                      backdropFilter: "blur(12px)",
+                    }}
                   >
                     {/* Header row: icon + name + status */}
                     <div className="flex items-start justify-between gap-3">
@@ -140,17 +145,20 @@ export default function DailyChallengesPage() {
                         <span>+{ch.reward_xp} XP</span>
                         {ch.reward_stars > 0 && <span>· +{ch.reward_stars} ★</span>}
                       </div>
-                      <div className="text-[10px] text-neutral-500">
+                      <div className="flex items-center gap-2">
                         {ch.current_best_wpm > 0 ? (
-                          <span>
+                          <span className="text-[10px] text-neutral-500">
                             Best: <strong className="text-neutral-300">{ch.current_best_wpm} WPM</strong>
                           </span>
                         ) : (
-                          <span>Not attempted</span>
+                          <span className="text-[10px] text-neutral-500">Not attempted</span>
                         )}
+                        <span className="text-[10px] font-bold text-orange-400 hover:text-orange-300 transition-colors">
+                          Play →
+                        </span>
                       </div>
                     </div>
-                  </SpotlightCard>
+                  </button>
                 ))}
               </div>
             )}

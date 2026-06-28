@@ -26,11 +26,11 @@ export interface TierConfig {
 }
 
 export const TIERS: TierConfig[] = [
-  { key: "ember", label: "EMBER", startLevel: 1, endLevel: 25, color: "#FF5020" },
-  { key: "igneious", label: "IGNEOUS", startLevel: 26, endLevel: 50, color: "#FF6600" },
-  { key: "magma_core", label: "MAGMA CORE", startLevel: 51, endLevel: 75, color: "#CC44FF" },
-  { key: "obsidian", label: "OBSIDIAN", startLevel: 76, endLevel: 100, color: "#CCCCCC" },
-  { key: "beyond", label: "BEYOND", startLevel: 101, endLevel: 125, color: "#FFCC00" },
+  { key: "ember", label: "EMBER", startLevel: 1, endLevel: 100, color: "#FF5020" },
+  { key: "igneious", label: "IGNEOUS", startLevel: 101, endLevel: 200, color: "#FF6600" },
+  { key: "magma_core", label: "MAGMA CORE", startLevel: 201, endLevel: 300, color: "#CC44FF" },
+  { key: "obsidian", label: "OBSIDIAN", startLevel: 301, endLevel: 400, color: "#CCCCCC" },
+  { key: "beyond", label: "BEYOND", startLevel: 401, endLevel: 500, color: "#FFCC00" },
 ];
 
 // ── Game Mode Config ────────────────────────────────────
@@ -44,7 +44,7 @@ export interface GameModeConfig {
 }
 
 export const GAME_MODES: GameModeConfig[] = [
-  { key: "level", label: "LEVELS", description: "100 levels of fire", icon: "🗺️", durationSeconds: null },
+  { key: "level", label: "LEVELS", description: "500 levels of fire", icon: "🗺️", durationSeconds: null },
   { key: "contest", label: "CONTEST", description: "Daily competition", icon: "🏆", durationSeconds: null },
   { key: "timed_1min", label: "1 MIN", description: "1-minute sprint", icon: "⏱️", durationSeconds: 60 },
   { key: "timed_3min", label: "3 MIN", description: "3-minute endurance", icon: "⏳", durationSeconds: 180 },
@@ -53,7 +53,7 @@ export const GAME_MODES: GameModeConfig[] = [
 
 // ── Level Config ────────────────────────────────────────
 
-export const LEVEL_TOTAL_COUNT = 100;
+export const LEVEL_TOTAL_COUNT = 500;
 
 // ── Stall Detection ─────────────────────────────────────
 

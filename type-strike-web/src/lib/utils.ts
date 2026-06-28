@@ -57,7 +57,7 @@ export function computeStars(
 ): number {
   return scoring.calculateStars(wpm, accuracy, {
     passWpm: detail.pass_wpm,
-    passAccuracy: detail.pass_accuracy / 100,
+    passAccuracy: detail.pass_accuracy,
   }, errorCount);
 }
 

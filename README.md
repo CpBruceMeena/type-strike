@@ -8,7 +8,7 @@
   <strong>Type with fury. Strike with fire.</strong>
 </p>
 
-type-strike is a typing game that turns every word into an explosive arcade battle. No flat typing tests — just visceral feedback, liquid-fueled combos, and a journey through 100+ levels of fire and fury.
+type-strike is a typing game that turns every word into an explosive arcade battle. No flat typing tests — just visceral feedback, liquid-fueled combos, and a journey through 500 levels of fire and fury.
 
 ---
 
@@ -20,17 +20,18 @@ You enter a dark, molten world — your progression map. Each node is a crystall
 
 ## 🔥 Features
 
-- **100+ levels** across 5 ascending tiers: Ember → Igneous → Magma Core → Obsidian → Beyond
+- **500 levels** across 5 ascending tiers (100 each): Ember → Igneous → Magma Core → Obsidian → Beyond
+- **Level data fully database-driven** — paragraphs, thresholds, and names served from PostgreSQL
 - **5 game modes** — Levels, Timed (1/3/5 min), Contest, and Coder (code & DSA)
 - **Plasma combo engine** — 6 escalating tiers with visual effects
 - **Coder mode** — type real multi-line code snippets across 7 languages (JS, TS, Python, Go, Java, C++, Rust)
-- **Learn mode** — 48 progressive typing lessons with **backend-tracked progress** (persisted across sessions)
+- **Learn mode** — 48 progressive typing lessons with backend-tracked progress (persisted across sessions)
 - **Daily challenges** — with streak multipliers, reward calendar, and bonus XP milestones
 - **Streak system** — 30-day reward calendar with bonus XP at 5, 10, 15, 20, 25, and 30 days
 - **Leaderboards** — Global (XP), Daily (today's best), and Timed (1min/3min/5min) rankings with stacked collapsible sections
 - **Stats dashboard** — real player data: game history, level progress, activity feed, XP tracking, streak counter
-- **Feats (achievements)** — 18 achievements across speed, accuracy, combo, progression, and streaks
-- **Gamified progression** — 6 rank tiers (Bronze → Silver → Gold → Platinum → Diamond → Obsidian) with titles, themes, and tier upgrade celebrations
+- **Feats (achievements)** — achievements across speed, accuracy, combo, progression, and streaks
+- **Gamified progression** — rank tiers (Bronze → Silver → Gold → Platinum → Diamond → Obsidian) with titles, themes, and tier upgrade celebrations
 - **Dynamic share cards** — Open Graph images for social media
 - **Custom keyboard themes** — unlock visual styles as you progress
 - **Retry on failure** — automatic retry button when a game fails to load
@@ -68,11 +69,11 @@ The redesigned homepage is organized into clear sections:
 
 | Tier | Levels | Vibe |
 |------|--------|------|
-| **EMBER 🔥** | 1–25 | The beginning of flame |
-| **IGNEOUS 🌋** | 26–50 | Forged in volcanic fire |
-| **MAGMA CORE 🔴** | 51–75 | The planet's burning heart |
-| **OBSIDIAN ⚫** | 76–100 | Only the fastest survive |
-| **BEYOND 🌟** | 101+ | Unlimited dynamically-generated levels |
+| **EMBER 🔥** | 1–100 | The beginning of flame |
+| **IGNEOUS 🌋** | 101–200 | Forged in volcanic fire |
+| **MAGMA CORE 🔴** | 201–300 | The planet's burning heart |
+| **OBSIDIAN ⚫** | 301–400 | Only the fastest survive |
+| **BEYOND 🌟** | 401–500 | The final frontier — mastery awaits |
 
 ---
 

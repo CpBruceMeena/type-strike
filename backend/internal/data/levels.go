@@ -128,11 +128,11 @@ const (
 )
 
 var tierRange = map[string][2]int{
-	TierEmber:     {1, 25},
-	TierIgneous:   {26, 50},
-	TierMagmaCore: {51, 75},
-	TierObsidian:  {76, 100},
-	TierBeyond:    {101, 125},
+	TierEmber:     {1, 100},
+	TierIgneous:   {101, 200},
+	TierMagmaCore: {201, 300},
+	TierObsidian:  {301, 400},
+	TierBeyond:    {401, 500},
 }
 
 var emberNames = []string{
@@ -498,11 +498,10 @@ func genParagraph(levelID int) string {
 	return result
 }
 
-// GetLevelTotalCount returns the total number of levels that have unique names
-// (pre-generated 100 + all named beyond levels). Levels beyond this count are
-// dynamically generated with auto-generated names.
+// GetLevelTotalCount returns the total number of levels.
+// All 500 levels (5 tiers × 100) are now pre-generated with configs.
 func GetLevelTotalCount() int {
-	return len(LevelConfigs) + len(beyondNames)
+	return len(LevelConfigs)
 }
 
 // GenerateFreshLevels generates all 100 levels with fresh paragraphs (exported for seeding tools).
@@ -521,6 +520,7 @@ func generateLevels() []LevelConfig {
 
 	for ti, name := range tierKeys {
 		start, end := tierRange[name][0], tierRange[name][1]
+		names := tierNames[ti]
 		for i := start; i <= end; i++ {
 			idx := i - start
 			tierSize := end - start
@@ -531,9 +531,17 @@ func generateLevels() []LevelConfig {
 			wpm := tierWPM[ti][0] + int(progress*float64(tierWPM[ti][1]-tierWPM[ti][0]))
 			acc := tierAcc[ti][0] + int(progress*float64(tierAcc[ti][1]-tierAcc[ti][0]))
 
+			// Use named pool if available, otherwise auto-generate a name
+			levelName := ""
+			if idx < len(names) {
+				levelName = names[idx]
+			} else {
+				levelName = genAutoName(i, ti)
+			}
+
 			levels = append(levels, LevelConfig{
 				ID:           i,
-				Name:         tierNames[ti][idx],
+				Name:         levelName,
 				Tier:         name,
 				Difficulty:   tierDiffs[ti],
 				PassWPM:      wpm,
@@ -544,4 +552,26 @@ func generateLevels() []LevelConfig {
 	}
 
 	return levels
+}
+
+// genAutoName generates a deterministic name for a level within a tier.
+// For levels beyond the named pool, this creates unique names.
+func genAutoName(levelID int, tierIndex int) string {
+	prefixes := [][]string{
+		{"Ember", "Flame", "Spark", "Heat", "Glow"},
+		{
+			"Basalt", "Granite", "Stone", "Rock", "Crag"},
+		{"Core", "Deep", "Inner", "Center", "Heart"},
+		{"Dark", "Shadow", "Void", "Night", "Onyx"},
+		{"Star", "Cosmic", "Solar", "Nova", "Astral"},
+	}
+	suffixes := []string{"Strike", "Forge", "Blaze", "Fury", "Rush", "Wave", "Storm", "Edge", "Peak", "Summit"}
+	seed := rand.New(rand.NewSource(int64(levelID) * 777))
+	ti := tierIndex
+	if ti >= len(prefixes) {
+		ti = len(prefixes) - 1
+	}
+	prefix := prefixes[ti][seed.Intn(len(prefixes[ti]))]
+	suffix := suffixes[seed.Intn(len(suffixes))]
+	return fmt.Sprintf("%s %s %d", prefix, suffix, levelID)
 }
