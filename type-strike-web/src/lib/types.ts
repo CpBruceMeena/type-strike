@@ -450,6 +450,63 @@ export interface UnlockedCountResponse {
   total_count: number;
 }
 
+// ── Streak Rewards ────────────────────────────────────────
+
+export interface StreakDay {
+  day_number: number;
+  label: string;
+  is_past: boolean;
+  is_today: boolean;
+  is_future: boolean;
+  is_claimed: boolean;
+  is_freeze_used: boolean;
+  reward?: {
+    type: string;
+    value: number;
+    icon: string;
+    description: string;
+  };
+}
+
+export interface StreakInfoResponse {
+  streak_count: number;
+  last_streak_date: string | null;
+  last_claimed_day: number;
+  streak_freezes: number;
+  total_days_claimed: number;
+  today_available: boolean;
+  freeze_available: boolean;
+  calendar: StreakDay[];
+}
+
+export interface ClaimRewardResponse {
+  claimed: boolean;
+  day_number: number;
+  streak_count: number;
+  reward_type: string;
+  reward_value: number;
+  reward_icon: string;
+  xp_added: number;
+  stars_added: number;
+  freeze_token: boolean;
+  total_xp: number;
+  total_stars: number;
+  freezes_now: number;
+  next_reward?: {
+    type: string;
+    value: number;
+    icon: string;
+    description: string;
+  };
+}
+
+export interface UseStreakFreezeResponse {
+  used: boolean;
+  remaining_freezes: number;
+  streak_count: number;
+  streak_preserved: boolean;
+}
+
 // ── Game State (web UI) ─────────────────────────────────
 
 export type GameState = "idle" | "loading" | "countdown" | "typing" | "mistake" | "stalled" | "complete" | "failed";

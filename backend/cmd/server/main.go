@@ -58,6 +58,7 @@ func main() {
 	lessonHandler := handler.NewLessonHandler(repos)
 	progressionHandler := handler.NewProgressionHandler(repos)
 	achievementHandler := handler.NewAchievementHandler(repos)
+	streakHandler := handler.NewStreakHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -177,6 +178,13 @@ func main() {
 			r.Get("/", achievementHandler.GetAllAchievements)
 			r.Get("/count", achievementHandler.GetUnlockedCount)
 			r.Post("/check", achievementHandler.CheckAchievements)
+		})
+
+		// Streak Rewards
+		r.Route("/players/{playerId}/streak", func(r chi.Router) {
+			r.Get("/", streakHandler.GetStreakInfo)
+			r.Post("/claim", streakHandler.ClaimDailyReward)
+			r.Post("/freeze", streakHandler.UseStreakFreeze)
 		})
 	})
 
