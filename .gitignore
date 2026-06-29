@@ -10,22 +10,8 @@ backend/server
 *.out
 *.test.exe
 
-# ── Android App (Kotlin/Jetpack Compose) ──────────────
-type-strike-android/.gradle/
-type-strike-android/build/
-type-strike-android/app/build/
-type-strike-android/local.properties
-*.iml
-.playwright-mcp
-.idea/
-.DS_Store
-*.apk
-*.aab
-*.ap_
-*.dex
-bin/
-gen/
-out/
+# ── Android App (Kotlin/Jetpack Compose) — on hold ──
+type-strike-android/
 
 # ── General ────────────────────────────────────────────
 *.swp
@@ -53,8 +39,6 @@ type-strike-wireframe.html
 
 # ── Root-level assets / screenshots ───────────────────
 *.png
-!type-strike-android/app/src/main/res/**/*.png
-!type-strike-android/app/src/main/res/drawable/**/*.png
 screenshot_*.png
 
 # ── Draft / temp files ────────────────────────────
@@ -62,6 +46,8 @@ coder.html
 index.html
 temp/
 website-*.zip
+"typing screen.zip"
+typing\ screen.zip
 
 # ── Android Keystore (DO NOT COMMIT) ───────────────────
 *.keystore
@@ -81,6 +67,8 @@ Thumbs.db
 *~
 .bak
 *.bak
+.idea/
+.playwright-mcp/
 
 # ── Backend build artifacts ──────────────────────────
 backend/scripts/seed_levels

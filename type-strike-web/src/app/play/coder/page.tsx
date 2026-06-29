@@ -134,14 +134,13 @@ function SnippetCard({
         </span>
       </div>
 
-      {/* Title + meta */}
-      <h3
-        className="relative mb-0.5 text-sm font-bold tracking-tight"
-        style={{ color: "var(--text-white)" }}
-      >
-        {snippet.title}
-      </h3>
-      <div className="relative mb-3 flex items-center gap-3 text-[10px]" style={{ color: "var(--text-muted)" }}>
+      {/* Title + meta */}                    <h3
+                      className="relative mb-0.5 text-sm font-bold tracking-tight"
+                      style={{ color: "var(--ts-text, #f5f3ff)", fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)" }}
+                    >
+                      {snippet.title}
+                    </h3>
+      <div className="relative mb-3 flex items-center gap-3 text-[10px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
         <span>{lineCount} lines</span>
         <span className="h-1 w-1 rounded-full bg-current opacity-30" />
         <span>{charCount} chars</span>
@@ -271,7 +270,7 @@ export default function CoderHubPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* ── Content ─────────────────────────────────── */}
-      <div className="flex-1 px-4 py-5 md:px-8 md:py-6">
+      <div className="flex-1" style={{ padding: "32px 28px" }}>
         <div className="mx-auto w-full max-w-6xl">
 
           {/* ── Header bar: difficulty + language + random ── */}
@@ -283,10 +282,10 @@ export default function CoderHubPage() {
             }}
           >
             <div className="flex items-center justify-between mb-2 px-1.5 pt-1.5">
-              <span className="text-xs font-bold tracking-[2px] text-text-white/50 uppercase">SNIPPETS</span>
+              <span style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 700, letterSpacing: 3, color: "var(--ts-text-dim, #9b94b3)", textTransform: "uppercase" }}>SNIPPETS</span>
               <div className="flex items-center gap-2">
                 {completedCount > 0 && (
-                  <span className="hidden text-[10px] tabular-nums sm:block" style={{ color: "var(--text-muted)" }}>
+                  <span className="hidden text-xs tabular-nums sm:block" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                     <span style={{ color: diffColor }}>{completedCount}</span>/{totalSnippets} done
                   </span>
                 )}
@@ -313,10 +312,10 @@ export default function CoderHubPage() {
                   <button
                     key={diff.key}
                     onClick={() => { setActiveDifficulty(diff.key); setActiveLanguage(null); }}
-                    className="relative flex flex-1 flex-col items-center gap-1.5 rounded-xl py-3 text-[11px] font-bold tracking-[1.5px] transition-all duration-200"
+                    className="relative flex flex-1 flex-col items-center gap-1.5 rounded-xl py-4 text-xs font-bold tracking-[2px] transition-all duration-200"
                     style={{
                       background: isActive ? `${diff.color}16` : "transparent",
-                      color: isActive ? diff.color : "var(--text-muted)",
+                      color: isActive ? diff.color : "var(--ts-text-dim, #9b94b3)",
                     }}
                   >
                     {isActive && (
@@ -341,15 +340,14 @@ export default function CoderHubPage() {
             {/* Language pills — redesigned */}
             <div className="mt-2 flex flex-wrap gap-1.5 px-1.5 pb-1.5">
               <button
-                onClick={() => setActiveLanguage(null)}
-                className="rounded-lg px-3 py-1.5 text-[10px] font-bold tracking-[1px] transition-all duration-200"
+                onClick={() => setActiveLanguage(null)}                    className="rounded-lg px-3 py-2 text-xs font-bold tracking-[1px] transition-all duration-200"
                 style={{
                   background: activeLanguage === null
                     ? "rgba(255,255,255,0.1)"
                     : "transparent",
                   color: activeLanguage === null
-                    ? "var(--text-white)"
-                    : "var(--text-label)",
+                    ? "var(--ts-text, #f5f3ff)"
+                    : "var(--ts-text-dim, #9b94b3)",
                   border: `1px solid ${
                     activeLanguage === null
                       ? "rgba(255,255,255,0.15)"
@@ -368,10 +366,10 @@ export default function CoderHubPage() {
                   <button
                     key={lang}
                     onClick={() => setActiveLanguage(isActive ? null : lang)}
-                    className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-[10px] font-bold tracking-[0.5px] transition-all duration-200"
+                    className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold tracking-[0.5px] transition-all duration-200"
                     style={{
                       background: isActive ? `${c}18` : "transparent",
-                      color: isActive ? c : "var(--text-label)",
+                      color: isActive ? c : "var(--ts-text-dim, #9b94b3)",
                       border: `1px solid ${
                         isActive ? `${c}40` : "rgba(255,255,255,0.06)"
                       }`,
@@ -404,11 +402,11 @@ export default function CoderHubPage() {
           {/* ── Snippets ─────────────────────────────── */}
           {currentSnippets.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No snippets match this combination</p>
+              <p className="text-sm" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>No snippets match this combination</p>
               <button
                 onClick={() => setActiveLanguage(null)}
                 className="mt-3 text-[11px] font-bold tracking-[1px] underline underline-offset-4 opacity-60 hover:opacity-100 transition-opacity"
-                style={{ color: "var(--electric-cyan)" }}
+                style={{ color: "var(--ts-orange, #ff6b1a)" }}
               >
                 Clear filter
               </button>
@@ -417,7 +415,7 @@ export default function CoderHubPage() {
             <>
               {/* Section label with counts */}
               <div className="mb-3 flex items-center gap-2">
-                <h2 className="text-[11px] font-bold tracking-[2px] uppercase" style={{ color: "var(--text-label)" }}>
+                <h2 style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 12, fontWeight: 700, letterSpacing: 2, color: "var(--ts-text-dim, #9b94b3)", textTransform: "uppercase" }}>
                   {activeLanguage ?? "All"} Snippets
                 </h2>
                 <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
@@ -427,7 +425,7 @@ export default function CoderHubPage() {
                       {completedCount} done
                     </span>
                   )}
-                  <span className="text-[10px] tabular-nums" style={{ color: "var(--text-muted)" }}>
+                  <span className="text-xs tabular-nums" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                     {currentSnippets.length} total
                   </span>
                 </div>
@@ -436,7 +434,7 @@ export default function CoderHubPage() {
               {/* Grid — uncompleted */}
               {sortedSnippets.uncompleted.length > 0 && (
                 <>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                     {sortedSnippets.uncompleted.map((snippet) => {
                       const actualIndex = currentSnippets.indexOf(snippet);
                       return (
@@ -459,7 +457,7 @@ export default function CoderHubPage() {
                     <div className="my-8 flex items-center gap-3">
                       <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] font-bold tracking-[2px] uppercase" style={{ color: "var(--text-muted)" }}>
+                        <span style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--ts-text-dim, #9b94b3)", textTransform: "uppercase" }}>
                           {completedCount} completed
                         </span>
                         <span className="text-[8px] tracking-[1px]" style={{ color: "rgba(255,255,255,0.15)" }}>
@@ -474,7 +472,7 @@ export default function CoderHubPage() {
 
               {/* Grid — completed */}
               {sortedSnippets.completed.length > 0 && (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                   {sortedSnippets.completed.map((snippet) => {
                     const actualIndex = currentSnippets.indexOf(snippet);
                     return (
@@ -497,7 +495,7 @@ export default function CoderHubPage() {
 
           {/* Footer */}
           <div className="mt-10 text-center">
-            <p className="text-[9px] tracking-[2px]" style={{ color: "rgba(255,255,255,0.12)" }}>
+            <p className="text-xs tracking-[2px]" style={{ color: "rgba(255,255,255,0.12)" }}>
               Real code · Multi-line indentation · Semi-colons &amp; parentheses required · Accuracy &gt; speed
             </p>
           </div>

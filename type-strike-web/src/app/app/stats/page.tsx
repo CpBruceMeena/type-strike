@@ -241,8 +241,9 @@ export default function StatsPage() {
   return (
     <div className="flex flex-1 flex-col">
 
-      <div className="flex-1 px-4 py-4 md:px-0 md:py-6">
-        <div className="mx-auto w-full max-w-3xl space-y-4">
+      <div className="flex-1" style={{ padding: "32px 28px" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 1100 }}>
+          <div className="space-y-5">
           {/* Player Level Banner */}
           <GlassPanel glow="magma" blur="md" depth={2} className="p-4">
             <div className="flex items-center gap-3">
@@ -420,6 +421,7 @@ export default function StatsPage() {
                 DAY STREAK
               </p>
             </GlassPanel>
+          </div>
           </div>
         </div>
       </div>

@@ -1,25 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import Card from "@/components/ui/Card";
 import GlassPanel from "@/components/ui/GlassPanel";
 import { usePlayer } from "@/hooks/usePlayer";
 import { api } from "@/lib/api";
 import type { TimedLeaderboardEntry } from "@/lib/types";
 
-// ── Tab Config ─────────────────────────────────────────
+// ── Column Config ─────────────────────────────────────
 
-interface TabDef {
+const COLUMNS: {
   key: string;
   label: string;
   accent: string;
-  type: "global" | "daily" | "timed" | "contest";
-}
-
-const TABS: TabDef[] = [
-  { key: "global", label: "GLOBAL", accent: "#FF5020", type: "global" },
-  { key: "daily", label: "DAILY", accent: "#FFCC00", type: "daily" },
-  { key: "timed", label: "TIMED", accent: "#00E5FF", type: "timed" },
+}[] = [
+  { key: "global", label: "GLOBAL", accent: "#FF5020" },
+  { key: "daily", label: "DAILY", accent: "#FFCC00" },
+  { key: "timed", label: "TIMED", accent: "#00E5FF" },
 ];
 
 // ── Timed Mode Config ──────────────────────────────────
@@ -39,27 +37,14 @@ const TIMED_MODES: TimedModeDef[] = [
   { key: "5min", mode: "timed_5min", label: "5 MIN", icon: "🔥", accent: "#FF6600", description: "5-minute marathon" },
 ];
 
-// ── Loading Skeleton ───────────────────────────────────
+// ── Column Data Shape ─────────────────────────────────
 
-function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: rows }).map((_, i) => (
-        <Card key={i} className="flex items-center gap-4 py-3">
-          <div className="h-5 w-8 animate-pulse rounded bg-white/5" />
-          <div className="h-10 w-10 animate-pulse rounded-full bg-white/5" />
-          <div className="flex-1 space-y-1.5">
-            <div className="h-3 w-28 animate-pulse rounded bg-white/5" />
-            <div className="h-2.5 w-16 animate-pulse rounded bg-white/5" />
-          </div>
-          <div className="h-4 w-14 animate-pulse rounded bg-white/5" />
-        </Card>
-      ))}
-    </div>
-  );
+interface ColumnData {
+  entries: EntryShape[];
+  totalCount: number;
 }
 
-// ── Entry Row ──────────────────────────────────────────
+// ── Entry Shape ────────────────────────────────────────
 
 interface EntryShape {
   player_id: number;
@@ -72,15 +57,19 @@ interface EntryShape {
   total_stars?: number;
 }
 
+// ── Entry Row Component ────────────────────────────────
+
 function EntryRow({
   entry,
   isSelf,
+  currentUserImageUrl,
 }: {
   entry: EntryShape;
   isSelf: boolean;
+  currentUserImageUrl?: string | null;
 }) {
   const rankColor =
-    entry.rank === 1 ? "#FFCC00" : entry.rank === 2 ? "#C0C0C0" : entry.rank === 3 ? "#CD7F32" : "var(--text-muted)";
+    entry.rank === 1 ? "#FFCC00" : entry.rank === 2 ? "#C0C0C0" : entry.rank === 3 ? "#CD7F32" : "var(--ts-text-dim, #9b94b3)";
 
   return (
     <Card
@@ -88,7 +77,7 @@ function EntryRow({
         isSelf ? "border-accent-primary/30 bg-accent-primary/5" : ""
       }`}
     >
-      {/* Rank medal */}
+      {/* Rank */}
       <span
         className="w-7 text-center text-sm font-black tabular-nums"
         style={{ color: rankColor }}
@@ -96,18 +85,28 @@ function EntryRow({
         {entry.rank <= 3 ? (["🥇", "🥈", "🥉"] as const)[entry.rank - 1] : `#${entry.rank}`}
       </span>
 
-      {/* Avatar — gradient initials */}
+      {/* Avatar */}
       <div className="h-9 w-9 shrink-0">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-black text-white"
-          style={{
-            background: isSelf
-              ? "linear-gradient(135deg, #f97316, #dc2626)"
-              : "linear-gradient(135deg, #2a2a3a, #1a1a28)",
-          }}
-        >
-          {entry.player_name?.[0]?.toUpperCase() || "?"}
-        </div>
+        {isSelf && currentUserImageUrl ? (
+          <img
+            src={currentUserImageUrl}
+            alt={entry.player_name || "Profile"}
+            referrerPolicy="no-referrer"
+            className="h-9 w-9 rounded-full object-cover"
+            style={{ border: "2px solid var(--accent-primary, #ff6b1a)" }}
+          />
+        ) : (
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-black text-white"
+            style={{
+              background: isSelf
+                ? "linear-gradient(135deg, #f97316, #dc2626)"
+                : "linear-gradient(135deg, #2a2a3a, #1a1a28)",
+            }}
+          >
+            {entry.player_name?.[0]?.toUpperCase() || "?"}
+          </div>
+        )}
       </div>
 
       {/* Name */}
@@ -145,326 +144,390 @@ function EntryRow({
   );
 }
 
-// ── Timed Mode Section (collapsible) ───────────────────
+// ── Loading Skeleton ───────────────────────────────────
 
-function TimedSection({
-  config,
+function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <Card key={i} className="flex items-center gap-4 py-3">
+          <div className="h-5 w-8 animate-pulse rounded bg-white/5" />
+          <div className="h-10 w-10 animate-pulse rounded-full bg-white/5" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3 w-28 animate-pulse rounded bg-white/5" />
+            <div className="h-2.5 w-16 animate-pulse rounded bg-white/5" />
+          </div>
+          <div className="h-4 w-14 animate-pulse rounded bg-white/5" />
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ── Helper: add player at bottom if not in top 15 ─────
+
+function applySelfRow(all: EntryShape[], playerId: number | null): EntryShape[] {
+  const top15 = all.slice(0, 15);
+  const selfEntry = all.find((e) => e.player_id === playerId);
+  if (selfEntry && !top15.some((e) => e.player_id === playerId)) {
+    return [...top15, { ...selfEntry, rank: all.indexOf(selfEntry) + 1 }];
+  }
+  return top15;
+}
+
+// ── Column Entry List ──────────────────────────────────
+
+function ColumnEntryList({
   entries,
+  totalCount,
   playerId,
+  userImageUrl,
   isLoading,
+  accent,
 }: {
-  config: TimedModeDef;
-  entries: TimedLeaderboardEntry[];
+  entries: EntryShape[];
+  totalCount: number;
   playerId: number | null;
+  userImageUrl?: string | null;
   isLoading: boolean;
+  accent: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const displayLimit = expanded ? entries.length : 5;
-  const visible = entries.slice(0, displayLimit);
-  const hasMore = entries.length > 5;
+  if (isLoading) {
+    return <LeaderboardSkeleton rows={6} />;
+  }
+
+  if (entries.length === 0) {
+    return (
+      <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--ts-text-dim, #9b94b3)", fontSize: 12 }}>
+        No entries yet
+      </div>
+    );
+  }
 
   return (
-    <GlassPanel glow="none" blur="sm" depth={1} className="overflow-hidden">
-      {/* Section header — clickable to expand/collapse */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02]"
-      >
-        <span className="text-lg">{config.icon}</span>
-        <div className="flex-1 text-left">
-          <p className="text-xs font-bold tracking-[2px]" style={{ color: config.accent }}>
-            {config.label}
-          </p>
-          <p className="text-[9px] text-text-muted">{config.description}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm font-black tabular-nums text-accent-gold">
-            {entries.length > 0 ? entries[0].best_wpm : "—"}
-            <span className="ml-0.5 text-[8px] font-bold text-text-muted">TOP</span>
-          </p>
-        </div>
-        <span
-          className={`ml-1 text-xs text-text-muted transition-transform duration-200 ${
-            expanded ? "rotate-180" : ""
-          }`}
-        >
-          ▼
-        </span>
-      </button>
-
-      {/* Divider */}
-      <div className="mx-4 h-px bg-white/[0.04]" />
-
-      {/* Entry list */}
-      <div className="px-3 py-2">
-        {isLoading ? (
-          <LeaderboardSkeleton rows={3} />
-        ) : entries.length === 0 ? (
-          <p className="py-6 text-center text-xs text-text-muted">
-            No entries yet for {config.label}
-          </p>
-        ) : (
-          <div className="space-y-1">
-            {visible.map((entry) => (
-              <EntryRow
-                key={`${config.key}-${entry.player_id}`}
-                entry={{
-                  player_id: entry.player_id,
-                  player_name: entry.player_name || `Player ${entry.player_id}`,
-                  rank: entry.rank,
-                  best_wpm: entry.best_wpm,
-                  best_accuracy: entry.best_accuracy,
-                }}
-                isSelf={playerId === entry.player_id}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Expand toggle */}
-        {hasMore && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="mt-1 w-full py-2 text-center text-[9px] font-bold tracking-[1.5px] text-text-muted transition-colors hover:text-text-body"
-          >
-            {expanded
-              ? `SHOW LESS ↑`
-              : `SHOW ALL ${entries.length} PLAYERS ↓`}
-          </button>
-        )}
-      </div>
-    </GlassPanel>
+    <div className="space-y-1" style={{ maxHeight: 560, overflowY: "auto" }}>
+      {entries.map((entry) => (
+        <EntryRow
+          key={`${entry.player_id}-${entry.rank}`}
+          entry={entry}
+          isSelf={playerId === entry.player_id}
+          currentUserImageUrl={entry.player_id === playerId ? userImageUrl : undefined}
+        />
+      ))}
+    </div>
   );
 }
 
 // ── Main Page ──────────────────────────────────────────
 
 export default function LeaderboardPage() {
+  const { user } = useUser();
   const { playerId } = usePlayer();
-  const [activeTab, setActiveTab] = useState("global");
 
-  // Global / Daily state
-  const [entries, setEntries] = useState<EntryShape[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-
-  // Timed state (fetches all three modes)
-  const [timedEntries, setTimedEntries] = useState<Record<string, TimedLeaderboardEntry[]>>({});
-  const [timedLoading, setTimedLoading] = useState(false);
+  // All three columns fetched simultaneously
+  const [globalData, setGlobalData] = useState<ColumnData>({ entries: [], totalCount: 0 });
+  const [dailyData, setDailyData] = useState<ColumnData>({ entries: [], totalCount: 0 });
+  const [timedData, setTimedData] = useState<Record<string, EntryShape[]>>({});
+  const [activeTimedTab, setActiveTimedTab] = useState("1min");
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timedCounts, setTimedCounts] = useState<Record<string, number>>({});
 
-  const currentTab = TABS.find((t) => t.key === activeTab)!;
-
-  // ── Fetch global/daily ──────────────────────────────
-
-  const fetchStandardLeaderboard = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      if (currentTab.type === "global") {
-        const resp = await api.getLeaderboardTop(50);
-        setEntries(resp.entries?.map((e) => ({
+      const [globalResp, dailyResp, timed1Resp, timed3Resp, timed5Resp] = await Promise.allSettled([
+        api.getLeaderboardTop(50),
+        api.getDailyLeaderboard(50),
+        api.getTimedLeaderboard("timed_1min", 50),
+        api.getTimedLeaderboard("timed_3min", 50),
+        api.getTimedLeaderboard("timed_5min", 50),
+      ]);
+
+      if (globalResp.status === "fulfilled") {
+        const all = (globalResp.value.entries ?? []).map((e) => ({
           player_id: e.player_id,
           player_name: e.player_name,
           rank: e.rank,
           best_wpm: e.best_wpm,
-          best_accuracy: undefined,
           xp: e.xp,
           levels_cleared: e.levels_cleared,
           total_stars: e.total_stars,
-        })) ?? []);
-        setTotalCount(resp.total_count ?? resp.entries?.length ?? 0);
-      } else if (currentTab.type === "daily") {
-        const resp = await api.getDailyLeaderboard(50);
-        setEntries(resp.entries?.map((e) => ({
-          player_id: e.player_id,
-          player_name: e.player_name,
-          rank: e.rank,
-          best_wpm: e.best_wpm,
-          best_accuracy: undefined,
-          xp: e.xp,
-          levels_cleared: e.levels_cleared,
-          total_stars: e.total_stars,
-        })) ?? []);
-        setTotalCount(resp.total_count ?? resp.entries?.length ?? 0);
+        }));
+        setGlobalData({
+          entries: applySelfRow(all, playerId),
+          totalCount: globalResp.value.total_count ?? all.length,
+        });
       }
+
+      if (dailyResp.status === "fulfilled") {
+        const all = (dailyResp.value.entries ?? []).map((e) => ({
+          player_id: e.player_id,
+          player_name: e.player_name,
+          rank: e.rank,
+          best_wpm: e.best_wpm,
+          xp: e.xp,
+          levels_cleared: e.levels_cleared,
+          total_stars: e.total_stars,
+        }));
+        setDailyData({
+          entries: applySelfRow(all, playerId),
+          totalCount: dailyResp.value.total_count ?? all.length,
+        });
+      }
+
+      const timedResults = [timed1Resp, timed3Resp, timed5Resp];
+      const timedKeys = ["1min", "3min", "5min"];
+      const timedAcc: Record<string, EntryShape[]> = {};
+      const timedCountAcc: Record<string, number> = {};
+      for (let i = 0; i < timedResults.length; i++) {
+        const result = timedResults[i];
+        const key = timedKeys[i];
+        if (result.status === "fulfilled") {
+          const all = result.value.entries.map((e) => ({
+            player_id: e.player_id,
+            player_name: e.player_name || `Player ${e.player_id}`,
+            rank: e.rank,
+            best_wpm: e.best_wpm,
+            best_accuracy: e.best_accuracy,
+          }));
+          timedAcc[key] = applySelfRow(all, playerId);
+          timedCountAcc[key] = result.value.total_count ?? all.length;
+        }
+      }
+      setTimedData(timedAcc);
+      setTimedCounts(timedCountAcc);
     } catch (err) {
-      console.error("Failed to fetch leaderboard:", err);
+      console.error("Failed to fetch leaderboards:", err);
       setError("Failed to load leaderboard data.");
     } finally {
       setIsLoading(false);
     }
-  }, [currentTab]);
-
-  // ── Fetch all three timed leaderboards ──────────────
-
-  const fetchTimedLeaderboards = useCallback(async () => {
-    setTimedLoading(true);
-    setError(null);
-    try {
-      const results = await Promise.allSettled(
-        TIMED_MODES.map((mode) =>
-          api.getTimedLeaderboard(mode.mode, 50).then((resp) => ({
-            key: mode.key,
-            entries: resp.entries ?? [],
-          }))
-        )
-      );
-
-      const acc: Record<string, TimedLeaderboardEntry[]> = {};
-      for (const result of results) {
-        if (result.status === "fulfilled") {
-          acc[result.value.key] = result.value.entries;
-        }
-      }
-      setTimedEntries(acc);
-    } catch (err) {
-      console.error("Failed to fetch timed leaderboards:", err);
-      setError("Failed to load timed leaderboard data.");
-    } finally {
-      setTimedLoading(false);
-    }
-  }, []);
-
-  // ── Effect: fetch on tab change ─────────────────────
+  }, [playerId]);
 
   useEffect(() => {
-    if (currentTab.type === "timed") {
-      fetchTimedLeaderboards();
-    } else {
-      fetchStandardLeaderboard();
-    }
-  }, [currentTab, fetchStandardLeaderboard, fetchTimedLeaderboards]);
+    fetchAll();
+  }, [fetchAll]);
 
-  // ── Render: Tab content ─────────────────────────────
+  // ── Render ──────────────────────────────────────────
 
-  function renderContent() {
-    if (isLoading || timedLoading) {
-      return <LeaderboardSkeleton />;
-    }
-
-    if (error) {
-      return (
-        <GlassPanel glow="magma" blur="md" depth={2} className="p-8 text-center">
-          <p className="mb-1 text-3xl">⚠️</p>
-          <p className="mb-3 text-sm font-bold text-text-body">{error}</p>
+  if (error && !isLoading && !globalData.entries.length && !dailyData.entries.length && Object.keys(timedData).length === 0) {
+    return (
+      <div className="flex flex-1 flex-col" style={{ padding: "32px 28px" }}>
+        <div style={{ textAlign: "center", padding: "60px 20px" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+          <p style={{ color: "var(--ts-text, #f5f3ff)", fontWeight: 600, marginBottom: 8 }}>{error}</p>
           <button
-            onClick={() => {
-              if (currentTab.type === "timed") fetchTimedLeaderboards();
-              else fetchStandardLeaderboard();
+            onClick={fetchAll}
+            style={{
+              padding: "8px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: "var(--ts-orange, #ff6b1a)",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
             }}
-            className="rounded-lg bg-accent-primary/20 px-4 py-2 text-xs font-bold tracking-[1px] text-accent-primary hover:bg-accent-primary/30 transition-colors"
           >
             RETRY
           </button>
-        </GlassPanel>
-      );
-    }
-
-    // ── Timed layout: stacked vertical sections ─────
-    if (currentTab.type === "timed") {
-      return (
-        <div className="space-y-3">
-          {/* Personal best summary row */}
-          <div className="grid grid-cols-3 gap-2">
-            {TIMED_MODES.map((mode) => {
-              const userEntry = timedEntries[mode.key]?.find((e) => e.player_id === playerId);
-              return (
-                <GlassPanel key={mode.key} glow="none" blur="sm" depth={1} className="p-3 text-center">
-                  <p className="mb-0.5 text-xs">{mode.icon}</p>
-                  <p className="text-lg font-black tabular-nums" style={{ color: mode.accent }}>
-                    {userEntry?.best_wpm ?? "—"}
-                    <span className="ml-0.5 text-[8px] font-bold text-text-muted">WPM</span>
-                  </p>
-                  <p className="mt-0.5 text-[8px] font-bold tracking-[1.5px] text-text-muted">
-                    {mode.label}
-                  </p>
-                </GlassPanel>
-              );
-            })}
-          </div>
-
-          {/* Stacked timed sections */}
-          {TIMED_MODES.map((mode) => (
-            <TimedSection
-              key={mode.key}
-              config={mode}
-              entries={timedEntries[mode.key] ?? []}
-              playerId={playerId}
-              isLoading={timedLoading}
-            />
-          ))}
         </div>
-      );
-    }
-
-    // ── Global / Daily layout ─────────────────────────
-    return (
-      <div className="space-y-1.5">
-        <div className="mb-2 flex items-center justify-between px-1">
-          <span className="text-[10px] font-bold tracking-[1.5px] text-text-muted">
-            {totalCount} player{totalCount !== 1 ? "s" : ""}
-          </span>
-          <span className="text-[10px] font-bold tracking-[1.5px] text-text-muted">
-            BEST WPM
-          </span>
-        </div>
-        {entries.length === 0 ? (
-          <GlassPanel glow="none" blur="md" depth={2} className="p-8 text-center">
-            <p className="mb-2 text-3xl">🏆</p>
-            <p className="text-sm font-bold text-text-body">No entries yet</p>
-            <p className="mt-1 text-xs text-text-muted">
-              Complete levels and games to appear on the leaderboard!
-            </p>
-          </GlassPanel>
-        ) : (
-          entries.map((entry) => (
-            <EntryRow
-              key={`${entry.player_id}`}
-              entry={entry}
-              isSelf={playerId === entry.player_id}
-            />
-          ))
-        )}
       </div>
     );
   }
 
   return (
     <div className="flex flex-1 flex-col">
-
-      {/* Tab strip — centered with content */}
-      <div className="mx-auto w-full max-w-3xl px-4 pb-3 pt-4 md:px-0 md:pt-6">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="relative shrink-0 rounded-lg px-3.5 py-2 text-[10px] font-bold tracking-[2px] transition-all"
+      <div className="flex-1" style={{ padding: "32px 28px" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 1400 }}>
+          {/* Three-column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* GLOBAL */}
+            <div
+              className="column-card"
               style={{
-                color: activeTab === tab.key ? tab.accent : "var(--text-muted)",
-                background: activeTab === tab.key ? `${tab.accent}14` : "transparent",
+                background: "var(--ts-bg-3, #13101c)",
+                border: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
+                borderRadius: 14,
+                overflow: "hidden",
               }}
             >
-              {activeTab === tab.key && (
-                <span
-                  className="absolute inset-0 rounded-lg"
-                  style={{ boxShadow: `inset 0 0 0 1px ${tab.accent}30` }}
+              <div
+                className="column-header"
+                style={{
+                  padding: "14px 16px",
+                  borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
+                  background: "var(--ts-bg-2, #0d0d18)",
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    letterSpacing: 3,
+                    color: "#FF5020",
+                  }}
+                >
+                  GLOBAL
+                </h3>
+                <p style={{ fontSize: 11, color: "var(--ts-text-dim, #9b94b3)", marginTop: 2 }}>
+                  {globalData.totalCount} players
+                </p>
+              </div>
+              <div style={{ padding: "8px 12px" }}>
+                <ColumnEntryList
+                  entries={globalData.entries}
+                  totalCount={globalData.totalCount}
+                  playerId={playerId}
+                  userImageUrl={user?.imageUrl}
+                  isLoading={isLoading}
+                  accent="#FF5020"
                 />
-              )}
-              {tab.label}
-            </button>
-          ))}
+              </div>
+            </div>
+
+            {/* DAILY */}
+            <div
+              className="column-card"
+              style={{
+                background: "var(--ts-bg-3, #13101c)",
+                border: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
+                borderRadius: 14,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                className="column-header"
+                style={{
+                  padding: "14px 16px",
+                  borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
+                  background: "var(--ts-bg-2, #0d0d18)",
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    letterSpacing: 3,
+                    color: "#FFCC00",
+                  }}
+                >
+                  DAILY
+                </h3>
+                <p style={{ fontSize: 11, color: "var(--ts-text-dim, #9b94b3)", marginTop: 2 }}>
+                  {dailyData.totalCount} players
+                </p>
+              </div>
+              <div style={{ padding: "8px 12px" }}>
+                <ColumnEntryList
+                  entries={dailyData.entries}
+                  totalCount={dailyData.totalCount}
+                  playerId={playerId}
+                  userImageUrl={user?.imageUrl}
+                  isLoading={isLoading}
+                  accent="#FFCC00"
+                />
+              </div>
+            </div>
+
+            {/* TIMED (pill tabs) */}
+            <div
+              className="column-card"
+              style={{
+                background: "var(--ts-bg-3, #13101c)",
+                border: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
+                borderRadius: 14,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                className="column-header"
+                style={{
+                  padding: "14px 16px",
+                  borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
+                  background: "var(--ts-bg-2, #0d0d18)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <h3
+                    style={{
+                      fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
+                      fontSize: 14,
+                      fontWeight: 800,
+                      letterSpacing: 3,
+                      color: "#00E5FF",
+                    }}
+                  >
+                    TIMED
+                  </h3>
+                  {/* Pill tabs inline */}
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {TIMED_MODES.map((mode) => (
+                      <button
+                        key={mode.key}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTimedTab(mode.key);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "4px 8px",
+                          borderRadius: 6,
+                          border: "1px solid",
+                          borderColor: activeTimedTab === mode.key ? mode.accent : "rgba(255,255,255,0.08)",
+                          background: activeTimedTab === mode.key ? `${mode.accent}15` : "transparent",
+                          cursor: "pointer",
+                          fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: 1,
+                          color: activeTimedTab === mode.key ? mode.accent : "var(--ts-text-dim, #9b94b3)",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        <span style={{ fontSize: 10 }}>{mode.icon}</span>
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: "var(--ts-text-dim, #9b94b3)", marginTop: 2 }}>
+                  {timedCounts[activeTimedTab] ?? 0} players · {TIMED_MODES.find(m => m.key === activeTimedTab)?.description}
+                </p>
+              </div>
+              <div style={{ padding: "8px 12px" }}>
+                <ColumnEntryList
+                  entries={timedData[activeTimedTab] ?? []}
+                  totalCount={timedCounts[activeTimedTab] ?? 0}
+                  playerId={playerId}
+                  userImageUrl={user?.imageUrl}
+                  isLoading={isLoading}
+                  accent={TIMED_MODES.find(m => m.key === activeTimedTab)?.accent ?? "#00E5FF"}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 px-4 pb-4 md:px-0 md:pb-6">
-        <div className="mx-auto w-full max-w-3xl">
-          {renderContent()}
-        </div>
-      </div>
+      <style>{`
+        .column-card {
+          transition: border-color 0.2s;
+        }
+        .column-card:hover {
+          border-color: rgba(255,107,26,0.3);
+        }
+        @media (max-width: 768px) {
+          .column-card { margin-bottom: 12px; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -74,7 +74,10 @@ export default function DailyChallengesPage() {
           <div className="flex flex-1 flex-col gap-4 min-h-0">
             {/* Section header */}
             <div className="flex items-center justify-between">
-              <h2 className="m-0 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[3px] text-neutral-300">
+              <h2
+                className="m-0 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[3px]"
+                style={{ color: "#d4d0e6", fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)" }}
+              >
                 <span className="inline-block h-2 w-2 rounded-full bg-orange-500" />
                 Today&apos;s Challenges
               </h2>

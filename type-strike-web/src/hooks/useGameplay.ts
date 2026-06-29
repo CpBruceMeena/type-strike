@@ -137,13 +137,19 @@ export function useGameplay(mode: GameMode, playerId?: number) {
 
           setTimeout(() => {
             // For level mode: 0 stars = failure regardless of completion
-            // For timed/contest modes: use completion status
+            // For timed/contest modes: use a unified timed result screen (no victory/fail branding)
             const isLevelMode = mode.startsWith("level-");
-            const failed = isLevelMode
-              ? (response.stars ?? 0) <= 0
-              : !result.completed;
-            const dest = failed ? "/failed" : "/victory";
-            router.push(`${dest}?${params.toString()}`);
+            const isTimedMode = mode.startsWith("timed_") || mode === "contest";
+
+            if (isTimedMode) {
+              router.push(`/timed-result?${params.toString()}`);
+            } else {
+              const failed = isLevelMode
+                ? (response.stars ?? 0) <= 0
+                : !result.completed;
+              const dest = failed ? "/failed" : "/victory";
+              router.push(`${dest}?${params.toString()}`);
+            }
           }, 1200);
         }
       } catch (err) {

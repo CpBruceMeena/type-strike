@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeStrike — Master the Keys, Dominate the Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+<style>
+  :root{
+    --bg-0:#07060a;
+    --bg-1:#0d0a14;
+    --bg-2:#13101c;
+    --orange:#ff6b1a;
+    --orange-bright:#ff8a3d;
+    --red:#ff3d3d;
+    --yellow:#ffb800;
+    --cyan:#00e5ff;
+    --purple:#9d4dff;
+    --green:#22e07d;
+    --pink:#ff3d9a;
+    --text:#f5f3ff;
+    --text-dim:#9b94b3;
+    --border:rgba(255,107,26,0.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg-0);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+  body{
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(255,107,26,0.18), transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(157,77,255,0.12), transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(255,61,154,0.1), transparent 60%),
+      var(--bg-0);
+    min-height:100vh;
+  }
+  /* Animated grid background */
+  .grid-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,107,26,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,26,0.05) 1px, transparent 1px);
+    background-size:50px 50px;
+    mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+    animation:gridDrift 20s linear infinite;
+  }
+  @keyframes gridDrift{
+    0%{background-position:0 0,0 0}
+    100%{background-position:50px 50px,50px 50px}
+  }
+  /* Floating embers */
+  .ember{position:fixed;width:4px;height:4px;border-radius:50%;background:var(--orange);box-shadow:0 0 12px var(--orange-bright);pointer-events:none;opacity:0;z-index:0;animation:emberFloat linear infinite}
+  @keyframes emberFloat{
+    0%{transform:translateY(110vh) scale(0.5);opacity:0}
+    10%{opacity:1}
+    90%{opacity:0.7}
+    100%{transform:translateY(-10vh) scale(1.2);opacity:0}
+  }
+  
+  /* Nav */
+  .navbar{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(20px);
+    background:linear-gradient(180deg, rgba(7,6,10,0.85), rgba(7,6,10,0.5));
+    border-bottom:1px solid var(--border);
+  }
+  .nav-inner{
+    max-width:1400px;margin:0 auto;padding:18px 32px;
+    display:flex;align-items:center;justify-content:space-between;gap:24px;
+  }
+  .logo{display:flex;align-items:center;gap:12px;cursor:pointer;text-decoration:none;color:var(--text)}
+  .logo-mark{
+    width:42px;height:42px;border-radius:12px;
+    background:linear-gradient(135deg, var(--orange) 0%, var(--red) 100%);
+    display:grid;place-items:center;font-size:20px;
+    box-shadow:0 0 24px rgba(255,107,26,0.5), inset 0 0 12px rgba(255,255,255,0.2);
+    animation:pulseGlow 2s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{
+    0%,100%{box-shadow:0 0 24px rgba(255,107,26,0.5), inset 0 0 12px rgba(255,255,255,0.2)}
+    50%{box-shadow:0 0 36px rgba(255,107,26,0.8), inset 0 0 16px rgba(255,255,255,0.3)}
+  }
+  .logo-text{font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;letter-spacing:1px}
+  .logo-text span{background:linear-gradient(90deg, var(--orange), var(--yellow));-webkit-background-clip:text;background-clip:text;color:transparent}
+  
+  .nav-links{display:flex;align-items:center;gap:8px}
+  .nav-link{
+    padding:10px 16px;border-radius:10px;color:var(--text-dim);
+    font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;
+    transition:all .2s;display:flex;align-items:center;gap:8px;background:transparent;border:none;
+  }
+  .nav-link:hover{color:var(--text);background:rgba(255,107,26,0.08)}
+  .nav-link.active{color:var(--orange);background:rgba(255,107,26,0.12)}
+  .nav-link i{font-size:13px}
+  
+  .nav-right{display:flex;align-items:center;gap:14px}
+  .pill{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 14px;border-radius:999px;
+    background:rgba(255,107,26,0.08);border:1px solid var(--border);
+    font-size:13px;font-weight:600;
+  }
+  .pill.streak{color:var(--orange);background:linear-gradient(90deg, rgba(255,107,26,0.15), rgba(255,61,61,0.15))}
+  .avatar{
+    display:flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;
+    border-radius:999px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);
+    cursor:pointer;transition:all .2s;
+  }
+  .avatar:hover{border-color:var(--border)}
+  .avatar img{width:30px;height:30px;border-radius:50%;border:2px solid var(--orange)}
+  .avatar-name{font-size:13px;font-weight:600}
+  .mobile-toggle{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer}
+  
+  /* Hero */
+  .hero{
+    position:relative;z-index:1;
+    max-width:1400px;margin:0 auto;padding:60px 32px 40px;
+  }
+  .hero-grid{
+    display:grid;grid-template-columns:1.1fr 0.9fr;gap:48px;align-items:center;
+  }
+  .hero-tag{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:8px 14px;border-radius:999px;
+    background:rgba(255,107,26,0.1);border:1px solid var(--border);
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:1px;
+    color:var(--orange);margin-bottom:24px;text-transform:uppercase;
+  }
+  .hero-tag .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite}
+  @keyframes blink{50%{opacity:0.3}}
+  
+  .hero h1{
+    font-family:'Orbitron',sans-serif;font-weight:900;
+    font-size:clamp(40px,6vw,82px);line-height:0.95;letter-spacing:-1px;
+    margin-bottom:20px;
+  }
+  .hero h1 .stroke{
+    -webkit-text-stroke:2px var(--orange);color:transparent;
+    display:inline-block;
+  }
+  .hero h1 .grad{
+    background:linear-gradient(135deg, var(--orange) 0%, var(--yellow) 50%, var(--red) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    display:inline-block;text-shadow:0 0 60px rgba(255,107,26,0.3);
+  }
+  .hero p.sub{
+    font-size:18px;color:var(--text-dim);max-width:540px;line-height:1.6;margin-bottom:32px;
+  }
+  
+  .hero-stats{
+    display:flex;gap:32px;margin-bottom:36px;flex-wrap:wrap;
+  }
+  .stat{display:flex;flex-direction:column;gap:4px}
+  .stat-val{font-family:'Orbitron',sans-serif;font-weight:800;font-size:26px;color:var(--text)}
+  .stat-val .accent{color:var(--orange)}
+  .stat-lbl{font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;font-weight:600}
+  
+  .cta-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .btn{
+    position:relative;overflow:hidden;
+    display:inline-flex;align-items:center;gap:10px;
+    padding:16px 28px;border-radius:12px;
+    font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;letter-spacing:1.5px;
+    text-transform:uppercase;cursor:pointer;border:none;text-decoration:none;
+    transition:transform .15s ease, box-shadow .2s;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--orange), var(--red));
+    color:#fff;
+    box-shadow:0 8px 24px rgba(255,107,26,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-primary::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transform:translateX(-100%);transition:transform .6s;
+  }
+  .btn-primary:hover::before{transform:translateX(100%)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(255,107,26,0.6)}
+  .btn-ghost{
+    background:rgba(255,255,255,0.04);color:var(--text);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,0.08);border-color:var(--orange)}
+  
+  /* Hero visual: animated keyboard */
+  .hero-visual{
+    position:relative;height:480px;display:flex;align-items:center;justify-content:center;
+  }
+  .kbd-3d{
+    position:relative;
+    perspective:1200px;
+    width:100%;max-width:520px;
+  }
+  .kbd-inner{
+    transform:rotateX(45deg) rotateZ(-15deg);
+    transform-style:preserve-3d;
+    display:grid;gap:8px;padding:24px;
+    background:linear-gradient(145deg, #1a1525, #0f0c18);
+    border-radius:20px;
+    border:1px solid rgba(255,107,26,0.2);
+    box-shadow:
+      0 40px 80px rgba(0,0,0,0.6),
+      0 0 60px rgba(255,107,26,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    animation:kbdFloat 6s ease-in-out infinite;
+  }
+  @keyframes kbdFloat{
+    0%,100%{transform:rotateX(45deg) rotateZ(-15deg) translateY(0)}
+    50%{transform:rotateX(45deg) rotateZ(-15deg) translateY(-12px)}
+  }
+  .kbd-row{display:flex;gap:6px;justify-content:center}
+  .key{
+    width:38px;height:38px;border-radius:8px;
+    background:linear-gradient(180deg, #2a2238, #1a1428);
+    border:1px solid rgba(255,255,255,0.06);
+    display:grid;place-items:center;
+    font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
+    color:var(--text-dim);
+    box-shadow:0 4px 0 #0a0810, 0 6px 12px rgba(0,0,0,0.4);
+    transition:all .1s;
+  }
+  .key.wide{width:60px}
+  .key.space{width:200px}
+  .key.glow{
+    background:linear-gradient(180deg, var(--orange), var(--red));
+    color:#fff;
+    box-shadow:0 4px 0 #8a2a05, 0 0 20px var(--orange), inset 0 1px 0 rgba(255,255,255,0.3);
+    animation:keyPress 1.4s ease-in-out infinite;
+  }
+  @keyframes keyPress{
+    0%,100%{transform:translateZ(0)}
+    50%{transform:translateZ(-4px)}
+  }
+  
+  /* Hero floating badges */
+  .float-badge{
+    position:absolute;
+    padding:10px 16px;border-radius:12px;
+    background:rgba(13,10,20,0.9);backdrop-filter:blur(12px);
+    border:1px solid var(--border);
+    display:flex;align-items:center;gap:10px;
+    font-size:13px;font-weight:600;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+    animation:floatBob 4s ease-in-out infinite;
+  }
+  .float-badge i{font-size:18px}
+  .float-badge.b1{top:8%;left:-10px;color:var(--orange);animation-delay:0s}
+  .float-badge.b2{top:20%;right:-10px;color:var(--cyan);animation-delay:1s}
+  .float-badge.b3{bottom:18%;left:0;color:var(--green);animation-delay:2s}
+  .float-badge.b4{bottom:6%;right:10%;color:var(--yellow);animation-delay:1.5s}
+  @keyframes floatBob{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-10px)}
+  }
+  
+  /* Section title */
+  .section{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:40px 32px}
+  .section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
+  .section-head h2{
+    font-family:'Orbitron',sans-serif;font-weight:800;font-size:32px;letter-spacing:1px;
+  }
+  .section-head h2 .accent{color:var(--orange)}
+  .section-head p{color:var(--text-dim);font-size:14px;margin-top:6px}
+  
+  /* Mode cards (replacing Strike/Learn/Coder) */
+  .mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .mode-card{
+    position:relative;overflow:hidden;
+    padding:32px 28px;border-radius:20px;cursor:pointer;
+    background:linear-gradient(160deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.06);
+    transition:all .3s;
+    min-height:280px;
+    display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .mode-card::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at 70% 0%, var(--clr,var(--orange)), transparent 60%);
+    opacity:0.08;transition:opacity .3s;
+  }
+  .mode-card::after{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, transparent, var(--clr,var(--orange)), transparent);
+    opacity:0;transition:opacity .3s;
+  }
+  .mode-card:hover{transform:translateY(-6px);border-color:var(--clr,var(--orange))}
+  .mode-card:hover::before{opacity:0.2}
+  .mode-card:hover::after{opacity:1}
+  .mode-icon{
+    width:56px;height:56px;border-radius:14px;
+    background:linear-gradient(135deg, var(--clr,var(--orange)), transparent);
+    display:grid;place-items:center;font-size:24px;color:#fff;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+    margin-bottom:20px;position:relative;z-index:1;
+  }
+  .mode-card h3{
+    font-family:'Orbitron',sans-serif;font-weight:800;font-size:24px;letter-spacing:1px;
+    margin-bottom:8px;position:relative;z-index:1;
+  }
+  .mode-card .desc{color:var(--text-dim);font-size:14px;line-height:1.5;position:relative;z-index:1}
+  .mode-meta{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);
+    position:relative;z-index:1;
+  }
+  .mode-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--clr);letter-spacing:1px;font-weight:700}
+  .mode-arrow{
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    display:grid;place-items:center;transition:all .2s;color:var(--text-dim);
+  }
+  .mode-card:hover .mode-arrow{background:var(--clr);color:#fff;border-color:var(--clr);transform:translateX(4px)}
+  
+  /* Quick play / daily challenge banner */
+  .daily-banner{
+    margin-top:24px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:24px 28px;border-radius:18px;gap:24px;
+    background:linear-gradient(120deg, rgba(255,107,26,0.12), rgba(157,77,255,0.08));
+    border:1px solid var(--border);
+    position:relative;overflow:hidden;flex-wrap:wrap;
+  }
+  .daily-banner::before{
+    content:'';position:absolute;top:-50%;right:-10%;width:300px;height:300px;
+    background:radial-gradient(circle, var(--orange), transparent 70%);
+    opacity:0.2;animation:rotateGlow 12s linear infinite;
+  }
+  @keyframes rotateGlow{to{transform:rotate(360deg)}}
+  .daily-left{display:flex;align-items:center;gap:18px;position:relative;z-index:1}
+  .daily-ic{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--orange),var(--red));display:grid;place-items:center;font-size:22px;color:#fff;box-shadow:0 8px 20px rgba(255,107,26,0.4)}
+  .daily-banner h4{font-family:'Orbitron',sans-serif;font-weight:700;font-size:18px;margin-bottom:4px}
+  .daily-banner span{color:var(--text-dim);font-size:13px}
+  .daily-timer{
+    display:flex;gap:6px;font-family:'JetBrains Mono',monospace;font-weight:700;
+    align-items:center;color:var(--orange);position:relative;z-index:1;
+  }
+  .timer-box{padding:8px 12px;background:rgba(0,0,0,0.4);border-radius:8px;border:1px solid var(--border);min-width:44px;text-align:center}
+  
+  /* Stats grid */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:24px}
+  .stat-card{
+    padding:22px;border-radius:16px;cursor:pointer;
+    background:linear-gradient(160deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.06);
+    transition:all .25s;
+    position:relative;overflow:hidden;
+  }
+  .stat-card:hover{border-color:var(--clr);transform:translateY(-3px)}
+  .stat-card .ic{
+    width:42px;height:42px;border-radius:10px;display:grid;place-items:center;
+    background:color-mix(in srgb, var(--clr) 18%, transparent);
+    color:var(--clr);font-size:18px;margin-bottom:14px;
+  }
+  .stat-card h5{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px}
+  .stat-card .sd{font-size:12px;color:var(--text-dim)}
+  .stat-card .sv{margin-top:14px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:22px;color:var(--clr)}
+  
+  /* Streak section */
+  .streak-card{
+    margin-top:24px;padding:32px;border-radius:20px;
+    background:linear-gradient(160deg, rgba(255,107,26,0.08), rgba(255,61,61,0.04));
+    border:1px solid var(--border);
+  }
+  .streak-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px}
+  .streak-info{display:flex;align-items:center;gap:18px}
+  .streak-flame{
+    width:60px;height:60px;border-radius:16px;
+    background:linear-gradient(135deg, var(--orange), var(--red));
+    display:grid;place-items:center;font-size:28px;color:#fff;
+    box-shadow:0 0 30px rgba(255,107,26,0.5);
+    animation:flameFlicker 1.5s ease-in-out infinite;
+  }
+  @keyframes flameFlicker{
+    0%,100%{box-shadow:0 0 30px rgba(255,107,26,0.5)}
+    50%{box-shadow:0 0 40px rgba(255,107,26,0.8)}
+  }
+  .streak-info .lbl{font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;font-weight:600}
+  .streak-info .val{font-family:'Orbitron',sans-serif;font-weight:800;font-size:28px}
+  .streak-info .val .d{color:var(--orange);margin-right:6px}
+  
+  .progress-track{
+    height:8px;background:rgba(255,255,255,0.05);border-radius:999px;overflow:hidden;margin:8px 0 18px;
+    border:1px solid rgba(255,255,255,0.04);
+  }
+  .progress-fill{
+    height:100%;width:30%;
+    background:linear-gradient(90deg, var(--orange), var(--yellow), var(--orange));
+    background-size:200% 100%;
+    border-radius:999px;
+    box-shadow:0 0 12px var(--orange);
+    animation:fillShine 3s linear infinite;
+  }
+  @keyframes fillShine{to{background-position:200% 0}}
+  .progress-meta{display:flex;justify-content:space-between;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;font-weight:600}
+  
+  .reward-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-top:24px}
+  .day-card{
+    position:relative;padding:18px 10px;border-radius:14px;text-align:center;cursor:pointer;
+    background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+    transition:all .2s;
+  }
+  .day-card:hover{border-color:var(--orange);transform:translateY(-2px)}
+  .day-card.done{opacity:0.6}
+  .day-card.today{
+    background:linear-gradient(160deg, rgba(255,107,26,0.18), rgba(255,107,26,0.05));
+    border-color:var(--orange);
+    box-shadow:0 0 24px rgba(255,107,26,0.25);
+  }
+  .day-card.bonus{
+    background:linear-gradient(160deg, rgba(157,77,255,0.15), rgba(157,77,255,0.05));
+    border-color:var(--purple);
+  }
+  .day-lbl{font-size:10px;letter-spacing:1.5px;color:var(--text-dim);font-weight:700;margin-bottom:8px}
+  .day-card.today .day-lbl{color:var(--orange)}
+  .day-card.bonus .day-lbl{color:var(--purple)}
+  .day-ic{font-size:22px;margin:4px 0}
+  .day-reward{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;color:var(--text)}
+  .day-card.bonus .day-reward{color:var(--purple)}
+  .day-card .check{
+    position:absolute;top:6px;right:6px;
+    width:16px;height:16px;border-radius:50%;background:var(--green);
+    display:grid;place-items:center;font-size:9px;color:#000;
+  }
+  
+  .claim-btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:14px 22px;border-radius:12px;cursor:pointer;border:none;
+    background:linear-gradient(135deg, var(--orange), var(--red));
+    color:#fff;font-family:'Orbitron',sans-serif;font-weight:700;font-size:13px;letter-spacing:1.5px;
+    text-transform:uppercase;
+    box-shadow:0 8px 24px rgba(255,107,26,0.4);
+    transition:all .2s;
+  }
+  .claim-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(255,107,26,0.55)}
+  
+  /* Leaderboard preview */
+  .leader-card{
+    padding:24px;border-radius:18px;
+    background:linear-gradient(160deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .leader-row{
+    display:grid;grid-template-columns:60px 1fr auto auto;gap:16px;align-items:center;
+    padding:14px 12px;border-radius:12px;cursor:pointer;transition:background .2s;
+  }
+  .leader-row:hover{background:rgba(255,107,26,0.05)}
+  .leader-row + .leader-row{border-top:1px solid rgba(255,255,255,0.04)}
+  .rank{
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:20px;text-align:center;
+    color:var(--text-dim);
+  }
+  .rank.gold{color:var(--yellow);text-shadow:0 0 12px rgba(255,184,0,0.5)}
+  .rank.silver{color:#c0c8d8}
+  .rank.bronze{color:#cd7f32}
+  .leader-user{display:flex;align-items:center;gap:12px}
+  .leader-user img{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,0.1)}
+  .leader-user .nm{font-weight:700;font-size:14px}
+  .leader-user .lv{font-size:11px;color:var(--text-dim);letter-spacing:1px;font-weight:600}
+  .leader-wpm{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--orange)}
+  .leader-xp{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-dim);font-size:13px}
+  
+  /* Footer */
+  .footer{
+    position:relative;z-index:1;margin-top:60px;
+    border-top:1px solid var(--border);
+    padding:32px;text-align:center;color:var(--text-dim);font-size:13px;
+  }
+  .footer .ft-logo{font-family:'Orbitron',sans-serif;font-weight:900;color:var(--orange);margin-bottom:8px;font-size:16px;letter-spacing:1px}
+  
+  /* Toast */
+  .toast{
+    position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);
+    padding:14px 22px;border-radius:12px;
+    background:linear-gradient(135deg, var(--orange), var(--red));
+    color:#fff;font-weight:700;font-size:14px;
+    box-shadow:0 10px 30px rgba(255,107,26,0.5);
+    z-index:1000;opacity:0;transition:all .3s;
+    display:flex;align-items:center;gap:10px;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  
+  /* Modal (for page navigation feedback) */
+  .modal{
+    position:fixed;inset:0;background:rgba(7,6,10,0.85);backdrop-filter:blur(12px);
+    display:none;align-items:center;justify-content:center;z-index:200;padding:24px;
+  }
+  .modal.show{display:flex;animation:fadeIn .2s}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal-box{
+    max-width:520px;width:100%;padding:36px;border-radius:20px;text-align:center;
+    background:linear-gradient(160deg, var(--bg-2), var(--bg-1));
+    border:1px solid var(--border);
+    box-shadow:0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(255,107,26,0.15);
+    animation:popIn .3s cubic-bezier(.2,1.2,.4,1);
+  }
+  @keyframes popIn{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-ic{width:72px;height:72px;border-radius:18px;margin:0 auto 20px;display:grid;place-items:center;font-size:32px;color:#fff;background:linear-gradient(135deg, var(--orange), var(--red));box-shadow:0 0 30px rgba(255,107,26,0.5)}
+  .modal h3{font-family:'Orbitron',sans-serif;font-size:24px;margin-bottom:10px;letter-spacing:1px}
+  .modal p{color:var(--text-dim);margin-bottom:24px;line-height:1.5}
+  .modal-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  
+  /* Mobile menu */
+  .mobile-menu{
+    display:none;flex-direction:column;gap:6px;
+    padding:16px;border-top:1px solid var(--border);background:var(--bg-1);
+  }
+  .mobile-menu.open{display:flex}
+  
+  @media(max-width:960px){
+    .hero-grid{grid-template-columns:1fr}
+    .hero-visual{height:380px;order:-1}
+    .mode-grid{grid-template-columns:1fr}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .reward-cal{grid-template-columns:repeat(4,1fr)}
+    .nav-links{display:none}
+    .mobile-toggle{display:block}
+    .nav-right .pill{display:none}
+    .section-head h2{font-size:24px}
+  }
+  @media(max-width:520px){
+    .nav-inner{padding:14px 18px}
+    .hero{padding:36px 18px 20px}
+    .section{padding:24px 18px}
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .reward-cal{grid-template-columns:repeat(3,1fr)}
+    .hero-stats{gap:18px}
+    .stat-val{font-size:22px}
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="#" class="logo" onclick="navigate(event,'home')">
+      <div class="logo-mark"><i class="fa-solid fa-fire"></i></div>
+      <div class="logo-text">TYPE<span>STRIKE</span></div>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <button class="nav-link active" data-route="home" onclick="navigate(event,'home')"><i class="fa-solid fa-house"></i> Home</button>
+      <button class="nav-link" data-route="strike" onclick="navigate(event,'strike')"><i class="fa-solid fa-bolt"></i> Strike</button>
+      <button class="nav-link" data-route="learn" onclick="navigate(event,'learn')"><i class="fa-solid fa-graduation-cap"></i> Learn</button>
+      <button class="nav-link" data-route="coder" onclick="navigate(event,'coder')"><i class="fa-solid fa-code"></i> Coder</button>
+      <button class="nav-link" data-route="leaderboard" onclick="navigate(event,'leaderboard')"><i class="fa-solid fa-trophy"></i> Ranks</button>
+      <button class="nav-link" data-route="shop" onclick="navigate(event,'shop')"><i class="fa-solid fa-store"></i> Shop</button>
+    </div>
+    <div class="nav-right">
+      <div class="pill"><i class="fa-solid fa-medal" style="color:var(--orange)"></i> Bronze · Lv3</div>
+      <div class="pill streak"><i class="fa-solid fa-fire"></i> 3</div>
+      <div class="avatar" onclick="navigate(event,'profile')">
+        <img src="https://i.pravatar.cc/60?img=12" alt="">
+        <span class="avatar-name">Sandeep</span>
+      </div>
+      <button class="mobile-toggle" id="mobileToggle"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="nav-link active" onclick="navigate(event,'home')"><i class="fa-solid fa-house"></i> Home</button>
+    <button class="nav-link" onclick="navigate(event,'strike')"><i class="fa-solid fa-bolt"></i> Strike</button>
+    <button class="nav-link" onclick="navigate(event,'learn')"><i class="fa-solid fa-graduation-cap"></i> Learn</button>
+    <button class="nav-link" onclick="navigate(event,'coder')"><i class="fa-solid fa-code"></i> Coder</button>
+    <button class="nav-link" onclick="navigate(event,'leaderboard')"><i class="fa-solid fa-trophy"></i> Ranks</button>
+    <button class="nav-link" onclick="navigate(event,'shop')"><i class="fa-solid fa-store"></i> Shop</button>
+  </div>
+</nav>
+
+<!-- Embers -->
+<div id="emberContainer"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-tag"><span class="dot"></span> 12,847 PLAYERS ONLINE</div>
+      <h1>
+        <span class="stroke">MASTER</span><br>
+        <span class="grad">THE KEYS.</span><br>
+        <span>DOMINATE.</span>
+      </h1>
+      <p class="sub">Welcome back, <strong style="color:var(--orange)">Sandeep</strong>. Sharpen your fingers, climb the global ranks, and outpace coders worldwide in real-time typing battles.</p>
+      
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-val"><span class="accent">67</span> WPM</div>
+          <div class="stat-lbl">Personal Best</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">61<span class="accent">XP</span></div>
+          <div class="stat-lbl">Total Earned</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">#<span class="accent">2,847</span></div>
+          <div class="stat-lbl">Global Rank</div>
+        </div>
+      </div>
+      
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="navigate(event,'strike')">
+          <i class="fa-solid fa-play"></i> Play Now
+        </button>
+        <button class="btn btn-ghost" onclick="navigate(event,'tutorial')">
+          <i class="fa-solid fa-book-open"></i> How to Play
+        </button>
+      </div>
+    </div>
+    
+    <div class="hero-visual">
+      <div class="float-badge b1"><i class="fa-solid fa-bolt"></i> +25 XP</div>
+      <div class="float-badge b2"><i class="fa-solid fa-keyboard"></i> 67 WPM</div>
+      <div class="float-badge b3"><i class="fa-solid fa-check"></i> 98% Accuracy</div>
+      <div class="float-badge b4"><i class="fa-solid fa-fire"></i> 3 Day Streak</div>
+      
+      <div class="kbd-3d">
+        <div class="kbd-inner">
+          <div class="kbd-row">
+            <div class="key">Q</div><div class="key">W</div><div class="key">E</div>
+            <div class="key">R</div><div class="key glow">T</div><div class="key">Y</div>
+            <div class="key">U</div><div class="key">I</div><div class="key">O</div><div class="key">P</div>
+          </div>
+          <div class="kbd-row">
+            <div class="key">A</div><div class="key">S</div><div class="key">D</div>
+            <div class="key">F</div><div class="key">G</div><div class="key">H</div>
+            <div class="key">J</div><div class="key">K</div><div class="key">L</div>
+          </div>
+          <div class="kbd-row">
+            <div class="key wide">⇧</div><div class="key">Z</div><div class="key">X</div>
+            <div class="key">C</div><div class="key">V</div><div class="key">B</div>
+            <div class="key">N</div><div class="key">M</div><div class="key wide">⌫</div>
+          </div>
+          <div class="kbd-row">
+            <div class="key space"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GAME MODES -->
+<section class="section">
+  <div class="section-head">
+    <div>
+      <h2>CHOOSE YOUR <span class="accent">BATTLEGROUND</span></h2>
+      <p>Three modes. Infinite ways to dominate the keyboard.</p>
+    </div>
+    <button class="nav-link" onclick="showToast('Loading all modes…')"><i class="fa-solid fa-arrow-right"></i> View all</button>
+  </div>
+  
+  <div class="mode-grid">
+    <div class="mode-card" style="--clr:var(--orange)" onclick="navigate(event,'strike')">
+      <div>
+        <div class="mode-icon"><i class="fa-solid fa-bolt"></i></div>
+        <h3>STRIKE</h3>
+        <p class="desc">Battle through dynamic levels, defeat AI opponents, and climb the bracket. Pure competitive typing.</p>
+      </div>
+      <div class="mode-meta">
+        <span class="mode-tag">PVP · RANKED</span>
+        <div class="mode-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+    </div>
+    
+    <div class="mode-card" style="--clr:var(--green)" onclick="navigate(event,'learn')">
+      <div>
+        <div class="mode-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h3>LEARN</h3>
+        <p class="desc">Master fundamentals with adaptive lessons. Touch typing, finger placement, drill sessions.</p>
+      </div>
+      <div class="mode-meta">
+        <span class="mode-tag">CAMPAIGN · BEGINNER</span>
+        <div class="mode-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+    </div>
+    
+    <div class="mode-card" style="--clr:var(--cyan)" onclick="navigate(event,'coder')">
+      <div>
+        <div class="mode-icon"><i class="fa-solid fa-code"></i></div>
+        <h3>CODER</h3>
+        <p class="desc">Real code snippets in 15+ languages. DSA challenges. Built for developers who type for a living.</p>
+      </div>
+      <div class="mode-meta">
+        <span class="mode-tag">DEV MODE · ADVANCED</span>
+        <div class="mode-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Daily challenge banner -->
+  <div class="daily-banner">
+    <div class="daily-left">
+      <div class="daily-ic"><i class="fa-solid fa-bullseye"></i></div>
+      <div>
+        <h4>Daily Challenges Live</h4>
+        <span>Complete 3 quick tasks · Earn bonus XP & loot drops</span>
+      </div>
+    </div>
+    <div class="daily-timer">
+      <span style="font-size:11px;letter-spacing:2px;color:var(--text-dim);margin-right:8px">RESETS IN</span>
+      <div class="timer-box" id="t-h">12</div>
+      <span>:</span>
+      <div class="timer-box" id="t-m">34</div>
+      <span>:</span>
+      <div class="timer-box" id="t-s">56</div>
+      <button class="btn btn-primary" style="margin-left:14px;padding:12px 20px" onclick="navigate(event,'daily')">View</button>
+    </div>
+  </div>
+</section>
+
+<!-- QUICK ACTIONS / STATS -->
+<section class="section">
+  <div class="section-head">
+    <div>
+      <h2>YOUR <span class="accent">ARSENAL</span></h2>
+      <p>Track progress, unlock achievements, climb ranks.</p>
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card" style="--clr:var(--green)" onclick="navigate(event,'leaderboard')">
+      <div class="ic"><i class="fa-solid fa-ranking-star"></i></div>
+      <h5>Leaderboard</h5>
+      <div class="sd">Climb the ranks</div>
+      <div class="sv">#2,847</div>
+    </div>
+    <div class="stat-card" style="--clr:var(--purple)" onclick="navigate(event,'feats')">
+      <div class="ic"><i class="fa-solid fa-medal"></i></div>
+      <h5>Feats</h5>
+      <div class="sd">Achievements & badges</div>
+      <div class="sv">12 / 84</div>
+    </div>
+    <div class="stat-card" style="--clr:var(--yellow)" onclick="navigate(event,'ranks')">
+      <div class="ic"><i class="fa-solid fa-trophy"></i></div>
+      <h5>Ranks</h5>
+      <div class="sd">Bronze → Silver → Gold</div>
+      <div class="sv">BRONZE</div>
+    </div>
+    <div class="stat-card" style="--clr:var(--cyan)" onclick="navigate(event,'stats')">
+      <div class="ic"><i class="fa-solid fa-chart-line"></i></div>
+      <h5>Stats</h5>
+      <div class="sd">Your performance</div>
+      <div class="sv">67 WPM</div>
+    </div>
+  </div>
+</section>
+
+<!-- STREAK + REWARDS -->
+<section class="section">
+  <div class="streak-card">
+    <div class="streak-head">
+      <div class="streak-info">
+        <div class="streak-flame"><i class="fa-solid fa-fire"></i></div>
+        <div>
+          <div class="lbl">Active Streak</div>
+          <div class="val"><span class="d">3</span>days</div>
+        </div>
+      </div>
+      <button class="claim-btn" onclick="claim()">
+        <i class="fa-solid fa-gift"></i> Claim Rewards
+      </button>
+    </div>
+    
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="progress-meta"><span>DAY 1</span><span>DAY 30+</span></div>
+    
+    <div style="margin-top:24px;display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;font-weight:700">
+      <i class="fa-solid fa-star" style="color:var(--orange)"></i> Reward Calendar
+    </div>
+    
+    <div class="reward-cal">
+      <div class="day-card done">
+        <div class="check"><i class="fa-solid fa-check"></i></div>
+        <div class="day-lbl">DAY 2</div>
+        <div class="day-ic">🔥</div>
+        <div class="day-reward">+10</div>
+      </div>
+      <div class="day-card today">
+        <div class="day-lbl">TODAY</div>
+        <div class="day-ic">🔥</div>
+        <div class="day-reward">+10</div>
+      </div>
+      <div class="day-card">
+        <div class="day-lbl">TOMORROW</div>
+        <div class="day-ic">🔥</div>
+        <div class="day-reward">+10</div>
+      </div>
+      <div class="day-card bonus">
+        <div class="day-lbl">DAY 5 · BONUS</div>
+        <div class="day-ic">🎁</div>
+        <div class="day-reward">+50</div>
+      </div>
+      <div class="day-card">
+        <div class="day-lbl">DAY 6</div>
+        <div class="day-ic">🔥</div>
+        <div class="day-reward">+12</div>
+      </div>
+      <div class="day-card">
+        <div class="day-lbl">DAY 7</div>
+        <div class="day-ic">🔥</div>
+        <div class="day-reward">+14</div>
+      </div>
+      <div class="day-card bonus">
+        <div class="day-lbl">DAY 10 · MEGA</div>
+        <div class="day-ic">💎</div>
+        <div class="day-reward">+100</div>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:18px;color:var(--text-dim);font-size:13px">Reach day 10 for a <strong style="color:var(--purple)">mega bonus reward</strong>.</p>
+  </div>
+</section>
+
+<!-- LEADERBOARD PREVIEW -->
+<section class="section">
+  <div class="section-head">
+    <div>
+      <h2>TOP <span class="accent">STRIKERS</span></h2>
+      <p>This week's elite. Will you join them?</p>
+    </div>
+    <button class="btn btn-ghost" onclick="navigate(event,'leaderboard')"><i class="fa-solid fa-trophy"></i> Full Ranks</button>
+  </div>
+  <div class="leader-card">
+    <div class="leader-row" onclick="showToast('Viewing player profile')">
+      <div class="rank gold">#1</div>
+      <div class="leader-user">
+        <img src="https://i.pravatar.cc/60?img=33" alt="">
+        <div>
+          <div class="nm">VortexKey ⚡</div>
+          <div class="lv">DIAMOND · LV 47</div>
+        </div>
+      </div>
+      <div class="leader-wpm">182 WPM</div>
+      <div class="leader-xp">48,920 XP</div>
+    </div>
+    <div class="leader-row" onclick="showToast('Viewing player profile')">
+      <div class="rank silver">#2</div>
+      <div class="leader-user">
+        <img src="https://i.pravatar.cc/60?img=47" alt="">
+        <div>
+          <div class="nm">NeonStrike</div>
+          <div class="lv">DIAMOND · LV 42</div>
+        </div>
+      </div>
+      <div class="leader-wpm">174 WPM</div>
+      <div class="leader-xp">44,210 XP</div>
+    </div>
+    <div class="leader-row" onclick="showToast('Viewing player profile')">
+      <div class="rank bronze">#3</div>
+      <div class="leader-user">
+        <img src="https://i.pravatar.cc/60?img=21" alt="">
+        <div>
+          <div class="nm">PixelFury</div>
+          <div class="lv">PLATINUM · LV 38</div>
+        </div>
+      </div>
+      <div class="leader-wpm">169 WPM</div>
+      <div class="leader-xp">41,002 XP</div>
+    </div>
+    <div class="leader-row" onclick="showToast('Viewing player profile')">
+      <div class="rank">#4</div>
+      <div class="leader-user">
+        <img src="https://i.pravatar.cc/60?img=14" alt="">
+        <div>
+          <div class="nm">CtrlAltElite</div>
+          <div class="lv">PLATINUM · LV 36</div>
+        </div>
+      </div>
+      <div class="leader-wpm">161 WPM</div>
+      <div class="leader-xp">38,475 XP</div>
+    </div>
+    <div class="leader-row" onclick="showToast('Viewing player profile')">
+      <div class="rank">#5</div>
+      <div class="leader-user">
+        <img src="https://i.pravatar.cc/60?img=5" alt="">
+        <div>
+          <div class="nm">GhostType</div>
+          <div class="lv">GOLD · LV 31</div>
+        </div>
+      </div>
+      <div class="leader-wpm">154 WPM</div>
+      <div class="leader-xp">34,120 XP</div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="ft-logo">TYPESTRIKE</div>
+  <div>Built for speed. Forged in fire. © 2025 — Press any key to begin.</div>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"><i class="fa-solid fa-check-circle"></i> <span id="toastMsg">Done</span></div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="modal-ic" id="modalIc"><i class="fa-solid fa-rocket"></i></div>
+    <h3 id="modalTitle">Loading Strike Mode</h3>
+    <p id="modalDesc">Preparing your battleground. Get ready to type fast.</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal()"><i class="fa-solid fa-play"></i> Continue</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Embers
+  const ec = document.getElementById('emberContainer');
+  for(let i=0;i<25;i++){
+    const e = document.createElement('div');
+    e.className = 'ember';
+    e.style.left = Math.random()*100+'vw';
+    e.style.animationDuration = (8 + Math.random()*10) + 's';
+    e.style.animationDelay = (Math.random()*10) + 's';
+    e.style.opacity = (0.4 + Math.random()*0.5);
+    e.style.width = e.style.height = (2 + Math.random()*4)+'px';
+    ec.appendChild(e);
+  }
+  
+  // Mobile toggle
+  document.getElementById('mobileToggle').addEventListener('click', () => {
+    document.getElementById('mobileMenu').classList.toggle('open');
+  });
+  
+  // Nav routing (visual feedback only; matches original page semantics)
+  const routes = {
+    home:      {ic:'fa-house', title:'Welcome Home', desc:'You are already here. Choose a mode to begin.'},
+    strike:    {ic:'fa-bolt', title:'Entering Strike Mode', desc:'Battle through levels — competitive typing arena.'},
+    learn:     {ic:'fa-graduation-cap', title:'Loading Learn', desc:'Master the basics with structured lessons.'},
+    coder:     {ic:'fa-code', title:'Coder Mode Online', desc:'Code snippets & DSA — built for developers.'},
+    leaderboard:{ic:'fa-trophy', title:'Global Leaderboard', desc:'See where you stand among the elite.'},
+    ranks:     {ic:'fa-medal', title:'Rank Progression', desc:'Bronze → Silver → Gold → Platinum → Diamond.'},
+    feats:     {ic:'fa-award', title:'Feats & Achievements', desc:'Unlock badges by mastering challenges.'},
+    stats:     {ic:'fa-chart-line', title:'Your Stats', desc:'Detailed analytics on your typing performance.'},
+    shop:      {ic:'fa-store', title:'Shop', desc:'Spend XP on themes, keycaps and cosmetics.'},
+    profile:   {ic:'fa-user', title:'Profile · Sandeep', desc:'View and edit your gamer profile.'},
+    daily:     {ic:'fa-bullseye', title:'Daily Challenges', desc:'3 tasks. Bonus XP. New every day.'},
+    tutorial:  {ic:'fa-book-open', title:'How to Play', desc:'Quick guide to mastering TypeStrike.'},
+  };
+  
+  function navigate(e, route){
+    if(e) e.preventDefault();
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelectorAll(`[data-route="${route}"]`).forEach(l => l.classList.add('active'));
+    document.getElementById('mobileMenu').classList.remove('open');
+    
+    const r = routes[route];
+    if(!r) return;
+    document.getElementById('modalIc').innerHTML = `<i class="fa-solid ${r.ic}"></i>`;
+    document.getElementById('modalTitle').textContent = r.title;
+    document.getElementById('modalDesc').textContent = r.desc;
+    document.getElementById('modal').classList.add('show');
+  }
+  function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+  document.getElementById('modal').addEventListener('click', e => {
+    if(e.target.id === 'modal') closeModal();
+  });
+  
+  // Toast
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._tt);
+    window._tt = setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+  
+  function claim(){
+    showToast('🔥 +10 XP claimed! Streak extended.');
+  }
+  
+  // Daily timer countdown
+  function tick(){
+    const now = new Date();
+    const end = new Date(); end.setHours(24,0,0,0);
+    let diff = Math.max(0, (end - now)/1000);
+    const h = String(Math.floor(diff/3600)).padStart(2,'0');
+    const m = String(Math.floor((diff%3600)/60)).padStart(2,'0');
+    const s = String(Math.floor(diff%60)).padStart(2,'0');
+    document.getElementById('t-h').textContent = h;
+    document.getElementById('t-m').textContent = m;
+    document.getElementById('t-s').textContent = s;
+  }
+  tick(); setInterval(tick, 1000);
+  
+  // Animated keyboard "typing" effect — cycle the glowing key
+  const keys = document.querySelectorAll('.kbd-3d .key:not(.wide):not(.space)');
+  let curIdx = 4; // T
+  setInterval(() => {
+    keys.forEach(k => k.classList.remove('glow'));
+    curIdx = Math.floor(Math.random()*keys.length);
+    keys[curIdx].classList.add('glow');
+  }, 900);
+  
+  // Hero CTA keyboard shortcut: Enter / Space → Play
+  document.addEventListener('keydown', (e) => {
+    if(document.getElementById('modal').classList.contains('show')){
+      if(e.key === 'Escape') closeModal();
+      return;
+    }
+    if(e.key === 'Enter') navigate(null, 'strike');
+  });
+</script>
+</body>
+</html>
+```

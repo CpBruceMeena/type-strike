@@ -1,6 +1,7 @@
 import {ClerkProvider} from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { orbitron, jetbrainsMono, inter } from "@/lib/fonts";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -55,7 +56,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} ${jetbrainsMono.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-dvh flex-col bg-bg-primary text-text-body">

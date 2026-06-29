@@ -10,6 +10,8 @@
 
 type-strike is a typing game that turns every word into an explosive arcade battle. No flat typing tests — just visceral feedback, liquid-fueled combos, and a journey through 500 levels of fire and fury.
 
+> **Note:** The Android companion app (`type-strike-android/`) is currently on hold. Development is focused on the web frontend and Go backend. The Android project remains in the repo for future reference.
+
 ---
 
 ## 🎮 The Core Loop
@@ -128,8 +130,9 @@ type-strike/
 ## 📱 Platform
 
 - **Web** — Next.js 16, React 19, TypeScript, Tailwind CSS 4
-- **Android** — Kotlin, Jetpack Compose
 - **Backend** — Go, PostgreSQL, Chi router
+
+> Android (Kotlin, Jetpack Compose) — currently on hold.
 
 ---
 

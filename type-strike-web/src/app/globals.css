@@ -3,7 +3,7 @@
 /* ── Type Strike Design System Tokens ──────────────────── */
 :root {
   /* Backgrounds */
-  --bg-primary: #0a0a10;
+  --bg-primary: #07060a;
   --bg-surface: #1a1a28;
   --bg-surface-dark: #141420;
   --bg-card: #12121e;
@@ -111,6 +111,24 @@ body {
   color: var(--text-white);
 }
 
+/* ── Homepage Design Tokens (from HTML reference) ─────── */
+:root {
+  --ts-bg-0: #07060a;
+  --ts-bg-1: #0d0a14;
+  --ts-bg-2: #13101c;
+  --ts-orange: #ff6b1a;
+  --ts-orange-bright: #ff8a3d;
+  --ts-red: #ff3d3d;
+  --ts-yellow: #ffb800;
+  --ts-cyan: #00e5ff;
+  --ts-purple: #9d4dff;
+  --ts-green: #22e07d;
+  --ts-pink: #ff3d9a;
+  --ts-text: #f5f3ff;
+  --ts-text-dim: #9b94b3;
+  --ts-border: rgba(255, 107, 26, 0.18);
+}
+
 /* ── Animations ────────────────────────────────────────── */
 @keyframes shake-x {
   0%, 100% { transform: translateX(0); }
@@ -139,6 +157,65 @@ body {
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
+}
+
+@keyframes gridDrift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 50px 50px, 50px 50px; }
+}
+
+@keyframes emberFloat {
+  0% { transform: translateY(110vh) scale(0.5); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.7; }
+  100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 24px rgba(255, 107, 26, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.2); }
+  50% { box-shadow: 0 0 36px rgba(255, 107, 26, 0.8), inset 0 0 16px rgba(255, 255, 255, 0.3); }
+}
+
+@keyframes kbdFloat {
+  0%, 100% { transform: rotateX(45deg) rotateZ(-15deg) translateY(0); }
+  50% { transform: rotateX(45deg) rotateZ(-15deg) translateY(-12px); }
+}
+
+@keyframes keyPress {
+  0%, 100% { transform: translateZ(0); }
+  50% { transform: translateZ(-4px); }
+}
+
+@keyframes floatBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes flameFlicker {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 107, 26, 0.5); }
+  50% { box-shadow: 0 0 40px rgba(255, 107, 26, 0.8); }
+}
+
+@keyframes fillShine {
+  to { background-position: 200% 0; }
+}
+
+@keyframes rotateGlow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+  50% { opacity: 0.3; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .animate-shake { animation: shake-x 0.12s ease-in-out; }
