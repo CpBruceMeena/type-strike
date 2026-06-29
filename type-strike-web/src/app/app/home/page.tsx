@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { usePlayer } from "@/hooks/usePlayer";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { useProgression } from "@/hooks/useProgression";
@@ -24,6 +25,7 @@ let cachedRankPlayerId: number | null = null;
 
 export default function HomePage() {
   const router = useRouter();
+  const { user } = useUser();
   const { player, playerId, isLoading: playerLoading } = usePlayer();
   const { stats, isLoading: statsLoading } = usePlayerStats(playerId);
   const { progression } = useProgression(playerId);
@@ -183,7 +185,12 @@ export default function HomePage() {
           onClaim={handleClaim}
         />
 
-        <LeaderboardPreview entries={leaderboardTop} loading={leaderboardLoading} />
+        <LeaderboardPreview 
+          entries={leaderboardTop} 
+          loading={leaderboardLoading}
+          currentUserImageUrl={user?.imageUrl}
+          currentPlayerId={playerId}
+        />
 
         <HomeFooter />
       </div>
