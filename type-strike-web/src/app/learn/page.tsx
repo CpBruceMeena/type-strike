@@ -62,32 +62,40 @@ export default function LessonsHubPage() {
   return (
     <div className="flex flex-1 flex-col">
 
-      <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
-        <div className="mx-auto w-full max-w-2xl">
+      <div className="flex-1" style={{ padding: "32px 28px" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 1200 }}>
 
         {/* Title */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#22DD44]/10">
-            <span className="text-2xl">🎓</span>
-          </div>
-          <h1
-            className="text-2xl font-black tracking-[6px]"
-            style={{ color: "#22DD44" }}
-          >
-            LEARN
-          </h1>
-          <p className="mt-1 text-xs tracking-[3px]" style={{ color: "var(--text-muted)" }}>
-            Master touch typing from the ground up
-          </p>
+        <div className="mb-10 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#22DD44]/10">
+            <span className="text-3xl">🎓</span>
+          </div>            <h1
+              className="text-3xl font-black tracking-[8px]"
+              style={{
+                color: "#22DD44",
+                fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
+              }}
+            >
+              LEARN
+            </h1>
+            <p
+              className="mt-2 text-sm tracking-[4px]"
+              style={{
+                color: "var(--ts-text-dim, #9b94b3)",
+                fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
+              }}
+            >
+              Master touch typing from the ground up
+            </p>
         </div>
 
         {/* ═══ Beginner Guides ═══ */}
-        <section className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm">🧭</span>
-            <h2 className="text-xs font-bold uppercase tracking-[2px] text-neutral-400">Getting Started</h2>
+        <section className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-base">🧭</span>
+            <h2 style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 700, letterSpacing: 3, color: "var(--ts-text-dim, #9b94b3)", textTransform: "uppercase" }}>Getting Started</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {BEGINNER_GUIDES.map((guide, i) => (
               <motion.button
                 key={guide.id}
@@ -95,7 +103,7 @@ export default function LessonsHubPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 onClick={() => router.push(guide.href)}
-                className="flex flex-col items-center gap-3 rounded-[18px] border border-neutral-800/60 bg-neutral-900/30 p-4 transition-all hover:border-neutral-700/60 hover:bg-neutral-900/50 active:scale-[0.97] text-center"
+                className="flex flex-col items-center gap-3 rounded-[18px] border border-neutral-800/60 bg-neutral-900/30 p-5 transition-all hover:border-neutral-700/60 hover:bg-neutral-900/50 active:scale-[0.97] text-center"
               >
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-[14px] text-xl"
@@ -104,8 +112,8 @@ export default function LessonsHubPage() {
                   {guide.icon}
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-neutral-100" style={{ color: guide.color }}>{guide.title}</p>
-                  <p className="mt-0.5 text-[10px] text-neutral-500 leading-tight">{guide.desc}</p>
+                  <p style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 700, color: guide.color }}>{guide.title}</p>
+                  <p className="mt-0.5 text-xs text-neutral-500 leading-tight">{guide.desc}</p>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-500">
                   <span>Start</span>
@@ -118,23 +126,23 @@ export default function LessonsHubPage() {
 
         {/* Progress summary */}
         <div
-          className="mb-8 rounded-xl p-4"
+          className="mb-10 rounded-xl p-5"
           style={{
             background: "rgba(34,221,68,0.04)",
             border: "1px solid rgba(34,221,68,0.1)",
           }}
         >
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold tracking-[1px]" style={{ color: "var(--text-body)" }}>
+          <div className="flex items-center justify-between text-sm">
+            <span style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 700, letterSpacing: "1.5px", color: "var(--ts-text, #f5f3ff)" }}>
               {completedCount}/{LESSONS.length} COMPLETED
             </span>
-            <span className="tracking-[1px]" style={{ color: "var(--text-muted)" }}>
+            <span className="tracking-[1.5px] text-xs" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
               Keep going!
             </span>
           </div>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-3">
             <div
-              className="h-1.5 flex-1 overflow-hidden rounded-full"
+              className="h-2 flex-1 overflow-hidden rounded-full"
               style={{ background: "rgba(255,255,255,0.06)" }}
             >
               <div
@@ -145,7 +153,7 @@ export default function LessonsHubPage() {
                 }}
               />
             </div>
-            <span className="text-[10px] font-bold tabular-nums" style={{ color: "var(--text-muted)" }}>
+            <span className="text-xs font-bold tabular-nums" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
               {progressPercent}%
             </span>
           </div>
@@ -156,30 +164,29 @@ export default function LessonsHubPage() {
             ([category, lessons]) => {
               const catInfo = LESSON_CATEGORIES[category];
               return (
-                <section key={category}>
+                <section key={category} className="mb-10">
                   {/* Category header */}
-                  <div className="mb-3 flex items-center gap-3">
+                  <div                    className="mb-5 flex items-center gap-3">
                     <div
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-sm"
+                      className="flex h-12 w-12 items-center justify-center rounded-xl text-lg"
                       style={{ background: `${catInfo.color}15` }}
                     >
                       {catInfo.icon}
                     </div>
                     <div>
                       <h2
-                        className="text-sm font-black tracking-[2px]"
-                        style={{ color: catInfo.color }}
+                        style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 16, fontWeight: 900, letterSpacing: 3, color: catInfo.color }}
                       >
                         {catInfo.label}
                       </h2>
-                      <p className="text-[10px] tracking-[1px]" style={{ color: "var(--text-muted)" }}>
+                      <p className="text-xs tracking-[1.5px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                         {lessons.length} lesson{lessons.length > 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
 
                   {/* Lesson cards */}
-                  <div className="grid gap-2">
+                  <div className="grid gap-4 md:grid-cols-2">
                     {lessons.map((lesson) => {
                       const lp = lessonProgress.get(lesson.id);
                       const isCompleted = lp?.completed ?? false;
@@ -195,7 +202,7 @@ export default function LessonsHubPage() {
                           key={lesson.id}
                           onClick={() => router.push(`/learn/lesson?id=${lesson.id}`)}
                           disabled={isLocked}
-                          className="group relative w-full overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 hover:scale-[1.01]"
+                          className="group relative w-full overflow-hidden rounded-xl border p-5 text-left transition-all duration-200 hover:scale-[1.005] hover:border-opacity-50"
                           style={{
                             borderColor: isLocked
                               ? "rgba(255,255,255,0.04)"
@@ -210,10 +217,10 @@ export default function LessonsHubPage() {
                             opacity: isLocked ? 0.4 : 1,
                           }}
                         >
-                          <div className="flex items-center gap-4">
+                          <div                        className="flex items-center gap-6">
                             {/* Lesson number */}
                             <div
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-black"
+                              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-black"
                               style={{
                                 background: isCompleted
                                   ? "rgba(34,221,68,0.15)"
@@ -226,36 +233,34 @@ export default function LessonsHubPage() {
 
                             {/* Content */}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p
-                                  className="text-sm font-bold tracking-[1px]"
-                                  style={{ color: isLocked ? "var(--text-disabled)" : "var(--text-white)" }}
+                              <div className="flex items-center gap-2">                                  <p
+                                  style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 700, letterSpacing: "1.5px", color: isLocked ? "var(--ts-text-dim, #9b94b3)" : "var(--ts-text, #f5f3ff)" }}
                                 >
                                   {lesson.name}
                                 </p>
                                 {isCompleted && (
-                                  <span className="rounded bg-[#22DD44]/15 px-1.5 py-0.5 text-[9px] font-bold tracking-[1px] text-[#22DD44]">
+                                  <span className="rounded bg-[#22DD44]/15 px-2 py-0.5 text-[10px] font-bold tracking-[1.5px] text-[#22DD44]">
                                     DONE
                                   </span>
                                 )}
                               </div>
                               <p
-                                className="mt-0.5 truncate text-[10px] tracking-[0.5px]"
-                                style={{ color: "var(--text-muted)" }}
+                                className="mt-1.5 text-sm tracking-[0.5px] leading-relaxed"
+                                style={{ color: "var(--ts-text-dim, #9b94b3)" }}
                               >
                                 {lesson.description}
                               </p>
                             </div>
 
                             {/* Difficulty & focus keys */}
-                            <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-3">
                               {/* Finger color dots */}
                               {fingerColors.length > 0 && (
                                 <div className="flex -space-x-0.5">
                                   {fingerColors.slice(0, 3).map((c, i) => (
                                     <div
                                       key={i}
-                                      className="h-2 w-2 rounded-full border border-[rgba(0,0,0,0.3)]"
+                                      className="h-2.5 w-2.5 rounded-full border border-[rgba(0,0,0,0.3)]"
                                       style={{ background: c }}
                                     />
                                   ))}
@@ -263,11 +268,11 @@ export default function LessonsHubPage() {
                               )}
 
                               {/* Difficulty dots */}
-                              <div className="flex gap-0.5">
+                              <div className="flex gap-1">
                                 {Array.from({ length: 10 }, (_, i) => (
                                   <div
                                     key={i}
-                                    className="h-1 w-1 rounded-full"
+                                    className="h-1.5 w-1.5 rounded-full"
                                     style={{
                                       background:
                                         i < lesson.difficulty
@@ -280,8 +285,8 @@ export default function LessonsHubPage() {
 
                               {/* Arrow */}
                               <span
-                                className="text-sm transition-transform duration-200 group-hover:translate-x-0.5"
-                                style={{ color: "var(--text-muted)" }}
+                                className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
+                                style={{ color: "var(--ts-text-dim, #9b94b3)" }}
                               >
                                 {isLocked ? "🔒" : "→"}
                               </span>

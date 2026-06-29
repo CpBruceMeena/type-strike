@@ -159,16 +159,16 @@ export default function FeatsPage() {
   return (
     <div className="flex flex-1 flex-col">
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
-        <div className="mx-auto w-full max-w-4xl">
+      <div className="flex-1 overflow-y-auto" style={{ padding: "32px 28px" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 1100 }}>
           {/* ═══ Level Tier Progress Section ═══ */}
           {Object.keys(tierProgress).length > 0 && (
-          <div className="mb-6 rounded-2xl border border-neutral-800/60 bg-gradient-to-br from-neutral-900/50 to-neutral-950/50 p-5">
+          <div className="mb-8 rounded-2xl border border-neutral-800/60 bg-gradient-to-br from-neutral-900/50 to-neutral-950/50 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[10px] font-bold tracking-[2px] uppercase text-neutral-400">
+              <h2 style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 12, fontWeight: 700, letterSpacing: 3, color: "var(--ts-text-dim, #9b94b3)", textTransform: "uppercase" }}>
                 Level Progress · {Object.values(tierProgress).reduce((s, t) => s + t.cleared, 0)}/{Object.values(tierProgress).reduce((s, t) => s + t.total, 0)}
               </h2>
-              <span className="text-[10px] text-neutral-500">
+              <span className="text-[11px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                 {Object.values(tierProgress).reduce((s, t) => s + t.total, 0) > 0
                   ? Math.round((Object.values(tierProgress).reduce((s, t) => s + t.cleared, 0) / Object.values(tierProgress).reduce((s, t) => s + t.total, 0)) * 100) + '%'
                   : '0%'}
@@ -207,7 +207,7 @@ export default function FeatsPage() {
           )}
 
           {/* Overview banner — richer with progress + recently unlocked */}
-          <div className="mb-6 rounded-2xl border border-white/5 bg-gradient-to-r from-[#1A0A28] to-[#0A0A14] p-5">
+          <div className="mb-8 rounded-2xl border border-white/5 bg-gradient-to-r from-[#1A0A28] to-[#0A0A14] p-6">
             <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
               {/* Unlocked count with arc progress */}
               <div className="flex items-center gap-4">
@@ -226,10 +226,10 @@ export default function FeatsPage() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold tracking-[2px] text-text-muted uppercase">
+                  <p style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 12, fontWeight: 700, letterSpacing: 2, color: "var(--ts-text-dim, #9b94b3)", textTransform: "uppercase" }}>
                     FEATS UNLOCKED
                   </p>
-                  <p className="text-xs text-text-muted mt-0.5">
+                  <p className="text-sm" style={{ color: "var(--ts-text-dim, #9b94b3)", marginTop: 4 }}>
                     <span className="font-bold text-orange-400">{totalCount - unlockedCount}</span> remaining ·{' '}
                     <span className="font-bold text-neutral-100">{Math.round((totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0))}%</span> complete
                   </p>
@@ -239,7 +239,7 @@ export default function FeatsPage() {
               {/* Recently Unlocked */}
               {achievements.filter(a => a.unlocked).length > 0 && (
                 <div className="text-center md:text-right">
-                  <p className="text-[9px] font-bold tracking-[2px] text-text-muted uppercase mb-1.5">
+                  <p style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "var(--ts-text-dim, #9b94b3)", textTransform: "uppercase", marginBottom: 6 }}>
                     Recently Unlocked
                   </p>
                   <div className="flex flex-wrap justify-center md:justify-end gap-1.5">
@@ -270,7 +270,7 @@ export default function FeatsPage() {
 
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <div className="text-sm font-bold tracking-[2px]" style={{ color: "var(--text-muted)" }}>
+              <div className="text-sm font-bold tracking-[2px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                 LOADING FEATS...
               </div>
             </div>
@@ -283,25 +283,24 @@ export default function FeatsPage() {
               const color = CATEGORY_COLORS[category] || "#CC44FF";
 
               return (
-                <div key={category} className="mb-8">
+                <div key={category} className="mb-10">
                   {/* Category header */}
-                  <div className="mb-3 flex items-center gap-3">
+                  <div className="mb-4 flex items-center gap-3">
                     <div
                       className="h-4 w-1 rounded-full"
                       style={{ backgroundColor: color }}
                     />
                     <span
-                      className="text-sm font-bold tracking-[3px] uppercase"
-                      style={{ color }}
+                      style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 700, letterSpacing: 3, color, textTransform: "uppercase" }}
                     >
                       {CATEGORY_LABELS[category] || category}
                     </span>
-                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    <span className="text-sm" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                       {unlocked}/{total}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                     {feats.map((feat) => {
                       const progressPct = feat.max_progress > 0
                         ? Math.round((feat.progress / feat.max_progress) * 100)
@@ -326,16 +325,13 @@ export default function FeatsPage() {
                           <div className="text-center">
                             <span className="text-3xl">{feat.icon}</span>
                             <p
-                              className="mt-1 text-[11px] font-bold tracking-[0.5px]"
-                              style={{
-                                color: feat.unlocked ? color : "var(--text-muted)",
-                              }}
+                              style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 11, fontWeight: 700, letterSpacing: "0.5px", marginTop: 4, color: feat.unlocked ? color : "var(--ts-text-dim, #9b94b3)" }}
                             >
                               {feat.name}
                             </p>
                             <p
                               className="mt-0.5 text-[8px] leading-tight"
-                              style={{ color: "var(--text-muted)" }}
+                              style={{ color: "var(--ts-text-dim, #9b94b3)" }}
                             >
                               {feat.description}
                             </p>
@@ -355,7 +351,7 @@ export default function FeatsPage() {
                                     }}
                                   />
                                 </div>
-                                <p className="mt-0.5 text-[8px]" style={{ color: "var(--text-muted)" }}>
+                                <p className="mt-0.5 text-[8px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                                   {feat.progress}/{feat.max_progress}
                                 </p>
                               </div>
@@ -388,7 +384,7 @@ export default function FeatsPage() {
             <button
               onClick={() => setSelectedAchievement(null)}
               className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-lg text-sm transition-colors hover:bg-white/5"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: "var(--ts-text-dim, #9b94b3)" }}
             >
               ✕
             </button>
@@ -401,13 +397,13 @@ export default function FeatsPage() {
               >
                 {selectedAchievement.name}
               </h2>
-              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+              <p className="mt-1 text-xs" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                 {selectedAchievement.description}
               </p>
 
               {/* Progress */}
               <div className="mt-4 rounded-xl bg-black/20 p-3">
-                <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--text-muted)" }}>
+                <p className="text-[9px] font-bold tracking-[1.5px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                   PROGRESS
                 </p>
                 <div className="mt-2">
@@ -423,7 +419,7 @@ export default function FeatsPage() {
                       }}
                     />
                   </div>
-                  <p className="mt-1 text-[9px]" style={{ color: "var(--text-muted)" }}>
+                  <p className="mt-1 text-[9px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                     {selectedAchievement.unlocked
                       ? "UNLOCKED 🎉"
                       : `${selectedAchievement.progress}/${selectedAchievement.max_progress}`}
@@ -504,7 +500,7 @@ export default function FeatsPage() {
                 >
                   {selectedAchievement.name}
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-body)" }}>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                   {selectedAchievement.description}
                 </p>
               </div>
@@ -521,10 +517,10 @@ export default function FeatsPage() {
 
               {/* URL */}
               <div className="relative text-center">
-                <p className="text-[10px] font-bold tracking-[2px]" style={{ color: "var(--text-muted)" }}>
+                <p className="text-[10px] font-bold tracking-[2px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                   typestrike.app
                 </p>
-                <p className="mt-1 text-[8px] tracking-[1px]" style={{ color: "var(--text-muted)" }}>
+                <p className="mt-1 text-[8px] tracking-[1px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
                   Type with fury. Strike with fire.
                 </p>
               </div>

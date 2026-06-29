@@ -7,6 +7,10 @@ import type { LeaderboardEntry } from "@/lib/types";
 interface LeaderboardPreviewProps {
   entries: LeaderboardEntry[];
   loading?: boolean;
+  /** Clerk profile image URL for the current player (shown if they appear in the list) */
+  currentUserImageUrl?: string | null;
+  /** The current player's ID (to match their entry and show their image) */
+  currentPlayerId?: number | null;
 }
 
 function getRankColor(rank: number): string {
@@ -36,7 +40,44 @@ function getAvatarColor(index: number): string {
   return colors[index % colors.length];
 }
 
-export default function LeaderboardPreview({ entries, loading }: LeaderboardPreviewProps) {
+function UserAvatar({ name, isCurrentUser, imageUrl, colorIndex }: { name: string; isCurrentUser: boolean; imageUrl?: string | null; colorIndex: number }) {
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={name || "Player"}
+        referrerPolicy="no-referrer"
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: "50%",
+          objectFit: "cover",
+          border: "2px solid var(--ts-orange, #ff6b1a)",
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 13,
+        fontWeight: 900,
+        color: "#fff",
+        background: getAvatarColor(colorIndex),
+      }}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
+
+export default function LeaderboardPreview({ entries, loading, currentUserImageUrl, currentPlayerId }: LeaderboardPreviewProps) {
   const router = useRouter();
 
   return (
@@ -108,7 +149,8 @@ export default function LeaderboardPreview({ entries, loading }: LeaderboardPrev
             </div>
           </div>
         ) : (
-          entries.slice(0, 5).map((entry, idx) => (
+          <>
+          {entries.slice(0, 5).map((entry, idx) => (
             <div key={entry.player_id}>
               {idx > 0 && (
                 <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }} />
@@ -152,22 +194,12 @@ export default function LeaderboardPreview({ entries, loading }: LeaderboardPrev
                     gap: 12,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 13,
-                      fontWeight: 900,
-                      color: "#fff",
-                      background: getAvatarColor(idx),
-                    }}
-                  >
-                    {getInitials(entry.player_name)}
-                  </div>
+                  <UserAvatar
+                    name={entry.player_name}
+                    isCurrentUser={currentPlayerId === entry.player_id}
+                    imageUrl={currentPlayerId === entry.player_id ? currentUserImageUrl : undefined}
+                    colorIndex={idx}
+                  />
                   <div>
                     <div
                       style={{
@@ -186,7 +218,12 @@ export default function LeaderboardPreview({ entries, loading }: LeaderboardPrev
                         fontWeight: 600,
                       }}
                     >
-                      LV {entry.level} · {entry.xp?.toLocaleString() || 0} XP
+                      {entry.level != null ? `LV ${entry.level}` : ""} · {entry.xp?.toLocaleString() || 0} XP
+                      {currentPlayerId === entry.player_id && entry.best_wpm != null && (
+                        <span style={{ fontSize: 10, color: "var(--ts-orange-bright, #ff8a3d)", marginLeft: 6 }}>
+                          (1min: {entry.best_wpm} WPM)
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -198,7 +235,7 @@ export default function LeaderboardPreview({ entries, loading }: LeaderboardPrev
                     color: "var(--ts-orange, #ff6b1a)",
                   }}
                 >
-                  {entry.best_wpm} WPM
+                  {entry.best_wpm != null && entry.best_wpm > 0 ? `${entry.best_wpm} WPM` : '— WPM'}
                 </div>
                 <div
                   className="leader-xp"
@@ -213,7 +250,22 @@ export default function LeaderboardPreview({ entries, loading }: LeaderboardPrev
                 </div>
               </div>
             </div>
-          ))
+          ))}
+          {/* 1-min WPM disclaimer */}
+          <div
+            style={{
+              marginTop: 14,
+              padding: "8px 12px",
+              fontSize: 11,
+              color: "var(--ts-text-dim, #9b94b3)",
+              borderTop: "1px solid rgba(255,255,255,0.04)",
+              textAlign: "center",
+              fontStyle: "italic",
+            }}
+          >
+            Rankings reflect highest 1-minute WPM in timed sessions
+          </div>
+          </>
         )}
       </div>
 
