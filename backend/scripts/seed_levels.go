@@ -7,20 +7,9 @@ import (
 
 	"github.com/cpbrucemeena/type-strike-backend/internal/data"
 	"github.com/cpbrucemeena/type-strike-backend/internal/database"
+	"github.com/cpbrucemeena/type-strike-backend/internal/models"
 	"math/rand"
 )
-
-type Level struct {
-	ID           int    `gorm:"primaryKey"`
-	Name         string `gorm:"type:varchar(100)"`
-	Tier         string `gorm:"type:varchar(20)"`
-	Difficulty   int    `gorm:"default:1"`
-	PassWPM      int    `gorm:"column:pass_wpm"`
-	PassAccuracy int    `gorm:"column:pass_accuracy"`
-	Paragraph    string `gorm:"type:text"`
-}
-
-func (Level) TableName() string { return "levels" }
 
 func main() {
 	databaseURL := os.Getenv("DATABASE_URL")
@@ -42,10 +31,23 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	// Re-generate levels with fresh randomness
-	log.Println("Generating 100 level configurations...")
-	levels := data.GenerateFreshLevels()
+	// Auto-migrate the levels table (creates table if not exists)
+	log.Println("Auto-migrating levels table...")
+	if err := db.AutoMigrate(&models.Level{}); err != nil {
+		log.Fatalf("Failed to migrate: %v", err)
+	}
 
+	// Fix outdated check constraints that don't account for Beyond tier
+	log.Println("Updating table constraints for all 5 tiers (1-500)...")
+	db.Exec("ALTER TABLE levels DROP CONSTRAINT IF EXISTS levels_difficulty_check")
+	db.Exec("ALTER TABLE levels DROP CONSTRAINT IF EXISTS levels_tier_check")
+	db.Exec("ALTER TABLE levels ADD CONSTRAINT levels_difficulty_check CHECK (difficulty >= 1 AND difficulty <= 5)")
+	db.Exec("ALTER TABLE levels ADD CONSTRAINT levels_tier_check CHECK (tier::text = ANY (ARRAY['ember'::text, 'igneious'::text, 'magma_core'::text, 'obsidian'::text, 'beyond'::text]))")
+	log.Println("Constraints updated.")
+
+	// Re-generate all 500 level configurations (5 tiers × 100 levels each)
+	log.Println("Generating 500 level configurations...")
+	levels := data.GenerateFreshLevels()
 	log.Printf("Seeding %d levels into the database...", len(levels))
 
 	// Use a transaction for the bulk operation
@@ -62,7 +64,7 @@ func main() {
 
 	// Insert each level
 	for _, lvl := range levels {
-		level := Level{
+		level := models.Level{
 			ID:           lvl.ID,
 			Name:         lvl.Name,
 			Tier:         lvl.Tier,
@@ -81,7 +83,7 @@ func main() {
 		log.Fatalf("Failed to commit: %v", err)
 	}
 
-	log.Printf("✅ %d levels seeded successfully!", len(levels))
+	log.Printf("✅ %d levels seeded successfully! All 5 tiers (Ember, Igneous, Magma Core, Obsidian, Beyond) × 100 levels each.", len(levels))
 }
 
 func init() {

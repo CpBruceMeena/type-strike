@@ -12,7 +12,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { getLessonById, LESSONS } from "@/lib/lessons";
-import type { Lesson } from "@/lib/lessons";
 import { TypingEngine } from "@/engine/TypingEngine";
 import {
   KeyboardInputSource,
@@ -23,7 +22,6 @@ import {
   LessonTextProvider,
 } from "@/engine/implementations";
 import type { GameResult, CharResult } from "@/engine/interfaces";
-import FingerGuide from "@/components/game/FingerGuide";
 import ParagraphDisplay from "@/components/game/ParagraphDisplay";
 import CountdownOverlay from "@/components/game/CountdownOverlay";
 import GlassPanel from "@/components/ui/GlassPanel";
@@ -501,14 +499,6 @@ function LessonContent() {
               gameState={state.gameState}
             />
           </GlassPanel>
-        </div>
-
-        {/* Finger Guide below */}
-        <div className="w-full max-w-lg mx-auto">
-          <FingerGuide
-            highlightKeys={lesson.focusKeys}
-            allowedKeys={lesson.allowedKeys}
-          />
         </div>
 
         {/* Live Stats */}

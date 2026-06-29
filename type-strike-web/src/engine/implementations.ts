@@ -278,11 +278,14 @@ export class StandardScoring implements IScoringStrategy {
     errorCount: number
   ): number {
     const { passWpm, passAccuracy } = threshold;
-    if (wpm < passWpm || accuracy < passAccuracy) return 0;
+    if (wpm < passWpm || accuracy < passAccuracy / 100) return 0;
 
-    const meets2Star = wpm >= Math.round(passWpm * 1.15) && accuracy >= 0.95;
+    // More lenient thresholds:
+    // 2 stars: 110% of pass WPM, 93%+ accuracy
+    // 3 stars: 125% of pass WPM, 96%+ accuracy, 2 or fewer errors
+    const meets2Star = wpm >= Math.round(passWpm * 1.10) && accuracy >= 0.93;
     const meets3Star =
-      wpm >= Math.round(passWpm * 1.3) && accuracy >= 0.98 && errorCount === 0;
+      wpm >= Math.round(passWpm * 1.25) && accuracy >= 0.96 && errorCount <= 2;
 
     if (meets3Star) return 3;
     if (meets2Star) return 2;

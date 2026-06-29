@@ -2,7 +2,7 @@
 
 > **Database:** PostgreSQL  
 > **ORM:** GORM (Go)  
-> **Last Updated:** June 26, 2026
+> **Last Updated:** June 28, 2026
 
 ---
 
@@ -47,9 +47,33 @@ The database for Type Strike is a **PostgreSQL** database that powers the Go bac
 | **Game Sessions** | `game_sessions` | Timed mode and contest game records |
 | **Competition** | `contests`, `contest_entries`, `leaderboard_entries`, `leaderboard_timed` | Daily contests, global and timed leaderboards |
 | **Daily Challenges** | `daily_challenges` | Per-player daily challenge system |
+| **Feedback** | `feedback` | User-submitted feedback and feature requests |
 | **Activity & Analytics** | `activity`, `analytics_events`, `daily_stats` | Event logging, telemetry, aggregated statistics |
 
 **ORM Layer:** All tables are accessed via GORM. Each table has a corresponding Go model in `backend/internal/models/` with GORM tags (`gorm:`) defining table names, column names, indexes, and constraints. All repositories reside in `backend/internal/repository/`.
+
+---
+
+### 2.15 `feedback` — User Feedback Submissions
+
+**Stores user-submitted feedback messages** from the profile page.
+
+| Column | Type | Default | Constraints | Description |
+|--------|------|---------|-------------|-------------|
+| `id` | `SERIAL` | — | `PRIMARY KEY` | Auto-incrementing ID |
+| `player_id` | `VARCHAR(255)` | — | — | Clerk user ID of the submitter |
+| `email` | `VARCHAR(255)` | — | — | Email from Clerk profile |
+| `message` | `TEXT` | — | `NOT NULL` | The feedback content |
+| `created_at` | `TIMESTAMPTZ` | `NOW()` | — | Submission timestamp |
+
+**Go Model:** `backend/internal/models/feedback.go` → `Feedback`
+
+**API:**
+- `POST /api/v1/feedback` — Submit feedback (body: `{player_id, email, message}`)
+
+**How it's used:**
+- Submitted from the profile page feedback form
+- Currently a simple append-only log for product improvement
 
 ---
 

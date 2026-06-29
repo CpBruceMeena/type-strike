@@ -35,9 +35,7 @@ export default function RanksPage() {
   const currentTierId = progression?.current_tier?.id;
 
   return (
-    <div className="flex min-h-dvh flex-col">
-
-      <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-6 md:px-0">
+    <div className="flex min-h-dvh flex-col">        <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-6 pt-4 md:px-0 md:pt-6">
         {/* Player Rank Summary */}
         {progression && (
           <GlassPanel
@@ -95,7 +93,7 @@ export default function RanksPage() {
         {/* Tier Cards */}
         {!isLoading && !error && tierDetails?.tiers && (
           <div className="space-y-4 pb-8">
-            {tierDetails.tiers.map((detail: TierDetail, index: number) => {
+            {tierDetails.tiers.map((detail: TierDetail, _index: number) => {
               const isCurrentTier = detail.tier.id === currentTierId;
               const isUnlocked = progression?.current_tier
                 ? detail.tier.sort_order <= progression.current_tier.sort_order

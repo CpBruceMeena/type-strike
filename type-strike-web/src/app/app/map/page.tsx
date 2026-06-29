@@ -12,7 +12,7 @@ import type { LevelDetail } from "@/lib/types";
 
 export default function MapPage() {
   const router = useRouter();
-  const { playerId, isLoading: playerLoading } = usePlayer();
+  const { playerId } = usePlayer();
   const pid = playerId ?? DEFAULT_PLAYER_ID;
   const [levels, setLevels] = useState<LevelDetail[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<LevelDetail | null>(null);
@@ -116,59 +116,113 @@ export default function MapPage() {
           </div>
         )}
 
-        <div className="mx-auto w-full max-w-4xl space-y-6">
-          {TIERS.map((tier) => (
-            <div key={tier.key}>
-              <div className="mb-3 flex items-center gap-3">
-                <div className="h-4 w-1 rounded-full" style={{ backgroundColor: tier.color }} />
-                <span className="text-sm font-bold tracking-[3px]" style={{ color: tier.color }}>
-                  {tier.label}
-                </span>
-                <span className="text-xs text-text-muted">
-                  ({tier.startLevel}-{tier.endLevel})
-                </span>
-              </div>
-              <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
-                {Array.from({ length: 25 }, (_, i) => {
-                  const levelId = tier.startLevel + i;
-                  if (levelId > tier.endLevel) return null;
-                  const detail = getLevelDetail(levelId);
-                  const passed = detail?.player_stars && detail.player_stars > 0;
-                  const stars = detail?.player_stars ?? 0;
+        <div className="mx-auto w-full max-w-4xl space-y-8">
+          {TIERS.map((tier) => {
+            // Determine which levels to show: completed + unlocked + next 5 locked
+            let lastUnlockedIndex = -1;
+            for (let i = 0; i < 100; i++) {
+              const levelId = tier.startLevel + i;
+              if (levelId > tier.endLevel) break;
+              const isLocked = (() => {
+                if (i < 3) return false;
+                const prevDetail = getLevelDetail(levelId - 1);
+                if (!prevDetail) return true;
+                return !(prevDetail.player_stars && prevDetail.player_stars > 0);
+              })();
+              if (!isLocked) lastUnlockedIndex = i;
+            }
+            // Show up to 5 ahead of the last unlocked
+            const showUpTo = Math.min(lastUnlockedIndex + 8, 99);
 
-                  return (
-                    <Card
-                      key={levelId}
-                      hoverable
-                      onClick={() => {
-                        if (detail) handleLevelClick(detail);
-                      }}
-                      className={`flex flex-col items-center py-3 transition-all duration-200 ${
-                        passed ? "border-accent-gold/30" : ""
-                      }`}
-                      style={passed ? { borderColor: "rgba(255,204,0,0.3)" } : {}}
-                    >
-                      <span className="text-[9px] text-text-muted">L{levelId}</span>
-                      <span
-                        className={`text-sm mt-0.5 ${
-                          stars > 0
-                            ? "text-accent-gold"
-                            : "text-text-disabled"
-                        }`}
+            const passedCount = Array.from({ length: 100 }, (_, i) => {
+              const levelId = tier.startLevel + i;
+              if (levelId > tier.endLevel) return 0;
+              const detail = getLevelDetail(levelId);
+              return detail?.player_stars && detail.player_stars > 0 ? 1 : 0;
+            }).filter(Boolean).length;
+
+            return (
+              <div key={tier.key}>
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="h-4 w-1 rounded-full" style={{ backgroundColor: tier.color }} />
+                  <span className="text-sm font-bold tracking-[3px]" style={{ color: tier.color }}>
+                    {tier.label}
+                  </span>
+                  <span className="text-xs text-text-muted">
+                    ({tier.startLevel}-{tier.endLevel}) · {passedCount} cleared
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
+                  {Array.from({ length: showUpTo + 1 }, (_, i) => {
+                    const levelId = tier.startLevel + i;
+                    if (levelId > tier.endLevel) return null;
+                    const detail = getLevelDetail(levelId);
+                    const passed = detail?.player_stars && detail.player_stars > 0;
+                    const stars = detail?.player_stars ?? 0;
+
+                    // Level locking: first 3 in each tier always unlocked.
+                    // Level 4+ requires the previous level to have >=1 star.
+                    const isLocked = (() => {
+                      if (i < 3) return false;
+                      const prevDetail = getLevelDetail(levelId - 1);
+                      if (!prevDetail) return true;
+                      return !(prevDetail.player_stars && prevDetail.player_stars > 0);
+                    })();
+
+                    return (
+                      <Card
+                        key={levelId}
+                        hoverable={!isLocked}
+                        onClick={() => {
+                          if (detail && !isLocked) handleLevelClick(detail);
+                        }}
+                        className={`flex flex-col items-center py-3 transition-all duration-200 ${
+                          passed ? "border-accent-gold/30" : ""
+                        } ${isLocked ? "cursor-not-allowed" : ""}`}
+                        style={{
+                          ...(passed ? { borderColor: "rgba(255,204,0,0.3)" } : {}),
+                          ...(isLocked ? { opacity: 0.55 } : {}),
+                        }}
                       >
-                        {stars > 0 ? "★".repeat(stars) : "☆"}
-                      </span>
-                      {detail && (
-                        <span className="mt-1 text-[7px] font-bold tracking-[0.5px] text-text-muted">
-                          {detail.pass_wpm}/{detail.pass_accuracy}%
-                        </span>
-                      )}
-                    </Card>
-                  );
-                })}
+                        {isLocked ? (
+                          <>
+                            <span className="text-sm">🔒</span>
+                            <span className="text-[8px] text-text-muted mt-1">L{levelId}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[9px] text-text-muted">L{levelId}</span>
+                            <span
+                              className={`text-sm mt-0.5 ${
+                                stars > 0
+                                  ? "text-accent-gold"
+                                  : "text-text-disabled"
+                              }`}
+                            >
+                              {stars > 0 ? "★".repeat(stars) : "☆"}
+                            </span>
+                            {detail && (
+                              <span className="mt-1 text-[7px] font-bold tracking-[0.5px] text-text-muted">
+                                {detail.pass_wpm}/{detail.pass_accuracy}%
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+                {/* Show remaining count if levels are hidden */}
+                {showUpTo < 99 && (
+                  <div className="mt-3 text-center">
+                    <p className="text-[10px] text-neutral-600">
+                      Complete levels to unlock {99 - showUpTo} more
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {loading && (
             <div className="flex items-center justify-center py-8">

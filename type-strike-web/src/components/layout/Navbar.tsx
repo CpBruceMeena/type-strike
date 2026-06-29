@@ -9,7 +9,7 @@ import {
   IconCrown,
   IconHash,
 } from "@tabler/icons-react";
-import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useProgression } from "@/hooks/useProgression";
 import { api } from "@/lib/api";
@@ -123,9 +123,27 @@ export default function Navbar() {
 
           {/* Profile / Auth */}
           {isSignedIn ? (
-            <div className="flex items-center">
-              <UserButton />
-            </div>
+            <button
+              onClick={() => router.push("/app/profile")}
+              className="flex items-center gap-1.5 rounded-xl border border-neutral-800/60 bg-neutral-900/40 px-2.5 py-1.5 transition-all hover:border-neutral-700/60 hover:bg-neutral-900/60 active:scale-95"
+              title="View Profile"
+            >
+              {user?.imageUrl ? (
+                <img
+                  src={user.imageUrl}
+                  alt={user.fullName || "Profile"}
+                  className="h-6 w-6 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-[9px] font-black text-white">
+                  {user?.firstName?.[0] || user?.username?.[0] || "?"}
+                </div>
+              )}
+              <span className="hidden sm:inline text-[11px] font-bold text-neutral-300">
+                {user?.firstName || user?.username || "Profile"}
+              </span>
+            </button>
           ) : (
             <div className="hidden sm:flex items-center gap-1.5">
               <SignInButton mode="modal">
@@ -192,8 +210,22 @@ export default function Navbar() {
             {/* Mobile auth */}
             <div>
               {isSignedIn ? (
-                <div className="flex items-center gap-3 px-3 py-2">
-                  <UserButton />
+                <button
+                  onClick={() => { router.push("/app/profile"); setMobileMenuOpen(false); }}
+                  className="flex w-full items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors hover:bg-neutral-900/60"
+                >
+                  {user?.imageUrl ? (
+                    <img
+                      src={user.imageUrl}
+                      alt={user.fullName || "Profile"}
+                      className="h-9 w-9 rounded-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-xs font-black text-white">
+                      {user?.firstName?.[0] || user?.username?.[0] || "?"}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-bold text-neutral-200 truncate">
                       {user?.firstName || user?.username || "Player"}
@@ -202,7 +234,7 @@ export default function Navbar() {
                       {user?.primaryEmailAddress?.emailAddress}
                     </div>
                   </div>
-                </div>
+                </button>
               ) : (
                 <div className="flex flex-col gap-2 px-3 pb-2">
                   <SignInButton mode="modal">

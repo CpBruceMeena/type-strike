@@ -9,10 +9,28 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { LESSONS, LESSON_CATEGORIES, getLessonsByCategory, FINGER_COLORS, KEY_FINGER_MAP } from "@/lib/lessons";
 import { api } from "@/lib/api";
 import { DEFAULT_PLAYER_ID } from "@/lib/constants";
 import type { LessonProgress } from "@/lib/types";
+
+// ── Beginner Guides ──────────────────────────────────────
+
+interface BeginnerGuide {
+  id: string;
+  title: string;
+  desc: string;
+  icon: string;
+  color: string;
+  href: string;
+}
+
+const BEGINNER_GUIDES: BeginnerGuide[] = [
+  { id: "hand-positioning", title: "Hand Positioning", desc: "Learn proper hand placement on the home row", icon: "⌨️", color: "#22DD44", href: "/learn/hand-positioning" },
+  { id: "finger-placement", title: "Finger Placement", desc: "Which finger presses which key", icon: "👆", color: "#4488FF", href: "/learn/finger-placement" },
+  { id: "typing-tips", title: "Typing Tips & Tricks", desc: "Essential tips to improve your speed", icon: "💡", color: "#f97316", href: "/learn/typing-tips" },
+];
 
 export default function LessonsHubPage() {
   const router = useRouter();
@@ -48,7 +66,7 @@ export default function LessonsHubPage() {
         <div className="mx-auto w-full max-w-2xl">
 
         {/* Title */}
-        <div className="mb-6 text-center">
+        <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#22DD44]/10">
             <span className="text-2xl">🎓</span>
           </div>
@@ -63,9 +81,44 @@ export default function LessonsHubPage() {
           </p>
         </div>
 
+        {/* ═══ Beginner Guides ═══ */}
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm">🧭</span>
+            <h2 className="text-xs font-bold uppercase tracking-[2px] text-neutral-400">Getting Started</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {BEGINNER_GUIDES.map((guide, i) => (
+              <motion.button
+                key={guide.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                onClick={() => router.push(guide.href)}
+                className="flex flex-col items-center gap-3 rounded-[18px] border border-neutral-800/60 bg-neutral-900/30 p-4 transition-all hover:border-neutral-700/60 hover:bg-neutral-900/50 active:scale-[0.97] text-center"
+              >
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-[14px] text-xl"
+                  style={{ background: `${guide.color}15`, border: `1px solid ${guide.color}30` }}
+                >
+                  {guide.icon}
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-neutral-100" style={{ color: guide.color }}>{guide.title}</p>
+                  <p className="mt-0.5 text-[10px] text-neutral-500 leading-tight">{guide.desc}</p>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-500">
+                  <span>Start</span>
+                  <span>→</span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </section>
+
         {/* Progress summary */}
         <div
-          className="mb-6 rounded-xl p-4"
+          className="mb-8 rounded-xl p-4"
           style={{
             background: "rgba(34,221,68,0.04)",
             border: "1px solid rgba(34,221,68,0.1)",

@@ -60,6 +60,7 @@ func main() {
 	achievementHandler := handler.NewAchievementHandler(repos)
 	streakHandler := handler.NewStreakHandler(repos)
 	statsHandler := handler.NewStatsHandler(repos)
+	feedbackHandler := handler.NewFeedbackHandler(repos)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -115,7 +116,7 @@ func main() {
 			r.Put("/{playerId}/settings", settingsHandler.BatchUpdate)
 		})
 
-		// Level catalog (static configuration for all 100 levels)
+		// Level catalog (static configuration for all 500 levels; served from DB)
 		r.Route("/levels", func(r chi.Router) {
 			r.Get("/", levelDataHandler.GetAll)
 			r.Get("/next", levelDataHandler.GetNext)
@@ -190,6 +191,9 @@ func main() {
 
 		// Extended Player Stats (aggregated for home page)
 		r.Get("/players/{playerId}/extended-stats", statsHandler.GetExtendedStats)
+
+		// Feedback
+		r.Post("/feedback", feedbackHandler.Submit)
 	})
 
 	// Start server

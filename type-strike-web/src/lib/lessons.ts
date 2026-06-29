@@ -119,7 +119,7 @@ function repeatChars(chars: string, count: number): string {
 }
 
 function repeatWords(words: string[], count: number): string {
-  let result: string[] = [];
+  const result: string[] = [];
   for (let i = 0; i < count; i++) {
     result.push(words[i % words.length]);
   }

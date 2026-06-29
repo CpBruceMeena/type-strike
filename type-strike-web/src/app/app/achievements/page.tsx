@@ -7,7 +7,9 @@ import { useAchievements } from "@/hooks/useAchievements";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import GlassPanel from "@/components/ui/GlassPanel";
-import type { PlayerAchievement } from "@/lib/types";
+import { TIERS } from "@/lib/constants";
+import { api } from "@/lib/api";
+import type { PlayerAchievement, LevelDetail } from "@/lib/types";
 
 // Used to track how many achievements the user has seen so we can
 // show/hide the unseen-count badge in the navigation.
@@ -20,6 +22,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   accuracy: "#00E5FF",
   combo: "#FFCC00",
   progression: "#22DD44",
+  levels: "#f97316",
   streak: "#8844FF",
   social: "#FF44CC",
 };
@@ -29,15 +32,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   accuracy: "ACCURACY",
   combo: "COMBO",
   progression: "PROGRESSION",
+  levels: "LEVELS",
   streak: "STREAK",
   social: "SOCIAL",
 };
 
-const CATEGORY_ORDER = ["speed", "accuracy", "combo", "progression", "streak", "social"];
+const CATEGORY_ORDER = ["speed", "accuracy", "combo", "progression", "levels", "streak", "social"];
 
 // ── Component ────────────────────────────────────────────
 
 export default function FeatsPage() {
+  const [tierProgress, setTierProgress] = useState<Record<string, { cleared: number; total: number }>>({});
   const router = useRouter();
   const { playerId } = usePlayer();
   const {
@@ -46,6 +51,23 @@ export default function FeatsPage() {
     totalCount,
     loading,
   } = useAchievements(playerId);
+
+  // Fetch level progress per tier for the overview section
+  useEffect(() => {
+    const pid = playerId;
+    if (pid == null) return;
+    api.getAllLevels(pid).then((data) => {
+      const progress: Record<string, { cleared: number; total: number }> = {};
+      for (const tier of TIERS) {
+        const tierLevels = data.filter((l: LevelDetail) => l.id >= tier.startLevel && l.id <= tier.endLevel);
+        progress[tier.key] = {
+          cleared: tierLevels.filter((l: LevelDetail) => l.player_stars && l.player_stars > 0).length,
+          total: tier.endLevel - tier.startLevel + 1,
+        };
+      }
+      setTierProgress(progress);
+    }).catch(() => {});
+  }, [playerId]);
 
   // When the achievements page loads, save the current unlock count to localStorage
   // so the sidebar badge stops showing the notification until new achievements arrive
@@ -139,17 +161,111 @@ export default function FeatsPage() {
 
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto w-full max-w-4xl">
-          {/* Summary banner */}
-          <div className="mb-6 rounded-2xl border border-white/5 bg-gradient-to-r from-[#1A0A28] to-[#0A0A14] p-4">
-            <p className="text-center text-[11px] font-bold tracking-[2px] text-text-muted">
-              FEATS UNLOCKED
-            </p>
-            <p className="text-center text-3xl font-black text-white">
-              {unlockedCount}{" "}
-              <span className="text-lg font-bold" style={{ color: "var(--text-muted)" }}>
-                / {totalCount}
+          {/* ═══ Level Tier Progress Section ═══ */}
+          {Object.keys(tierProgress).length > 0 && (
+          <div className="mb-6 rounded-2xl border border-neutral-800/60 bg-gradient-to-br from-neutral-900/50 to-neutral-950/50 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[10px] font-bold tracking-[2px] uppercase text-neutral-400">
+                Level Progress · {Object.values(tierProgress).reduce((s, t) => s + t.cleared, 0)}/{Object.values(tierProgress).reduce((s, t) => s + t.total, 0)}
+              </h2>
+              <span className="text-[10px] text-neutral-500">
+                {Object.values(tierProgress).reduce((s, t) => s + t.total, 0) > 0
+                  ? Math.round((Object.values(tierProgress).reduce((s, t) => s + t.cleared, 0) / Object.values(tierProgress).reduce((s, t) => s + t.total, 0)) * 100) + '%'
+                  : '0%'}
               </span>
-            </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              {TIERS.map((tier) => {
+                const p = tierProgress[tier.key];
+                const cleared = p?.cleared ?? 0;
+                const total = p?.total ?? 100;
+                const pct = total > 0 ? Math.round((cleared / total) * 100) : 0;
+
+                return (
+                  <div key={tier.key} className="text-center">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-bold" style={{ color: tier.color }}>{tier.label}</span>
+                      <span className="text-[10px] text-neutral-500">{cleared}/{total}</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-neutral-800/60">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${pct}%`,
+                          background: `linear-gradient(90deg, ${tier.color}, ${tier.color}88)`,
+                        }}
+                      />
+                    </div>
+                    <p className="mt-0.5 text-[9px] font-bold" style={{ color: pct >= 100 ? tier.color : "#52525b" }}>
+                      {pct >= 100 ? '✅ Complete' : `${pct}%`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          )}
+
+          {/* Overview banner — richer with progress + recently unlocked */}
+          <div className="mb-6 rounded-2xl border border-white/5 bg-gradient-to-r from-[#1A0A28] to-[#0A0A14] p-5">
+            <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
+              {/* Unlocked count with arc progress */}
+              <div className="flex items-center gap-4">
+                <div className="relative h-16 w-16 shrink-0">
+                  <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
+                    <circle
+                      cx="32" cy="32" r="28" fill="none"
+                      stroke="#f97316" strokeWidth="4" strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 28}`}
+                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - (totalCount > 0 ? unlockedCount / totalCount : 0))}`}
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-white">
+                    {unlockedCount}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold tracking-[2px] text-text-muted uppercase">
+                    FEATS UNLOCKED
+                  </p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    <span className="font-bold text-orange-400">{totalCount - unlockedCount}</span> remaining ·{' '}
+                    <span className="font-bold text-neutral-100">{Math.round((totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0))}%</span> complete
+                  </p>
+                </div>
+              </div>
+
+              {/* Recently Unlocked */}
+              {achievements.filter(a => a.unlocked).length > 0 && (
+                <div className="text-center md:text-right">
+                  <p className="text-[9px] font-bold tracking-[2px] text-text-muted uppercase mb-1.5">
+                    Recently Unlocked
+                  </p>
+                  <div className="flex flex-wrap justify-center md:justify-end gap-1.5">
+                    {achievements
+                      .filter(a => a.unlocked)
+                      .slice(-3)
+                      .reverse()
+                      .map(feat => (
+                        <div
+                          key={feat.achievement_id}
+                          className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold"
+                          style={{
+                            background: `${CATEGORY_COLORS[feat.category] || "#CC44FF"}18`,
+                            border: `1px solid ${CATEGORY_COLORS[feat.category] || "#CC44FF"}30`,
+                            color: CATEGORY_COLORS[feat.category] || "#CC44FF",
+                          }}
+                          title={feat.description}
+                        >
+                          <span>{feat.icon}</span>
+                          <span className="max-w-[80px] truncate">{feat.name}</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {loading ? (

@@ -8,6 +8,7 @@ import (
 type Repositories struct {
 	Player          *PlayerRepository
 	LevelProgress   *LevelProgressRepository
+	LevelConfig     *LevelRepository
 	Activity        *ActivityRepository
 	Settings        *SettingsRepository
 	Analytics       *AnalyticsRepository
@@ -19,6 +20,7 @@ type Repositories struct {
 	Progression     *ProgressionRepository
 	Achievement     *AchievementRepository
 	Streak          *StreakRepository
+	Feedback        *FeedbackRepository
 }
 
 // NewRepositories creates all repository instances from a single GORM DB connection.
@@ -26,6 +28,7 @@ func NewRepositories(db *gorm.DB) *Repositories {
 	return &Repositories{
 		Player:          NewPlayerRepository(db),
 		LevelProgress:   NewLevelProgressRepository(db),
+		LevelConfig:     NewLevelRepository(db),
 		Activity:        NewActivityRepository(db),
 		Settings:        NewSettingsRepository(db),
 		Analytics:       NewAnalyticsRepository(db),
@@ -37,5 +40,6 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		Progression:     NewProgressionRepository(db),
 		Achievement:     NewAchievementRepository(db),
 		Streak:          NewStreakRepository(db),
+		Feedback:        NewFeedbackRepository(db),
 	}
 }
