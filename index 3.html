@@ -1,0 +1,1230 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeStrike — Campaign</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070d;--bg2:#0d0d18;--bg3:#12121f;--bg4:#1a1a2e;--bg5:#22223a;
+  --border:#1e1e35;--border2:#2a2a45;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--text4:#475569;
+  --ember:#ff6b2b;--ember2:#ff8c42;--igneous:#ef4444;--igneous2:#f87171;
+  --magma:#dc2626;--magma2:#ef4444;--obsidian:#7c3aed;--obsidian2:#a78bfa;
+  --beyond:#f59e0b;--beyond2:#fbbf24;
+  --gold:#ffd700;--gold2:#fbbf24;--green:#22c55e;--blue:#3b82f6;
+  --premium:#c084fc;--premium2:#a855f7;
+  --radius:12px;--radius-sm:8px;--radius-xs:6px;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;line-height:1.5;
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px}
+a{text-decoration:none;color:inherit}
+
+/* PARTICLES */
+#particles{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
+.particle{
+  position:absolute;border-radius:50%;opacity:0;
+  background:radial-gradient(circle,var(--ember) 0%,transparent 70%);
+  animation:floatUp linear infinite;
+}
+@keyframes floatUp{
+  0%{transform:translateY(100vh) scale(0);opacity:0}
+  10%{opacity:0.6}
+  90%{opacity:0.3}
+  100%{transform:translateY(-10vh) scale(1);opacity:0}
+}
+
+/* NAVBAR */
+.navbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(7,7,13,0.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);padding:0 24px;height:64px;
+  display:flex;align-items:center;
+}
+.nav-container{width:100%;max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,#ff6b2b,#ff3d00);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:16px;box-shadow:0 0 20px rgba(255,107,43,0.3);
+}
+.logo-text{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:800;letter-spacing:1px}
+.logo-text .highlight{color:var(--ember)}
+.nav-links{display:flex;gap:4px}
+.nav-link{
+  display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);
+  font-size:13px;font-weight:500;color:var(--text2);transition:all .2s;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;letter-spacing:0.5px;
+}
+.nav-link:hover{color:var(--text);background:var(--bg4)}
+.nav-link.active{color:var(--ember);background:rgba(255,107,43,0.12)}
+.nav-link i{font-size:13px}
+.nav-user{display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 12px;border-radius:var(--radius-sm);transition:background .2s}
+.nav-user:hover{background:var(--bg4)}
+.nav-user img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--border2)}
+.nav-user span{font-size:14px;font-weight:500}
+
+/* MAIN */
+.main-content{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:24px 20px 80px}
+
+/* DASHBOARD */
+.dashboard{
+  display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;margin-bottom:20px;
+}
+.dash-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 20px;display:flex;align-items:center;gap:14px;
+}
+.rank-card{justify-content:center;gap:16px}
+.rank-badge{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#cd7f32,#8B4513);
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  box-shadow:0 0 20px rgba(205,127,50,0.3);border:2px solid rgba(205,127,50,0.4);
+}
+.rank-info{display:flex;flex-direction:column}
+.rank-name{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold)}
+.rank-level{font-size:12px;color:var(--text3)}
+.xp-card{flex-direction:column;align-items:stretch;gap:8px}
+.xp-info{display:flex;justify-content:space-between;font-size:12px;color:var(--text2)}
+.xp-info span:last-child{font-weight:600;color:var(--text)}
+.xp-bar{height:8px;background:var(--bg5);border-radius:4px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--ember),var(--gold));border-radius:4px;transition:width 1s ease;position:relative}
+.xp-fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:shimmer 2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.season-card{flex-direction:column;align-items:center;gap:2px;text-align:center}
+.season-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--ember);font-weight:700;font-family:'Rajdhani',sans-serif}
+.season-name{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--text)}
+.season-timer{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ENGAGEMENT BAR */
+.engagement-bar{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:28px}
+.streak-card{
+  background:linear-gradient(135deg,rgba(255,107,43,0.1),rgba(255,61,0,0.05));
+  border:1px solid rgba(255,107,43,0.2);border-radius:var(--radius);
+  padding:16px 20px;display:flex;align-items:center;gap:14px;
+}
+.streak-fire{font-size:36px;animation:fireGlow 1.5s ease-in-out infinite alternate}
+@keyframes fireGlow{0%{filter:brightness(1);transform:scale(1)}100%{filter:brightness(1.3);transform:scale(1.1)}}
+.streak-info{display:flex;flex-direction:column;gap:6px}
+.streak-count{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;color:var(--ember2)}
+.streak-dots{display:flex;gap:5px}
+.streak-dots .dot{
+  width:20px;height:20px;border-radius:50%;border:2px solid var(--bg5);
+  display:flex;align-items:center;justify-content:center;font-size:8px;
+  transition:all .3s;
+}
+.streak-dots .dot.completed{border-color:var(--ember);background:rgba(255,107,43,0.2)}
+.streak-dots .dot.completed::after{content:'✓';color:var(--ember);font-size:10px;font-weight:700}
+.streak-dots .dot.current{border-color:var(--ember);animation:dotPulse 1.5s infinite}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,43,0.4)}50%{box-shadow:0 0 0 6px rgba(255,107,43,0)}}
+
+.daily-challenge-card{
+  background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(99,102,241,0.05));
+  border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius);
+  padding:14px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;
+  transition:all .25s;
+}
+.daily-challenge-card:hover{border-color:rgba(59,130,246,0.4);transform:translateY(-1px);box-shadow:0 4px 20px rgba(59,130,246,0.1)}
+.challenge-icon{font-size:28px;filter:drop-shadow(0 0 8px rgba(251,191,36,0.5))}
+.challenge-info{flex:1;display:flex;flex-direction:column}
+.challenge-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--blue);font-weight:700;font-family:'Rajdhani',sans-serif}
+.challenge-desc{font-size:13px;color:var(--text2)}
+.challenge-reward{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap}
+.challenge-btn{
+  padding:8px 20px;border:none;border-radius:var(--radius-xs);cursor:pointer;
+  background:linear-gradient(135deg,var(--blue),#6366f1);color:#fff;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+  letter-spacing:1px;text-transform:uppercase;transition:all .2s;
+}
+.challenge-btn:hover{transform:scale(1.05);box-shadow:0 4px 15px rgba(59,130,246,0.4)}
+
+/* ZONE */
+.zone{margin-bottom:20px;position:relative}
+.zone-header{
+  display:flex;align-items:center;gap:16px;padding:16px 24px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;
+  position:relative;overflow:hidden;
+}
+.zone-header::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:2px}
+.zone-title{display:flex;align-items:baseline;gap:8px;min-width:180px}
+.zone-title h2{
+  font-family:'Orbitron',sans-serif;font-size:16px;font-weight:800;
+  letter-spacing:3px;
+}
+.zone-range{font-size:12px;color:var(--text4)}
+.zone-progress{flex:1;display:flex;align-items:center;gap:12px}
+.zone-cleared{font-size:12px;color:var(--text3);min-width:65px}
+.zone-progress-bar{flex:1;height:6px;background:var(--bg5);border-radius:3px;overflow:hidden}
+.zone-progress-fill{height:100%;border-radius:3px;transition:width 1.5s ease}
+.zone-percent{font-size:12px;font-weight:600;color:var(--text2);min-width:32px;text-align:right}
+.zone-reward{
+  display:flex;align-items:center;gap:10px;padding:6px 14px;
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+}
+.reward-label{font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:1px}
+.reward-item{display:flex;align-items:center;gap:6px}
+.reward-icon{font-size:20px}
+.reward-name{font-size:12px;font-weight:600;color:var(--text2)}
+
+/* ZONE PATH */
+.zone-path{
+  background:var(--bg2);border:1px solid var(--border);border-top:none;
+  border-radius:0 0 var(--radius) var(--radius);
+  padding:20px 24px 16px;position:relative;overflow:visible;
+}
+.path-container{position:relative;margin-bottom:8px}
+.path-track{
+  position:absolute;top:50%;left:24px;right:60px;height:3px;
+  background:var(--bg5);border-radius:2px;transform:translateY(-50%);
+}
+.path-track-fill{
+  height:100%;border-radius:2px;transition:width 1s ease;
+  position:relative;
+}
+.path-track-fill::after{
+  content:'';position:absolute;right:0;top:-3px;width:9px;height:9px;
+  border-radius:50%;animation:trackPulse 1.5s infinite;
+}
+@keyframes trackPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.5)}}
+
+.path-nodes{display:flex;gap:12px;overflow-x:auto;padding:8px 0 12px;position:relative;z-index:2;scroll-behavior:smooth}
+.path-nodes::-webkit-scrollbar{height:4px}
+.path-nodes::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+.level-node{
+  flex-shrink:0;width:68px;height:80px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;cursor:pointer;
+  border-radius:var(--radius-sm);border:2px solid var(--bg5);
+  background:var(--bg3);transition:all .3s;position:relative;
+}
+.level-node:hover{transform:translateY(-3px)}
+.level-node .node-level{font-size:11px;color:var(--text3);font-weight:600}
+.level-node .node-icon{font-size:16px}
+
+.level-node.completed{
+  border-color:rgba(255,107,43,0.5);background:rgba(255,107,43,0.08);
+}
+.level-node.completed .node-level{color:var(--ember)}
+.level-node.completed .node-icon{color:var(--ember)}
+.level-node.completed:hover{border-color:var(--ember);box-shadow:0 4px 20px rgba(255,107,43,0.2)}
+
+.level-node.current{
+  border-color:var(--ember);background:rgba(255,107,43,0.12);
+  animation:currentPulse 2s infinite;
+}
+@keyframes currentPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,107,43,0.3)}
+  50%{box-shadow:0 0 0 8px rgba(255,107,43,0)}
+}
+.level-node.current .node-level{color:var(--ember);font-weight:700}
+.level-node.current::before{
+  content:'▼';position:absolute;top:-18px;font-size:12px;color:var(--ember);
+  animation:bounceDown 1s infinite;
+}
+@keyframes bounceDown{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+.level-node.locked{opacity:0.4;cursor:not-allowed}
+.level-node.locked:hover{transform:none;opacity:0.5}
+.level-node.locked .node-level{color:var(--text4)}
+.level-node.locked .node-icon{color:var(--text4)}
+
+.level-node.boss{
+  width:76px;height:88px;border-color:rgba(255,215,0,0.3);
+  background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,107,43,0.08));
+}
+.level-node.boss .node-level{color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px}
+.level-node.boss .node-icon{font-size:20px;color:var(--gold)}
+.level-node.boss.locked{opacity:0.3}
+.level-node.boss::after{
+  content:'';position:absolute;inset:-2px;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,var(--gold),var(--ember),var(--gold));
+  opacity:0.15;z-index:-1;
+}
+
+.level-node.premium-node{
+  border-color:rgba(192,132,252,0.3);background:rgba(192,132,252,0.06);
+}
+.level-node.premium-node .node-level{color:var(--premium)}
+.level-node.premium-node .node-icon{color:var(--premium)}
+.level-node.premium-node::before{
+  content:'PRO';position:absolute;top:-8px;right:-4px;
+  font-size:7px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,var(--premium2),var(--premium));
+  padding:2px 4px;border-radius:3px;letter-spacing:0.5px;
+}
+.level-node.premium-node.locked{opacity:0.25}
+
+.node-stars{display:flex;gap:2px;font-size:8px;color:var(--bg5)}
+.level-node.completed .node-stars i{color:var(--gold)}
+
+.path-more{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:8px;color:var(--text4);font-size:12px;cursor:pointer;
+  transition:color .2s;
+}
+.path-more:hover{color:var(--text2)}
+.path-more i{font-size:10px}
+
+.zone-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;background:var(--bg2);border:1px solid var(--border);
+  border-top:none;border-radius:0 0 var(--radius) var(--radius);
+  margin-top:-1px;
+}
+.zone-footer-text{font-size:12px;color:var(--text4)}
+.zone-footer-reward{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+
+/* ZONE LOCKED */
+.zone-locked .zone-header{opacity:0.5}
+.zone-locked .zone-path{
+  position:relative;
+  min-height:100px;
+}
+.zone-locked .zone-path::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(7,7,13,0.15) 3px,rgba(7,7,13,0.15) 4px);
+  border-radius:0 0 var(--radius) var(--radius);z-index:1;
+}
+.zone-lock-overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:2;
+  background:rgba(7,7,13,0.7);backdrop-filter:blur(4px);
+  border-radius:0 0 var(--radius) var(--radius);gap:8px;
+}
+.zone-lock-overlay i{font-size:28px;color:var(--text4)}
+.zone-lock-overlay span{font-size:13px;color:var(--text3);font-weight:500}
+.zone-lock-overlay .lock-req{
+  font-size:12px;color:var(--text4);
+  display:flex;align-items:center;gap:6px;
+}
+.zone-lock-overlay .lock-req i{font-size:11px}
+
+/* STRIKE PASS BANNER */
+.strike-pass-banner{
+  margin:28px 0;position:relative;border-radius:var(--radius);overflow:hidden;
+  cursor:pointer;transition:transform .3s;
+}
+.strike-pass-banner:hover{transform:translateY(-2px)}
+.strike-pass-banner .sp-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(99,102,241,0.1),rgba(59,130,246,0.08));
+  border:1px solid rgba(168,85,247,0.25);border-radius:var(--radius);
+}
+.strike-pass-banner .sp-glow{
+  position:absolute;top:-50%;right:-20%;width:300px;height:300px;
+  background:radial-gradient(circle,rgba(168,85,247,0.15),transparent 70%);
+  animation:spGlow 4s ease-in-out infinite alternate;
+}
+@keyframes spGlow{0%{opacity:0.5;transform:scale(1)}100%{opacity:1;transform:scale(1.2)}}
+.sp-content{position:relative;z-index:1;padding:24px 28px}
+.sp-badge{
+  display:inline-block;padding:3px 10px;border-radius:4px;
+  background:linear-gradient(135deg,var(--premium2),var(--premium));
+  font-size:9px;font-weight:800;letter-spacing:1.5px;color:#fff;
+  font-family:'Rajdhani',sans-serif;margin-bottom:8px;
+}
+.sp-title{
+  font-family:'Orbitron',sans-serif;font-size:20px;font-weight:800;
+  background:linear-gradient(135deg,var(--premium),var(--blue));-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;margin-bottom:4px;
+}
+.sp-desc{font-size:13px;color:var(--text2);margin-bottom:16px}
+.sp-rewards{display:flex;gap:20px;margin-bottom:18px;flex-wrap:wrap}
+.sp-reward-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.sp-reward-icon{font-size:20px}
+.sp-cta{
+  padding:12px 28px;border:none;border-radius:var(--radius-sm);cursor:pointer;
+  background:linear-gradient(135deg,var(--premium2),var(--premium),var(--blue));
+  color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;
+  letter-spacing:0.5px;transition:all .3s;
+}
+.sp-cta:hover{box-shadow:0 4px 25px rgba(168,85,247,0.4);transform:scale(1.02)}
+
+/* ZONE PREVIEW REWARDS */
+.zone-preview-rewards{
+  display:flex;align-items:center;gap:12px;padding:12px 24px;
+  background:var(--bg3);border:1px solid var(--border);border-top:none;
+  border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;
+}
+.preview-label{font-size:11px;color:var(--text4);text-transform:uppercase;letter-spacing:1px}
+.preview-items{display:flex;gap:12px;flex:1}
+.preview-item{
+  display:flex;align-items:center;gap:6px;padding:4px 10px;
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-xs);
+  font-size:11px;color:var(--text3);
+}
+.preview-item i,.preview-item span:first-child{color:var(--gold);font-size:14px}
+
+/* LEADERBOARD PREVIEW */
+.leaderboard-section{
+  margin-top:32px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+}
+.lb-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 24px;border-bottom:1px solid var(--border);
+}
+.lb-header h3{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.lb-header h3 i{color:var(--gold)}
+.lb-header a{font-size:12px;color:var(--ember);font-weight:500;cursor:pointer}
+.lb-header a:hover{text-decoration:underline}
+.lb-list{padding:8px 0}
+.lb-item{
+  display:flex;align-items:center;gap:14px;padding:10px 24px;
+  transition:background .2s;
+}
+.lb-item:hover{background:var(--bg4)}
+.lb-rank{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;
+  font-family:'Orbitron',sans-serif;
+}
+.lb-rank.gold{background:linear-gradient(135deg,#ffd700,#f59e0b);color:#000}
+.lb-rank.silver{background:linear-gradient(135deg,#c0c0c0,#94a3b8);color:#000}
+.lb-rank.bronze{background:linear-gradient(135deg,#cd7f32,#92400e);color:#fff}
+.lb-rank.normal{background:var(--bg5);color:var(--text3)}
+.lb-avatar{
+  width:36px;height:36px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--border);
+}
+.lb-name{flex:1;font-size:14px;font-weight:500}
+.lb-name.you{color:var(--ember)}
+.lb-level{font-size:12px;color:var(--text3);font-family:'Orbitron',sans-serif}
+.lb-zone-badge{
+  padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;
+  font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;
+}
+.lb-zone-badge.ember{background:rgba(255,107,43,0.15);color:var(--ember)}
+.lb-zone-badge.igneous{background:rgba(239,68,68,0.15);color:var(--igneous)}
+.lb-zone-badge.magma{background:rgba(220,38,38,0.15);color:var(--magma)}
+
+/* BOOSTER SHOP TEASER */
+.booster-teaser{
+  margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+}
+.booster-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;text-align:center;cursor:pointer;transition:all .25s;
+}
+.booster-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+.booster-icon{font-size:28px;margin-bottom:8px}
+.booster-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.booster-desc{font-size:11px;color:var(--text3);margin-bottom:10px}
+.booster-price{
+  display:inline-block;padding:5px 14px;border-radius:var(--radius-xs);
+  background:linear-gradient(135deg,var(--bg5),var(--bg4));
+  border:1px solid var(--border2);font-size:12px;font-weight:600;color:var(--gold);
+}
+
+/* MODALS */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+  z-index:1000;display:none;align-items:center;justify-content:center;
+  animation:fadeIn .2s ease;
+}
+.modal-overlay.active{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  width:90%;max-width:480px;max-height:90vh;overflow-y:auto;
+  animation:modalSlide .3s ease;
+}
+@keyframes modalSlide{from{opacity:0;transform:translateY(20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px;border-bottom:1px solid var(--border);
+}
+.modal-header h3{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700}
+.modal-close{
+  width:32px;height:32px;border-radius:50%;border:1px solid var(--border);
+  background:var(--bg4);color:var(--text3);cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:all .2s;font-size:14px;
+}
+.modal-close:hover{background:var(--bg5);color:var(--text)}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:12px;justify-content:flex-end}
+
+/* LEVEL MODAL SPECIFICS */
+.level-modal-visual{
+  text-align:center;padding:20px 0;margin-bottom:16px;
+}
+.level-modal-number{
+  font-family:'Orbitron',sans-serif;font-size:48px;font-weight:900;
+  background:linear-gradient(135deg,var(--ember),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.level-modal-zone{font-size:12px;color:var(--text3);margin-top:4px}
+.level-modal-stars{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.level-modal-stars i{font-size:24px;color:var(--bg5)}
+.level-modal-stars i.filled{color:var(--gold)}
+.level-modal-info{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.level-info-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 12px;background:var(--bg);border-radius:var(--radius-xs);
+  font-size:13px;
+}
+.level-info-row .label{color:var(--text3)}
+.level-info-row .value{font-weight:600}
+
+.btn-primary{
+  padding:10px 24px;border:none;border-radius:var(--radius-sm);cursor:pointer;
+  background:linear-gradient(135deg,var(--ember),#ff3d00);color:#fff;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;
+  letter-spacing:0.5px;transition:all .2s;
+}
+.btn-primary:hover{box-shadow:0 4px 15px rgba(255,107,43,0.4);transform:scale(1.02)}
+.btn-secondary{
+  padding:10px 24px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;background:var(--bg4);color:var(--text2);
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;transition:all .2s;
+}
+.btn-secondary:hover{background:var(--bg5);color:var(--text)}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  padding:12px 20px;display:flex;align-items:center;gap:10px;z-index:2000;
+  transition:transform .4s cubic-bezier(0.175,0.885,0.32,1.275);
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast i{font-size:18px}
+.toast span{font-size:13px;font-weight:500}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .dashboard{grid-template-columns:1fr}
+  .engagement-bar{grid-template-columns:1fr}
+  .nav-links{display:none}
+  .booster-teaser{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .zone-header{flex-wrap:wrap;gap:10px;padding:14px 16px}
+  .zone-progress{width:100%;order:3}
+  .zone-reward{order:4}
+  .zone-path{padding:16px}
+  .level-node{width:56px;height:68px}
+  .level-node .node-level{font-size:10px}
+  .level-node.boss{width:64px;height:76px}
+  .sp-content{padding:16px 20px}
+  .sp-title{font-size:16px}
+  .lb-item{padding:8px 16px}
+  .main-content{padding:16px 12px 60px}
+}
+@media(max-width:480px){
+  .level-node{width:50px;height:62px}
+  .level-node.boss{width:56px;height:68px}
+  .path-nodes{gap:8px}
+  .nav-user span{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a class="logo">
+      <div class="logo-icon"><i class="fas fa-fire"></i></div>
+      <span class="logo-text">TYPE<span class="highlight">STRIKE</span></span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link"><i class="fas fa-home"></i> Home</a>
+      <a class="nav-link active"><i class="fas fa-bolt"></i> Strike</a>
+      <a class="nav-link"><i class="fas fa-graduation-cap"></i> Learn</a>
+      <a class="nav-link"><i class="fas fa-code"></i> Coder</a>
+      <a class="nav-link"><i class="fas fa-trophy"></i> Ranks</a>
+      <a class="nav-link"><i class="fas fa-store"></i> Shop</a>
+    </div>
+    <div class="nav-user">
+      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sandeep&backgroundColor=ffdfbf" alt="Sandeep">
+      <span>Sandeep</span>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+
+  <!-- DASHBOARD -->
+  <section class="dashboard">
+    <div class="dash-card rank-card">
+      <div class="rank-badge">🥉</div>
+      <div class="rank-info">
+        <span class="rank-name">Bronze I</span>
+        <span class="rank-level">Level 3</span>
+      </div>
+    </div>
+    <div class="dash-card xp-card">
+      <div class="xp-info">
+        <span>Experience</span>
+        <span id="xpText">150 / 500 XP</span>
+      </div>
+      <div class="xp-bar">
+        <div class="xp-fill" id="xpFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="dash-card season-card">
+      <span class="season-label">Season 3</span>
+      <span class="season-name">Inferno Path</span>
+      <span class="season-timer" id="seasonTimer">14d 6h remaining</span>
+    </div>
+  </section>
+
+  <!-- ENGAGEMENT BAR -->
+  <section class="engagement-bar">
+    <div class="streak-card">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-info">
+        <span class="streak-count">5 Day Streak!</span>
+        <div class="streak-dots">
+          <span class="dot completed"></span>
+          <span class="dot completed"></span>
+          <span class="dot completed"></span>
+          <span class="dot completed"></span>
+          <span class="dot completed"></span>
+          <span class="dot current"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    </div>
+    <div class="daily-challenge-card" onclick="openModal('dailyModal')">
+      <div class="challenge-icon">⚡</div>
+      <div class="challenge-info">
+        <span class="challenge-label">Daily Challenge</span>
+        <span class="challenge-desc">Type 100 WPM in 60 seconds — 1 attempt left</span>
+      </div>
+      <div class="challenge-reward">+500 XP</div>
+      <button class="challenge-btn" onclick="event.stopPropagation();showToast('Starting Daily Challenge...','fas fa-bolt','var(--blue)')">PLAY</button>
+    </div>
+  </section>
+
+  <!-- ZONE: EMBER (Active) -->
+  <section class="zone zone-active" id="zoneEmber">
+    <div class="zone-header">
+      <div class="zone-accent" style="background:var(--ember)"></div>
+      <div class="zone-title">
+        <h2 style="color:var(--ember)">EMBER</h2>
+        <span class="zone-range">(1-100)</span>
+      </div>
+      <div class="zone-progress">
+        <span class="zone-cleared">3 cleared</span>
+        <div class="zone-progress-bar">
+          <div class="zone-progress-fill" id="emberProgress" style="width:0%;background:linear-gradient(90deg,var(--ember),var(--ember2))"></div>
+        </div>
+        <span class="zone-percent">3%</span>
+      </div>
+      <div class="zone-reward">
+        <span class="reward-label">Reward</span>
+        <div class="reward-item">
+          <span class="reward-icon">👑</span>
+          <span class="reward-name">Ember Crown</span>
+        </div>
+      </div>
+    </div>
+    <div class="zone-path" style="--zone-color:var(--ember)">
+      <div class="path-container">
+        <div class="path-track">
+          <div class="path-track-fill" id="emberTrack" style="width:0%;background:linear-gradient(90deg,var(--ember),var(--ember2))"></div>
+        </div>
+        <div class="path-nodes" id="emberNodes"></div>
+      </div>
+      <div class="path-more" onclick="showToast('Complete current levels to reveal more!','fas fa-lock','var(--text3)')">
+        <span>+89 more levels</span>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+    </div>
+    <div class="zone-footer">
+      <span class="zone-footer-text">Complete levels to unlock more rewards</span>
+      <div class="zone-footer-reward"><i class="fas fa-gift"></i> Zone completion: Ember Crown frame</div>
+    </div>
+  </section>
+
+  <!-- STRIKE PASS BANNER -->
+  <section class="strike-pass-banner" onclick="openModal('strikePassModal')">
+    <div class="sp-bg"></div>
+    <div class="sp-glow"></div>
+    <div class="sp-content">
+      <div class="sp-badge">SEASON 3 · LIMITED</div>
+      <h3 class="sp-title">Strike Pass</h3>
+      <p class="sp-desc">Unlock exclusive rewards, bonus XP, and premium keyboard themes across all zones!</p>
+      <div class="sp-rewards">
+        <div class="sp-reward-item"><span class="sp-reward-icon">🔥</span><span>Fire Avatar Frame</span></div>
+        <div class="sp-reward-item"><span class="sp-reward-icon">⌨️</span><span>Lava Keyboard Theme</span></div>
+        <div class="sp-reward-item"><span class="sp-reward-icon">⭐</span><span>2x XP Boost (30 days)</span></div>
+        <div class="sp-reward-item"><span class="sp-reward-icon">🎯</span><span>Exclusive Badge</span></div>
+      </div>
+      <button class="sp-cta" onclick="event.stopPropagation();showToast('Redirecting to checkout...','fas fa-credit-card','var(--premium)')">Get Strike Pass — $4.99/season</button>
+    </div>
+  </section>
+
+  <!-- ZONE: IGNEOUS (Locked) -->
+  <section class="zone zone-locked" id="zoneIgneous">
+    <div class="zone-header">
+      <div class="zone-accent" style="background:var(--igneous)"></div>
+      <div class="zone-title">
+        <h2 style="color:var(--igneous)">IGNEOUS</h2>
+        <span class="zone-range">(101-200)</span>
+      </div>
+      <div class="zone-progress">
+        <span class="zone-cleared">0 cleared</span>
+        <div class="zone-progress-bar">
+          <div class="zone-progress-fill" style="width:0%;background:linear-gradient(90deg,var(--igneous),var(--igneous2))"></div>
+        </div>
+        <span class="zone-percent">0%</span>
+      </div>
+      <div class="zone-reward">
+        <span class="reward-label">Reward</span>
+        <div class="reward-item">
+          <span class="reward-icon">🛡️</span>
+          <span class="reward-name">Obsidian Shield</span>
+        </div>
+      </div>
+    </div>
+    <div class="zone-path" style="--zone-color:var(--igneous)">
+      <div class="path-container">
+        <div class="path-track"><div class="path-track-fill" style="width:0%;background:linear-gradient(90deg,var(--igneous),var(--igneous2))"></div></div>
+        <div class="path-nodes" id="igneousNodes"></div>
+      </div>
+      <div class="path-more"><span>+89 more levels</span><i class="fas fa-chevron-right"></i></div>
+      <div class="zone-lock-overlay">
+        <i class="fas fa-lock"></i>
+        <span>Complete Ember zone to unlock</span>
+        <div class="lock-req"><i class="fas fa-flag-checkered"></i> Clear all 100 Ember levels</div>
+      </div>
+    </div>
+    <div class="zone-preview-rewards">
+      <span class="preview-label">Preview Rewards</span>
+      <div class="preview-items">
+        <div class="preview-item"><i class="fas fa-medal"></i> Bronze III Badge</div>
+        <div class="preview-item"><i class="fas fa-keyboard"></i> Magma Theme</div>
+        <div class="preview-item"><i class="fas fa-star"></i> +500 Bonus XP</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE: MAGMA CORE (Locked) -->
+  <section class="zone zone-locked" id="zoneMagma">
+    <div class="zone-header">
+      <div class="zone-accent" style="background:var(--magma)"></div>
+      <div class="zone-title">
+        <h2 style="color:var(--magma)">MAGMA CORE</h2>
+        <span class="zone-range">(201-300)</span>
+      </div>
+      <div class="zone-progress">
+        <span class="zone-cleared">0 cleared</span>
+        <div class="zone-progress-bar"><div class="zone-progress-fill" style="width:0%;background:linear-gradient(90deg,var(--magma),var(--magma2))"></div></div>
+        <span class="zone-percent">0%</span>
+      </div>
+      <div class="zone-reward"><span class="reward-label">Reward</span><div class="reward-item"><span class="reward-icon">🌋</span><span class="reward-name">Magma Aura</span></div></div>
+    </div>
+    <div class="zone-path" style="--zone-color:var(--magma)">
+      <div class="path-container">
+        <div class="path-track"><div class="path-track-fill" style="width:0%;background:linear-gradient(90deg,var(--magma),var(--magma2))"></div></div>
+        <div class="path-nodes" id="magmaNodes"></div>
+      </div>
+      <div class="path-more"><span>+89 more levels</span><i class="fas fa-chevron-right"></i></div>
+      <div class="zone-lock-overlay">
+        <i class="fas fa-lock"></i>
+        <span>Complete Igneous zone to unlock</span>
+        <div class="lock-req"><i class="fas fa-flag-checkered"></i> Clear all 100 Igneous levels</div>
+      </div>
+    </div>
+    <div class="zone-preview-rewards">
+      <span class="preview-label">Preview Rewards</span>
+      <div class="preview-items">
+        <div class="preview-item"><i class="fas fa-medal"></i> Silver I Badge</div>
+        <div class="preview-item"><i class="fas fa-fire"></i> Fire Trail Effect</div>
+        <div class="preview-item"><i class="fas fa-star"></i> +1000 Bonus XP</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE: OBSIDIAN (Locked) -->
+  <section class="zone zone-locked" id="zoneObsidian">
+    <div class="zone-header">
+      <div class="zone-accent" style="background:var(--obsidian)"></div>
+      <div class="zone-title">
+        <h2 style="color:var(--obsidian)">OBSIDIAN</h2>
+        <span class="zone-range">(301-400)</span>
+      </div>
+      <div class="zone-progress">
+        <span class="zone-cleared">0 cleared</span>
+        <div class="zone-progress-bar"><div class="zone-progress-fill" style="width:0%;background:linear-gradient(90deg,var(--obsidian),var(--obsidian2))"></div></div>
+        <span class="zone-percent">0%</span>
+      </div>
+      <div class="zone-reward"><span class="reward-label">Reward</span><div class="reward-item"><span class="reward-icon">🔮</span><span class="reward-name">Void Crystal</span></div></div>
+    </div>
+    <div class="zone-path" style="--zone-color:var(--obsidian)">
+      <div class="path-container">
+        <div class="path-track"><div class="path-track-fill" style="width:0%;background:linear-gradient(90deg,var(--obsidian),var(--obsidian2))"></div></div>
+        <div class="path-nodes" id="obsidianNodes"></div>
+      </div>
+      <div class="path-more"><span>+89 more levels</span><i class="fas fa-chevron-right"></i></div>
+      <div class="zone-lock-overlay">
+        <i class="fas fa-lock"></i>
+        <span>Complete Magma Core to unlock</span>
+        <div class="lock-req"><i class="fas fa-flag-checkered"></i> Clear all 100 Magma Core levels</div>
+      </div>
+    </div>
+    <div class="zone-preview-rewards">
+      <span class="preview-label">Preview Rewards</span>
+      <div class="preview-items">
+        <div class="preview-item"><i class="fas fa-medal"></i> Gold III Badge</div>
+        <div class="preview-item"><i class="fas fa-magic"></i> Purple Rain Effect</div>
+        <div class="preview-item"><i class="fas fa-star"></i> +2000 Bonus XP</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE: BEYOND (Locked) -->
+  <section class="zone zone-locked" id="zoneBeyond">
+    <div class="zone-header">
+      <div class="zone-accent" style="background:var(--beyond)"></div>
+      <div class="zone-title">
+        <h2 style="color:var(--beyond)">BEYOND</h2>
+        <span class="zone-range">(401-500)</span>
+      </div>
+      <div class="zone-progress">
+        <span class="zone-cleared">0 cleared</span>
+        <div class="zone-progress-bar"><div class="zone-progress-fill" style="width:0%;background:linear-gradient(90deg,var(--beyond),var(--beyond2))"></div></div>
+        <span class="zone-percent">0%</span>
+      </div>
+      <div class="zone-reward"><span class="reward-label">Reward</span><div class="reward-item"><span class="reward-icon">⭐</span><span class="reward-name">Celestial Crown</span></div></div>
+    </div>
+    <div class="zone-path" style="--zone-color:var(--beyond)">
+      <div class="path-container">
+        <div class="path-track"><div class="path-track-fill" style="width:0%;background:linear-gradient(90deg,var(--beyond),var(--beyond2))"></div></div>
+        <div class="path-nodes" id="beyondNodes"></div>
+      </div>
+      <div class="path-more"><span>+89 more levels</span><i class="fas fa-chevron-right"></i></div>
+      <div class="zone-lock-overlay">
+        <i class="fas fa-lock"></i>
+        <span>Complete Obsidian zone to unlock</span>
+        <div class="lock-req"><i class="fas fa-flag-checkered"></i> Clear all 100 Obsidian levels</div>
+      </div>
+    </div>
+    <div class="zone-preview-rewards">
+      <span class="preview-label">Preview Rewards</span>
+      <div class="preview-items">
+        <div class="preview-item"><i class="fas fa-medal"></i> Platinum Badge</div>
+        <div class="preview-item"><i class="fas fa-crown"></i> Golden Typing Effect</div>
+        <div class="preview-item"><i class="fas fa-star"></i> +5000 Bonus XP</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOOSTER TEASER -->
+  <div class="booster-teaser">
+    <div class="booster-card" onclick="showToast('XP Boost activated! 2x for 1 hour','fas fa-bolt','var(--gold)')">
+      <div class="booster-icon">⚡</div>
+      <div class="booster-name">XP Boost</div>
+      <div class="booster-desc">2x experience for 1 hour</div>
+      <div class="booster-price">200 Coins</div>
+    </div>
+    <div class="booster-card" onclick="showToast('Hint unlocked! Shows common letters','fas fa-lightbulb','var(--green)')">
+      <div class="booster-icon">💡</div>
+      <div class="booster-name">Hint Pack</div>
+      <div class="booster-desc">3 letter hints per level</div>
+      <div class="booster-price">100 Coins</div>
+    </div>
+    <div class="booster-card" onclick="showToast('Shield active! No streak loss today','fas fa-shield-alt','var(--blue)')">
+      <div class="booster-icon">🛡️</div>
+      <div class="booster-name">Streak Shield</div>
+      <div class="booster-desc">Protect your streak for 1 day</div>
+      <div class="booster-price">300 Coins</div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <section class="leaderboard-section">
+    <div class="lb-header">
+      <h3><i class="fas fa-trophy"></i> Leaderboard — Season 3</h3>
+      <a onclick="showToast('Full leaderboard coming soon!','fas fa-list','var(--text3)')">View All <i class="fas fa-arrow-right" style="font-size:10px"></i></a>
+    </div>
+    <div class="lb-list" id="leaderboard"></div>
+  </section>
+
+</div>
+
+<!-- LEVEL DETAIL MODAL -->
+<div class="modal-overlay" id="levelModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="levelModalTitle">Level 1</h3>
+      <button class="modal-close" onclick="closeModal('levelModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="level-modal-visual">
+        <div class="level-modal-number" id="levelModalNumber">L1</div>
+        <div class="level-modal-zone" id="levelModalZone">Ember Zone</div>
+        <div class="level-modal-stars" id="levelModalStars">
+          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+        </div>
+      </div>
+      <div class="level-modal-info">
+        <div class="level-info-row"><span class="label">Target WPM</span><span class="value">40 WPM</span></div>
+        <div class="level-info-row"><span class="label">Accuracy</span><span class="value">90% minimum</span></div>
+        <div class="level-info-row"><span class="label">XP Reward</span><span class="value" style="color:var(--gold)">+30 XP</span></div>
+        <div class="level-info-row"><span class="label">Time Limit</span><span class="value">120 seconds</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('levelModal')">Close</button>
+      <button class="btn-primary" onclick="startLevel()"><i class="fas fa-play"></i> Start Level</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAILY CHALLENGE MODAL -->
+<div class="modal-overlay" id="dailyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚡ Daily Challenge</h3>
+      <button class="modal-close" onclick="closeModal('dailyModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="level-modal-visual">
+        <div class="level-modal-number" style="font-size:36px;background:linear-gradient(135deg,var(--blue),var(--premium));-webkit-background-clip:text;-webkit-text-fill-color:transparent">⚡ DAILY</div>
+        <div class="level-modal-zone" style="color:var(--blue)">Resets in <span id="dailyTimer">14:32:07</span></div>
+      </div>
+      <div class="level-modal-info">
+        <div class="level-info-row"><span class="label">Challenge</span><span class="value">100 WPM in 60s</span></div>
+        <div class="level-info-row"><span class="label">Accuracy</span><span class="value">95% minimum</span></div>
+        <div class="level-info-row"><span class="label">XP Reward</span><span class="value" style="color:var(--gold)">+500 XP</span></div>
+        <div class="level-info-row"><span class="label">Attempts Left</span><span class="value" style="color:var(--ember)">1 of 3</span></div>
+        <div class="level-info-row"><span class="label">Streak Bonus</span><span class="value" style="color:var(--green)">+150 XP (5 day streak)</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('dailyModal')">Later</button>
+      <button class="btn-primary" onclick="startLevel()" style="background:linear-gradient(135deg,var(--blue),var(--premium))"><i class="fas fa-play"></i> Accept Challenge</button>
+    </div>
+  </div>
+</div>
+
+<!-- STRIKE PASS MODAL -->
+<div class="modal-overlay" id="strikePassModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔥 Strike Pass</h3>
+      <button class="modal-close" onclick="closeModal('strikePassModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:20px">
+        The <strong style="color:var(--premium)">Strike Pass</strong> gives you exclusive rewards on both the free and premium tracks across all zones.
+      </p>
+      <div style="display:flex;gap:16px;margin-bottom:20px">
+        <div style="flex:1;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Free Track</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">✓ Basic level rewards</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">✓ Zone completion badge</div>
+          <div style="font-size:13px;color:var(--text2)">✓ 1x XP multiplier</div>
+        </div>
+        <div style="flex:1;padding:16px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:var(--radius-sm)">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--premium);margin-bottom:8px;font-weight:700">Premium Track</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">✓ +50% bonus XP per level</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">✓ Exclusive cosmetics</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">✓ 2x XP multiplier</div>
+          <div style="font-size:13px;color:var(--text2)">✓ Premium keyboard themes</div>
+        </div>
+      </div>
+      <div style="padding:16px;background:var(--bg);border-radius:var(--radius-sm);text-align:center">
+        <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:800;color:var(--premium)">$4.99</div>
+        <div style="font-size:12px;color:var(--text3)">one-time · lasts the entire season</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('strikePassModal')">Maybe Later</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,var(--premium2),var(--premium))" onclick="showToast('Enjoy your Strike Pass! 🔥','fas fa-crown','var(--gold)');closeModal('strikePassModal')"><i class="fas fa-crown"></i> Get Strike Pass</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <i class="fas fa-check-circle" id="toastIcon"></i>
+  <span id="toastText">Action completed</span>
+</div>
+
+<script>
+// ========== DATA ==========
+const zoneData = [
+  { id:'ember', name:'EMBER', color:'#ff6b2b', color2:'#ff8c42', startLevel:1, cleared:3, total:100, active:true },
+  { id:'igneous', name:'IGNEOUS', color:'#ef4444', color2:'#f87171', startLevel:101, cleared:0, total:100, active:false },
+  { id:'magma', name:'MAGMA CORE', color:'#dc2626', color2:'#ef4444', startLevel:201, cleared:0, total:100, active:false },
+  { id:'obsidian', name:'OBSIDIAN', color:'#7c3aed', color2:'#a78bfa', startLevel:301, cleared:0, total:100, active:false },
+  { id:'beyond', name:'BEYOND', color:'#f59e0b', color2:'#fbbf24', startLevel:401, cleared:0, total:100, active:false },
+];
+
+const leaderboardData = [
+  { name:'TypeMaster99', level:487, zone:'MAGMA CORE', zoneClass:'magma', rank:1, you:false },
+  { name:'KeyboardKing', level:456, zone:'MAGMA CORE', zoneClass:'magma', rank:2, you:false },
+  { name:'SpeedDemon', level:423, zone:'OBSIDIAN', zoneClass:'ember', rank:3, you:false },
+  { name:'WPMWarrior', level:389, zone:'OBSIDIAN', zoneClass:'ember', rank:4, you:false },
+  { name:'Sandeep', level:3, zone:'EMBER', zoneClass:'ember', rank:47, you:true },
+  { name:'TypeNinja', level:381, zone:'OBSIDIAN', zoneClass:'ember', rank:5, you:false },
+];
+
+// ========== PARTICLES ==========
+function createParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 35; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (Math.random() * 12 + 8) + 's';
+    p.style.animationDelay = Math.random() * 12 + 's';
+    const size = Math.random() * 4 + 1;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    container.appendChild(p);
+  }
+}
+
+// ========== LEVEL NODES ==========
+function createLevelNodes(containerId, zone) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  
+  const visibleCount = 15;
+  for (let i = 0; i < visibleCount; i++) {
+    const levelNum = zone.startLevel + i;
+    const node = document.createElement('div');
+    node.className = 'level-node';
+    node.dataset.level = levelNum;
+    node.onclick = () => openLevelModal(levelNum, zone);
+    
+    let state = 'locked';
+    if (i < zone.cleared) state = 'completed';
+    else if (i === zone.cleared && zone.active) state = 'current';
+    
+    const isBoss = (levelNum % 50 === 0);
+    const isMiniBoss = (levelNum % 10 === 0) && !isBoss;
+    
+    // Premium nodes every 7th level
+    const isPremium = (i % 7 === 0 && i > 2);
+    
+    if (isBoss) node.classList.add('boss');
+    if (isPremium && !zone.active) node.classList.add('premium-node');
+    
+    node.classList.add(state);
+    
+    let icon = '';
+    if (state === 'completed') icon = '<i class="fas fa-star" style="font-size:14px"></i>';
+    else if (state === 'current') icon = '<i class="fas fa-play" style="font-size:14px"></i>';
+    else if (isPremium && !zone.active) icon = '<i class="fas fa-lock" style="font-size:12px"></i>';
+    else if (isBoss) icon = '<i class="fas fa-crown" style="font-size:16px"></i>';
+    else if (isMiniBoss) icon = '<i class="fas fa-bolt" style="font-size:14px"></i>';
+    else icon = '<i class="fas fa-lock" style="font-size:12px"></i>';
+    
+    const stars = state === 'completed' 
+      ? `<div class="node-stars"><i class="fas fa-star"></i></div>` 
+      : '';
+    
+    node.innerHTML = `
+      <span class="node-level">${isBoss ? 'BOSS' : 'L' + levelNum}</span>
+      <span class="node-icon">${icon}</span>
+      ${stars}
+    `;
+    
+    container.appendChild(node);
+  }
+}
+
+// ========== LEADERBOARD ==========
+function createLeaderboard() {
+  const container = document.getElementById('leaderboard');
+  container.innerHTML = '';
+  
+  leaderboardData.forEach(player => {
+    const item = document.createElement('div');
+    item.className = 'lb-item';
+    
+    let rankClass = 'normal';
+    if (player.rank === 1) rankClass = 'gold';
+    else if (player.rank === 2) rankClass = 'silver';
+    else if (player.rank === 3) rankClass = 'bronze';
+    
+    item.innerHTML = `
+      <div class="lb-rank ${rankClass}">${player.rank}</div>
+      <img class="lb-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}&backgroundColor=ffdfbf" alt="${player.name}">
+      <span class="lb-name ${player.you ? 'you' : ''}">${player.name}${player.you ? ' (You)' : ''}</span>
+      <span class="lb-zone-badge ${player.zoneClass}">${player.zone}</span>
+      <span class="lb-level">Lv.${player.level}</span>
+    `;
+    container.appendChild(item);
+  });
+}
+
+// ========== MODALS ==========
+function openLevelModal(level, zone) {
+  if (level > zone.startLevel + zone.cleared) {
+    const needed = zone.cleared;
+    if (zone.active) {
+      showToast(`Complete L${zone.startLevel + zone.cleared} first to unlock!`, 'fas fa-lock', 'var(--text3)');
+    } else {
+      showToast('Complete the previous zone first!', 'fas fa-lock', 'var(--text3)');
+    }
+    return;
+  }
+  
+  document.getElementById('levelModalTitle').textContent = `Level ${level} — ${zone.name}`;
+  document.getElementById('levelModalNumber').textContent = `L${level}`;
+  document.getElementById('levelModalZone').textContent = zone.name + ' Zone';
+  document.getElementById('levelModalZone').style.color = zone.color;
+  
+  // Show stars based on completion
+  const stars = document.querySelectorAll('#levelModalStars i');
+  const isCompleted = level < zone.startLevel + zone.cleared;
+  stars.forEach((star, idx) => {
+    star.className = isCompleted && idx < 2 ? 'fas fa-star filled' : 'fas fa-star';
+  });
+  
+  openModal('levelModal');
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  });
+});
+
+// ========== TOAST ==========
+let toastTimeout;
+function showToast(text, iconClass, color) {
+  const toast = document.getElementById('toast');
+  const toastIcon = document.getElementById('toastIcon');
+  const toastText = document.getElementById('toastText');
+  
+  toastText.textContent = text;
+  toastIcon.className = iconClass || 'fas fa-check-circle';
+  toastIcon.style.color = color || 'var(--green)';
+  
+  clearTimeout(toastTimeout);
+  toast.classList.add('show');
+  toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ========== START LEVEL ==========
+function startLevel() {
+  closeModal('levelModal');
+  closeModal('dailyModal');
+  showToast('Loading level...', 'fas fa-spinner fa-spin', 'var(--ember)');
+  setTimeout(() => showToast('Typing test would start here!', 'fas fa-keyboard', 'var(--green)'), 1500);
+}
+
+// ========== ANIMATED XP BAR ==========
+function animateXPBar() {
+  setTimeout(() => {
+    document.getElementById('xpFill').style.width = '30%';
+    document.getElementById('emberProgress').style.width = '3%';
+    document.getElementById('emberTrack').style.width = '15%';
+  }, 300);
+}
+
+// ========== DAILY TIMER ==========
+function updateDailyTimer() {
+  const now = new Date();
+  const endOfDay = new Date(now);
+  endOfDay.setHours(24, 0, 0, 0);
+  const diff = endOfDay - now;
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const el = document.getElementById('dailyTimer');
+  if (el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ========== SEASON TIMER ==========
+function updateSeasonTimer() {
+  // Fake season end: 14 days from now
+  const seasonEnd = new Date();
+  seasonEnd.setDate(seasonEnd.getDate() + 14);
+  seasonEnd.setHours(seasonEnd.getHours() + 6);
+  const now = new Date();
+  const diff = seasonEnd - now;
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  document.getElementById('seasonTimer').textContent = `${d}d ${h}h remaining`;
+}
+
+// ========== NAV ACTIVE STATE ==========
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    this.classList.add('active');
+    showToast(`Navigating to ${this.textContent.trim()}...`, 'fas fa-arrow-right', 'var(--ember)');
+  });
+});
+
+// ========== SCROLL ANIMATIONS ==========
+function handleScrollAnimations() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+  
+  document.querySelectorAll('.zone, .strike-pass-banner, .booster-teaser, .leaderboard-section').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+}
+
+// ========== INIT ==========
+document.addEventListener('DOMContentLoaded', () => {
+  createParticles();
+  
+  zoneData.forEach(zone => {
+    const containerId = zone.id + 'Nodes';
+    createLevelNodes(containerId, zone);
+  });
+  
+  createLeaderboard();
+  animateXPBar();
+  updateDailyTimer();
+  updateSeasonTimer();
+  
+  setInterval(updateDailyTimer, 1000);
+  setInterval(updateSeasonTimer, 60000);
+  
+  setTimeout(handleScrollAnimations, 100);
+});
+</script>
+</body>
+</html>
