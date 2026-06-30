@@ -7,7 +7,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import { usePlayer } from "@/hooks/usePlayer";
 import { api } from "@/lib/api";
 import { xpForNextLevel, xpProgress } from "@/lib/constants";
-import type { PlayerSummary, GameHistoryEntry, LevelCompleteResponse, ActivityEvent } from "@/lib/types";
+import type { PlayerSummary, GameHistoryEntry, LevelCompleteResponse, ActivityEvent, TimedLeaderboardEntry } from "@/lib/types";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -25,6 +25,11 @@ interface StatsData {
   recentActivity: ActivityEvent[];
   gameHistory: GameHistoryEntry[];
   levelProgress: LevelCompleteResponse[];
+  // New fields
+  playerRank: number | null;
+  timedRanks: { mode: string; rank: number | null; wpm: number }[];
+  contestCount: number;
+  bestWpmByMode: { '1min': number; '3min': number; '5min': number; level: number; contest: number };
 }
 
 // ── Loading Skeleton ───────────────────────────────────
@@ -128,13 +133,14 @@ export default function StatsPage() {
     setError(null);
 
     try {
-      const [summary, history, progress] = await Promise.all([
+      const [summary, history, progress, rankResp, timedRanksResp] = await Promise.all([
         api.getPlayerSummary(playerId).catch(() => null),
-        api.getGameHistory(playerId, undefined, 20).catch(() => null),
+        api.getGameHistory(playerId, undefined, 100).catch(() => null),
         api.getAllPlayerProgress(playerId).catch(() => null),
+        api.getPlayerRank(playerId).catch(() => null),
+        api.getPlayerTimedRanks(playerId).catch(() => null),
       ]);
 
-      // If all three failed, show error
       if (!summary && !history && !progress) {
         throw new Error("All API calls failed");
       }
@@ -156,8 +162,30 @@ export default function StatsPage() {
           ? 0.9
           : 0;
 
-      // Count all completed games
-      const totalGames = completedGames.length || summary?.levels_cleared || 0;
+      // Count contests
+      const contestCount = completedGames.filter((g) => g.mode === "contest").length;
+
+      // Best WPM by mode from game history
+      const bestByMode = { '1min': 0, '3min': 0, '5min': 0, level: 0, contest: 0 };
+      for (const g of completedGames) {
+        if (g.mode === "timed_1min") bestByMode["1min"] = Math.max(bestByMode["1min"], g.wpm);
+        else if (g.mode === "timed_3min") bestByMode["3min"] = Math.max(bestByMode["3min"], g.wpm);
+        else if (g.mode === "timed_5min") bestByMode["5min"] = Math.max(bestByMode["5min"], g.wpm);
+        else if (g.mode === "level") bestByMode.level = Math.max(bestByMode.level, g.wpm);
+        else if (g.mode === "contest") bestByMode.contest = Math.max(bestByMode.contest, g.wpm);
+      }
+
+      // Player's global rank
+      const playerRank = rankResp?.entry?.rank ?? null;
+
+      // Timed ranks
+      const timedEntries = timedRanksResp?.entries ?? [];
+      const modeTabMap = ["1min", "3min", "5min"];
+      const timedRanks = timedEntries.map((entry: TimedLeaderboardEntry | null, i: number) => ({
+        mode: modeTabMap[i] ?? `mode_${i}`,
+        rank: entry?.rank ?? null,
+        wpm: entry?.best_wpm ?? 0,
+      }));
 
       setData({
         totalGames: completedGames.length || 0,
@@ -173,6 +201,10 @@ export default function StatsPage() {
         recentActivity: summary?.recent_activity ?? [],
         gameHistory: completedGames,
         levelProgress: progress ?? [],
+        playerRank,
+        timedRanks,
+        contestCount,
+        bestWpmByMode: bestByMode,
       });
     } catch (err) {
       console.error("Failed to fetch stats:", err);
@@ -390,8 +422,55 @@ export default function StatsPage() {
             )}
           </GlassPanel>
 
+          {/* Rankings & Best WPM by Category */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <GlassPanel glow="none" blur="sm" depth={1} className="p-4">
+              <p className="mb-3 text-[9px] font-semibold tracking-[1.5px] text-text-muted">
+                RANKINGS
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span style={{ color: "var(--ts-text-dim, #9b94b3)" }}>Global Rank</span>
+                  <span className="font-bold tabular-nums" style={{ color: "#FF5020" }}>
+                    {data.playerRank ? `#${data.playerRank.toLocaleString()}` : '—'}
+                  </span>
+                </div>
+                {data.timedRanks.map((tr) => (
+                  <div key={tr.mode} className="flex items-center justify-between text-xs">
+                    <span style={{ color: "var(--ts-text-dim, #9b94b3)" }}>{tr.mode} Rank</span>
+                    <span className="font-bold tabular-nums" style={{ color: tr.rank ? "#00E5FF" : "rgba(255,255,255,0.3)" }}>
+                      {tr.rank ? `#${tr.rank} · ${tr.wpm} WPM` : 'Not played'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
+
+            <GlassPanel glow="none" blur="sm" depth={1} className="p-4">
+              <p className="mb-3 text-[9px] font-semibold tracking-[1.5px] text-text-muted">
+                BEST WPM BY MODE
+              </p>
+              <div className="space-y-2">
+                {[
+                  { label: '1 Min', key: '1min' as const, color: '#00E5FF' },
+                  { label: '3 Min', key: '3min' as const, color: '#CC44FF' },
+                  { label: '5 Min', key: '5min' as const, color: '#FF6600' },
+                  { label: 'Levels', key: 'level' as const, color: '#22DD44' },
+                  { label: 'Contest', key: 'contest' as const, color: '#FFCC00' },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between text-xs">
+                    <span style={{ color: "var(--ts-text-dim, #9b94b3)" }}>{item.label}</span>
+                    <span className="font-bold tabular-nums" style={{ color: data.bestWpmByMode[item.key] > 0 ? item.color : "rgba(255,255,255,0.2)" }}>
+                      {data.bestWpmByMode[item.key] > 0 ? `${data.bestWpmByMode[item.key]} WPM` : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
+          </div>
+
           {/* Additional Stats Row */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <GlassPanel glow="none" blur="sm" depth={1} className="p-4 text-center">
               <p className="text-2xl font-black tabular-nums text-plasma-purple">
                 {data.bestTimedWpm}
@@ -409,6 +488,16 @@ export default function StatsPage() {
               </p>
               <p className="mt-1 text-[9px] font-bold tracking-[1.5px] text-text-muted">
                 TOTAL STARS
+              </p>
+            </GlassPanel>
+
+            <GlassPanel glow="none" blur="sm" depth={1} className="p-4 text-center">
+              <p className="text-2xl font-black tabular-nums" style={{ color: "#00E5FF" }}>
+                {data.contestCount}
+                <span className="ml-0.5 text-sm font-bold text-text-muted">🏆</span>
+              </p>
+              <p className="mt-1 text-[9px] font-bold tracking-[1.5px] text-text-muted">
+                CONTESTS
               </p>
             </GlassPanel>
 

@@ -102,9 +102,8 @@ export default function MapPage() {
 
   const currentTier = progression?.current_tier;
   const rankName = currentTier?.display_name ?? "RECRUIT";
-  const playerLevel = progression?.xp
-    ? Math.floor(progression.xp / 500) + 1
-    : 3;
+  // Use the DB player level as the authoritative source (consistent with navbar)
+  const playerLevel = player?.level ?? 1;
   const currentXp = progression?.xp ?? 0;
   const xpToNext = progression?.xp_to_next_tier ?? 500;
   const streakCount = player?.streak_count ?? 0;

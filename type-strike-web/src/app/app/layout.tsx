@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import BottomNav from "@/components/layout/BottomNav";
 import ParticleField from "@/components/effects/ParticleField";
 import AchievementToast from "@/components/achievements/AchievementToast";
+import AgentationInit from "@/components/analytics/AgentationInit";
 
 export default function MainLayout({
   children,
@@ -10,6 +11,7 @@ export default function MainLayout({
 }) {
   return (
     <>
+      <AgentationInit />
       <ParticleField />
       <AchievementToast />
       <div className="relative z-10 flex h-dvh flex-col">

@@ -25,6 +25,7 @@ import type {
   GameHistoryResponse,
   ContestInfo,
   ContestLeaderboardResponse,
+  TimedLeaderboardEntry,
   TimedLeaderboardResponse,
   LessonProgress,
   UpdateLessonProgressRequest,
@@ -271,6 +272,16 @@ export const api = {
   },
 
   // ── Web-specific: Timed Leaderboard ────────────────
+  /** Fetch player's timed ranks for all timed modes */
+  getPlayerTimedRanks(
+    playerId: number
+  ): Promise<{
+    player_id: number;
+    entries: (TimedLeaderboardEntry | null)[];
+  }> {
+    return request(`api/v1/leaderboard/timed/player?player_id=${playerId}`);
+  },
+
   getTimedLeaderboard(
     mode: string,
     limit = 50

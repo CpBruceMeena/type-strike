@@ -141,6 +141,7 @@ func main() {
 			r.Get("/", leaderboardHandler.GetTop)
 			r.Get("/daily", leaderboardHandler.GetDailyTop)
 			r.Get("/timed", gameHandler.GetTimedLeaderboard)
+			r.Get("/timed/player", gameHandler.GetPlayerTimedRanks)
 			r.Get("/{playerId}", leaderboardHandler.GetPlayerRank)
 			r.Post("/sync", leaderboardHandler.Sync)
 		})
