@@ -84,12 +84,38 @@ export default function HomePage() {
     }).catch(() => {});
   }, [playerId]);
 
-  // Fetch top 5 leaderboard
+  // Fetch top 5 leaderboard and override current user's WPM with their actual timed best from stats
   useEffect(() => {
     if (!playerId) return;
     setLeaderboardLoading(true);
-    api.getLeaderboardTop(5).then((resp) => {
-      setLeaderboardTop(resp.entries ?? []);
+    Promise.all([
+      api.getLeaderboardTop(5),
+      api.getExtendedStats(playerId).catch(() => null),
+    ]).then(([lbResp, rawStats]) => {
+      let entries = lbResp.entries ?? [];
+
+      // If the current user's entry shows 0 WPM but they have timed data, override it
+      if (rawStats && typeof rawStats === 'object') {
+        const d = rawStats as Record<string, unknown>;
+        const bpm = d.best_wpm_by_mode as Record<string, number> | undefined;
+        if (bpm) {
+          const bestTimed = Math.max(
+            bpm.timed_1min ?? 0,
+            bpm.timed_3min ?? 0,
+            bpm.timed_5min ?? 0,
+            bpm.level ?? 0,
+          );
+          if (bestTimed > 0) {
+            entries = entries.map((e) =>
+              e.player_id === playerId && (!e.best_wpm || e.best_wpm === 0)
+                ? { ...e, best_wpm: bestTimed }
+                : e
+            );
+          }
+        }
+      }
+
+      setLeaderboardTop(entries);
     }).catch(() => {}).finally(() => {
       setLeaderboardLoading(false);
     });

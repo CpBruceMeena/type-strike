@@ -219,7 +219,7 @@ export default function LeaderboardPreview({ entries, loading, currentUserImageU
                       }}
                     >
                       {entry.level != null ? `LV ${entry.level}` : ""} · {entry.xp?.toLocaleString() || 0} XP
-                      {currentPlayerId === entry.player_id && entry.best_wpm != null && (
+                      {currentPlayerId === entry.player_id && entry.best_wpm != null && entry.best_wpm > 0 && (
                         <span style={{ fontSize: 10, color: "var(--ts-orange-bright, #ff8a3d)", marginLeft: 6 }}>
                           (1min: {entry.best_wpm} WPM)
                         </span>

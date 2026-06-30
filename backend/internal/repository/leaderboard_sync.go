@@ -14,7 +14,11 @@ func (r *LeaderboardRepository) SyncPlayer(ctx context.Context, playerID int) er
 			COALESCE(p.title, ''),
 			p.level, p.xp, p.total_stars,
 			(SELECT COUNT(*) FROM level_progress WHERE player_id = p.id AND completed = true),
-			(SELECT COALESCE(MAX(best_wpm), 0) FROM level_progress WHERE player_id = p.id)
+			GREATEST(
+				(SELECT COALESCE(MAX(best_wpm), 0) FROM level_progress WHERE player_id = p.id),
+				(SELECT COALESCE(MAX(best_wpm), 0) FROM leaderboard_timed WHERE player_id = p.id)
+			),
+			NOW()
 		FROM players p
 		WHERE p.id = $1
 		ON CONFLICT (player_id) DO UPDATE SET

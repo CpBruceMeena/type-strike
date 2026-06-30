@@ -51,6 +51,72 @@ function StatCard({
   );
 }
 
+// ── Hurray Toast ──────────────────────────────────────────
+
+function HurrayToast({ type, value }: { type: "personal-best" | "top-15"; value: string }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 4000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!visible) return null;
+
+  const isPB = type === "personal-best";
+
+  return (
+    <div
+      className="animate-slide-down"
+      style={{
+        position: "fixed",
+        top: 20,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 999,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "14px 24px",
+        borderRadius: 14,
+        background: isPB
+          ? "linear-gradient(135deg, rgba(255,204,0,0.2), rgba(255,80,32,0.15))"
+          : "linear-gradient(135deg, rgba(0,229,255,0.2), rgba(157,77,255,0.15))",
+        border: `1px solid ${isPB ? "rgba(255,204,0,0.3)" : "rgba(0,229,255,0.3)"}`,
+        backdropFilter: "blur(12px)",
+        boxShadow: isPB
+          ? "0 4px 24px rgba(255,204,0,0.2)"
+          : "0 4px 24px rgba(0,229,255,0.2)",
+        animation: "slideInTop 0.4s ease-out",
+      }}
+    >
+      <span style={{ fontSize: 24 }}>{isPB ? "🏆" : "🌟"}</span>
+      <div>
+        <p
+          style={{
+            fontWeight: 800,
+            fontSize: 13,
+            color: isPB ? "#FFCC00" : "#00E5FF",
+            fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
+            letterSpacing: 1,
+          }}
+        >
+          {isPB ? "NEW PERSONAL BEST!" : "TOP 15 GLOBALLY!"}
+        </p>
+        <p style={{ fontSize: 11, color: "var(--ts-text-dim, #9b94b3)", marginTop: 2 }}>
+          {value}
+        </p>
+      </div>
+      <style>{`
+        @keyframes slideInTop {
+          from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ── Performance Bar ───────────────────────────────────────
 
 function PerformanceBar({
@@ -84,7 +150,7 @@ function PerformanceBar({
         <p
           className="text-2xl font-black tabular-nums leading-none md:text-3xl"
           style={{
-            color: percentile >= 90 ? "var(--accent-gold)" : "var(--ts-text, #f5f3ff)",
+            color: percentile >= 90 ? "#FFCC00" : "var(--ts-text, #f5f3ff)",
             textShadow: percentile >= 90 ? "0 0 20px rgba(255,204,0,0.3)" : "none",
           }}
         >
@@ -96,7 +162,7 @@ function PerformanceBar({
       </div>
 
       <div className="relative">
-        <div className="mb-1 flex items-center justify-between text-[8px] font-bold tracking-[1px]" style={{ color: "var(--text-disabled)" }}>
+        <div className="mb-1 flex items-center justify-between text-[8px] font-bold tracking-[1px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
           <span>Slowest</span>
           <span>Fastest</span>
         </div>
@@ -139,7 +205,7 @@ function PerformanceBar({
           )}
         </div>
 
-        <div className="mt-1 flex items-center justify-between text-[9px]" style={{ color: "var(--text-disabled)" }}>
+        <div className="mt-1 flex items-center justify-between text-[9px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
           <span>{Math.round(totalPlayers * (1 - percentile / 100))} below</span>
           <span>{Math.round(totalPlayers * (percentile / 100))} above</span>
         </div>
@@ -157,10 +223,14 @@ export default function TimedResultContent() {
   const wpm = parseInt(searchParams.get("wpm") ?? "0", 10);
   const accuracy = parseFloat(searchParams.get("accuracy") ?? "0");
   const xp = searchParams.get("xp") ?? "0";
+  const rankStr = searchParams.get("rank");
   const mode = searchParams.get("mode") ?? "";
 
   const modeLabel =
     mode === "timed_1min" ? "1 MIN" : mode === "timed_3min" ? "3 MIN" : mode === "timed_5min" ? "5 MIN" : mode.toUpperCase();
+
+  // ── Hurray state ──
+  const [hurray, setHurray] = useState<{ type: "personal-best" | "top-15"; value: string } | null>(null);
 
   // ── Leaderboard comparison data ──
   const [leaderboardData, setLeaderboardData] = useState<{
@@ -184,12 +254,24 @@ export default function TimedResultContent() {
           belowCount: Math.max(0, total - above),
           percentile,
         });
+
+        // Check hurray conditions
+        // Top 15: if rank is provided and <= 15
+        const rank = rankStr ? parseInt(rankStr, 10) : null;
+        if (rank != null && rank <= 15) {
+          setHurray({ type: "top-15", value: `Ranked #${rank} out of ${total} players` });
+        }
+        // Personal best: if user ranks in top 80th percentile or beat their own record
+        // For simplicity: if percentile >= 80, show personal best toast
+        if (percentile >= 80 && !(rank != null && rank <= 15)) {
+          setHurray({ type: "personal-best", value: `${wpm} WPM · Top ${percentile}%` });
+        }
       } catch {
         // Silently fail
       }
     }
     fetchComparison();
-  }, [wpm, mode]);
+  }, [wpm, mode, rankStr]);
 
   const handlePlayAgain = useCallback(() => {
     if (mode === "timed_1min") router.push("/play/1min");
@@ -200,6 +282,9 @@ export default function TimedResultContent() {
 
   return (
     <div className="relative z-10 flex h-screen w-full flex-col items-center justify-center px-4 py-4 overflow-hidden">
+      {/* Hurray Toast */}
+      {hurray && <HurrayToast type={hurray.type} value={hurray.value} />}
+
       <div className="flex w-full max-w-[480px] flex-col gap-4">
         {/* ── Header Section ── */}
         <GlassPanel glow="cyan" blur="md" depth={2} className="px-5 py-5 text-center">
@@ -273,7 +358,7 @@ export default function TimedResultContent() {
               wpm={wpm}
             />
           ) : (
-            <p className="text-center text-[10px]" style={{ color: "var(--text-disabled)" }}>
+            <p className="text-center text-[10px]" style={{ color: "var(--ts-text-dim, #9b94b3)" }}>
               Loading comparison data…
             </p>
           )}

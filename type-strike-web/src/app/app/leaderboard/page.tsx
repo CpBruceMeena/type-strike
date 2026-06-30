@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import Card from "@/components/ui/Card";
-import GlassPanel from "@/components/ui/GlassPanel";
 import { usePlayer } from "@/hooks/usePlayer";
 import { api } from "@/lib/api";
 import type { TimedLeaderboardEntry } from "@/lib/types";
@@ -218,11 +218,70 @@ function ColumnEntryList({
   );
 }
 
+// ── Player Rank Badge Component ──────────────────────
+
+function PlayerRankBadge({
+  rankData,
+  accent,
+  label,
+  onCompete,
+}: {
+  rankData: { rank: number; best_wpm: number } | null;
+  accent: string;
+  label: string;
+  onCompete?: () => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "6px 10px",
+        borderRadius: 8,
+        background: `${accent}08`,
+        border: `1px solid ${accent}20`,
+        marginTop: 8,
+      }}
+    >
+      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--ts-text-dim, #9b94b3)" }}>
+        {label}
+      </span>
+      {rankData ? (
+        <span style={{ fontSize: 13, fontWeight: 800, color: accent }}>
+          #{rankData.rank} · {rankData.best_wpm} WPM
+        </span>
+      ) : onCompete ? (
+        <button
+          onClick={onCompete}
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.5px",
+            color: accent,
+            background: `${accent}15`,
+            border: `1px solid ${accent}30`,
+            borderRadius: 6,
+            padding: "3px 10px",
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = `${accent}25`; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = `${accent}15`; }}
+        >
+          Compete Now
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────
 
 export default function LeaderboardPage() {
   const { user } = useUser();
   const { playerId } = usePlayer();
+  const router = useRouter();
 
   // All three columns fetched simultaneously
   const [globalData, setGlobalData] = useState<ColumnData>({ entries: [], totalCount: 0 });
@@ -233,6 +292,9 @@ export default function LeaderboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timedCounts, setTimedCounts] = useState<Record<string, number>>({});
+  const [playerTimedRanks, setPlayerTimedRanks] = useState<Record<string, { rank: number; best_wpm: number } | null>>({});
+  const [playerGlobalRank, setPlayerGlobalRank] = useState<{ rank: number; best_wpm: number } | null>(null);
+  const [playerDailyRank, setPlayerDailyRank] = useState<{ rank: number; best_wpm: number } | null>(null);
 
   const fetchAll = useCallback(async () => {
     setIsLoading(true);
@@ -260,6 +322,13 @@ export default function LeaderboardPage() {
           entries: applySelfRow(all, playerId),
           totalCount: globalResp.value.total_count ?? all.length,
         });
+        // Extract player's global rank
+        const selfEntry = all.find((e) => e.player_id === playerId);
+        if (selfEntry && selfEntry.best_wpm > 0) {
+          setPlayerGlobalRank({ rank: selfEntry.rank, best_wpm: selfEntry.best_wpm });
+        } else {
+          setPlayerGlobalRank(null);
+        }
       }
 
       if (dailyResp.status === "fulfilled") {
@@ -276,6 +345,13 @@ export default function LeaderboardPage() {
           entries: applySelfRow(all, playerId),
           totalCount: dailyResp.value.total_count ?? all.length,
         });
+        // Extract player's daily rank
+        const selfEntry = all.find((e) => e.player_id === playerId);
+        if (selfEntry && selfEntry.best_wpm > 0) {
+          setPlayerDailyRank({ rank: selfEntry.rank, best_wpm: selfEntry.best_wpm });
+        } else {
+          setPlayerDailyRank(null);
+        }
       }
 
       const timedResults = [timed1Resp, timed3Resp, timed5Resp];
@@ -299,6 +375,22 @@ export default function LeaderboardPage() {
       }
       setTimedData(timedAcc);
       setTimedCounts(timedCountAcc);
+
+      // Fetch player's timed ranks
+      if (playerId) {
+        try {
+          const rankResp = await api.getPlayerTimedRanks(playerId);
+          const rankMap: Record<string, { rank: number; best_wpm: number } | null> = {};
+          const tabKeys = ["1min", "3min", "5min"];
+          for (let i = 0; i < rankResp.entries.length; i++) {
+            const entry = rankResp.entries[i];
+            rankMap[tabKeys[i]] = entry ? { rank: entry.rank, best_wpm: entry.best_wpm } : null;
+          }
+          setPlayerTimedRanks(rankMap);
+        } catch {
+          // Non-critical
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch leaderboards:", err);
       setError("Failed to load leaderboard data.");
@@ -311,6 +403,11 @@ export default function LeaderboardPage() {
     fetchAll();
   }, [fetchAll]);
 
+  // ── Compete handler ─────────────────────────────────
+  const handleCompete = useCallback((mode: string) => {
+    router.push(`/play/${mode}`);
+  }, [router]);
+
   // ── Render ──────────────────────────────────────────
 
   if (error && !isLoading && !globalData.entries.length && !dailyData.entries.length && Object.keys(timedData).length === 0) {
@@ -319,19 +416,7 @@ export default function LeaderboardPage() {
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
           <p style={{ color: "var(--ts-text, #f5f3ff)", fontWeight: 600, marginBottom: 8 }}>{error}</p>
-          <button
-            onClick={fetchAll}
-            style={{
-              padding: "8px 20px",
-              borderRadius: 8,
-              border: "none",
-              background: "var(--ts-orange, #ff6b1a)",
-              color: "#fff",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontSize: 13,
-            }}
-          >
+          <button onClick={fetchAll} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "var(--ts-orange, #ff6b1a)", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
             RETRY
           </button>
         </div>
@@ -339,44 +424,27 @@ export default function LeaderboardPage() {
     );
   }
 
+  const activeTimedMode = TIMED_MODES.find(m => m.key === activeTimedTab);
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1" style={{ padding: "32px 28px" }}>
         <div className="mx-auto w-full" style={{ maxWidth: 1400 }}>
-          {/* Three-column grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* GLOBAL */}
-            <div
-              className="column-card"
-              style={{
-                background: "var(--ts-bg-3, #13101c)",
-                border: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
-                borderRadius: 14,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                className="column-header"
-                style={{
-                  padding: "14px 16px",
-                  borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
-                  background: "var(--ts-bg-2, #0d0d18)",
-                }}
-              >
-                <h3
-                  style={{
-                    fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
-                    fontSize: 14,
-                    fontWeight: 800,
-                    letterSpacing: 3,
-                    color: "#FF5020",
-                  }}
-                >
-                  GLOBAL
-                </h3>
-                <p style={{ fontSize: 11, color: "var(--ts-text-dim, #9b94b3)", marginTop: 2 }}>
-                  {globalData.totalCount} players
-                </p>
+            {/* ── GLOBAL COLUMN ─── */}
+            <div className="column-card" style={{ background: "var(--ts-bg-3, #13101c)", border: "1px solid var(--ts-border, rgba(255,107,26,0.18))", borderRadius: 14, overflow: "hidden" }}>
+              <div className="column-header" style={{ padding: "14px 16px", borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))", background: "var(--ts-bg-2, #0d0d18)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <h3 style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 800, letterSpacing: 3, color: "#FF5020" }}>
+                    GLOBAL
+                  </h3>
+                </div>
+                <PlayerRankBadge
+                  rankData={playerGlobalRank}
+                  accent="#FF5020"
+                  label="Your Rank"
+                  onCompete={undefined}
+                />
               </div>
               <div style={{ padding: "8px 12px" }}>
                 <ColumnEntryList
@@ -390,38 +458,20 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            {/* DAILY */}
-            <div
-              className="column-card"
-              style={{
-                background: "var(--ts-bg-3, #13101c)",
-                border: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
-                borderRadius: 14,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                className="column-header"
-                style={{
-                  padding: "14px 16px",
-                  borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
-                  background: "var(--ts-bg-2, #0d0d18)",
-                }}
-              >
-                <h3
-                  style={{
-                    fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
-                    fontSize: 14,
-                    fontWeight: 800,
-                    letterSpacing: 3,
-                    color: "#FFCC00",
-                  }}
-                >
-                  DAILY
-                </h3>
-                <p style={{ fontSize: 11, color: "var(--ts-text-dim, #9b94b3)", marginTop: 2 }}>
-                  {dailyData.totalCount} players
-                </p>
+            {/* ── DAILY COLUMN ─── */}
+            <div className="column-card" style={{ background: "var(--ts-bg-3, #13101c)", border: "1px solid var(--ts-border, rgba(255,107,26,0.18))", borderRadius: 14, overflow: "hidden" }}>
+              <div className="column-header" style={{ padding: "14px 16px", borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))", background: "var(--ts-bg-2, #0d0d18)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <h3 style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 800, letterSpacing: 3, color: "#FFCC00" }}>
+                    DAILY
+                  </h3>
+                </div>
+                <PlayerRankBadge
+                  rankData={playerDailyRank}
+                  accent="#FFCC00"
+                  label="Your Rank"
+                  onCompete={undefined}
+                />
               </div>
               <div style={{ padding: "8px 12px" }}>
                 <ColumnEntryList
@@ -435,49 +485,20 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            {/* TIMED (pill tabs) */}
-            <div
-              className="column-card"
-              style={{
-                background: "var(--ts-bg-3, #13101c)",
-                border: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
-                borderRadius: 14,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                className="column-header"
-                style={{
-                  padding: "14px 16px",
-                  borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))",
-                  background: "var(--ts-bg-2, #0d0d18)",
-                }}
-              >
+            {/* ── TIMED COLUMN ─── */}
+            <div className="column-card" style={{ background: "var(--ts-bg-3, #13101c)", border: "1px solid var(--ts-border, rgba(255,107,26,0.18))", borderRadius: 14, overflow: "hidden" }}>
+              <div className="column-header" style={{ padding: "14px 16px", borderBottom: "1px solid var(--ts-border, rgba(255,107,26,0.18))", background: "var(--ts-bg-2, #0d0d18)" }}>
+                {/* Row 1: TIMED heading on left, pill tabs on right */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)",
-                      fontSize: 14,
-                      fontWeight: 800,
-                      letterSpacing: 3,
-                      color: "#00E5FF",
-                    }}
-                  >
+                  <h3 style={{ fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)", fontSize: 14, fontWeight: 800, letterSpacing: 3, color: activeTimedMode?.accent ?? "#00E5FF" }}>
                     TIMED
                   </h3>
-                  {/* Pill tabs inline */}
-                  <div style={{ display: "flex", gap: 4 }}>
+                  <div style={{ display: "flex", gap: 3 }}>
                     {TIMED_MODES.map((mode) => (
                       <button
                         key={mode.key}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTimedTab(mode.key);
-                        }}
+                        onClick={() => setActiveTimedTab(mode.key)}
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
                           padding: "4px 8px",
                           borderRadius: 6,
                           border: "1px solid",
@@ -492,15 +513,21 @@ export default function LeaderboardPage() {
                           transition: "all 0.15s",
                         }}
                       >
-                        <span style={{ fontSize: 10 }}>{mode.icon}</span>
+                        <span style={{ fontSize: 10, marginRight: 2 }}>{mode.icon}</span>
                         {mode.label}
                       </button>
                     ))}
                   </div>
                 </div>
-                <p style={{ fontSize: 11, color: "var(--ts-text-dim, #9b94b3)", marginTop: 2 }}>
-                  {timedCounts[activeTimedTab] ?? 0} players · {TIMED_MODES.find(m => m.key === activeTimedTab)?.description}
-                </p>
+                {/* Row 2: Player rank or Compete Now button */}
+                {activeTimedMode && (
+                  <PlayerRankBadge
+                    rankData={playerTimedRanks[activeTimedTab] ?? null}
+                    accent={activeTimedMode.accent}
+                    label={`${activeTimedMode.label} Rank`}
+                    onCompete={() => handleCompete(activeTimedMode.key)}
+                  />
+                )}
               </div>
               <div style={{ padding: "8px 12px" }}>
                 <ColumnEntryList
@@ -509,7 +536,7 @@ export default function LeaderboardPage() {
                   playerId={playerId}
                   userImageUrl={user?.imageUrl}
                   isLoading={isLoading}
-                  accent={TIMED_MODES.find(m => m.key === activeTimedTab)?.accent ?? "#00E5FF"}
+                  accent={activeTimedMode?.accent ?? "#00E5FF"}
                 />
               </div>
             </div>
@@ -518,15 +545,9 @@ export default function LeaderboardPage() {
       </div>
 
       <style>{`
-        .column-card {
-          transition: border-color 0.2s;
-        }
-        .column-card:hover {
-          border-color: rgba(255,107,26,0.3);
-        }
-        @media (max-width: 768px) {
-          .column-card { margin-bottom: 12px; }
-        }
+        .column-card { transition: border-color 0.2s; }
+        .column-card:hover { border-color: rgba(255,107,26,0.3); }
+        @media (max-width: 768px) { .column-card { margin-bottom: 12px; } }
       `}</style>
     </div>
   );

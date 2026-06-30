@@ -95,6 +95,39 @@ func (h *GameHandler) GetTimedLeaderboard(w http.ResponseWriter, r *http.Request
 	})
 }
 
+// GetPlayerTimedRanks handles GET /api/v1/leaderboard/timed/player
+// Returns the player's best timed entry across all timed modes with rank.
+// Query params: player_id (required)
+func (h *GameHandler) GetPlayerTimedRanks(w http.ResponseWriter, r *http.Request) {
+	playerIDStr := r.URL.Query().Get("player_id")
+	if playerIDStr == "" {
+		writeError(w, http.StatusBadRequest, "MISSING_PLAYER_ID", "player_id query parameter is required")
+		return
+	}
+	playerID, err := strconv.Atoi(playerIDStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_PLAYER_ID", "Player ID must be a number")
+		return
+	}
+
+	modes := []string{"timed_1min", "timed_3min", "timed_5min"}
+	results := make([]*models.TimedLeaderboardEntry, 0, 3)
+
+	for _, mode := range modes {
+		entry, err := h.repo.Game.GetPlayerTimedRank(r.Context(), playerID, mode)
+		if err != nil {
+			slog.Default().Error("failed to fetch player timed rank", "player_id", playerID, "mode", mode, "error", err)
+			continue
+		}
+		results = append(results, entry)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"player_id": playerID,
+		"entries":   results,
+	})
+}
+
 // ── Helpers ──────────────────────────────────────────
 
 func isTimedMode(mode string) bool {

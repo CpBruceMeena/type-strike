@@ -94,9 +94,11 @@ export function useGameplay(mode: GameMode, playerId?: number) {
           });
 
           // Update state with final results
+          // Timed/contest modes never show "failed" — time expiry is a natural end, not failure
+          const isTimedMode = mode.startsWith("timed_") || mode === "contest";
           setState((s) => ({
             ...s,
-            gameState: (result.completed ? "complete" : "failed") as GameState,
+            gameState: (isTimedMode || result.completed ? "complete" : "failed") as GameState,
             finalWpm: response.wpm,
             finalAccuracy: response.accuracy,
             stars: response.stars ?? 0,

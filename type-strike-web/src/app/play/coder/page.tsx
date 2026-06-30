@@ -136,7 +136,7 @@ function SnippetCard({
 
       {/* Title + meta */}                    <h3
                       className="relative mb-0.5 text-sm font-bold tracking-tight"
-                      style={{ color: "var(--ts-text, #f5f3ff)", fontFamily: "var(--font-orbitron, 'Orbitron', sans-serif)" }}
+                      style={{ color: "var(--ts-text, #f5f3ff)", fontFamily: "var(--font-inter, 'Inter', sans-serif)" }}
                     >
                       {snippet.title}
                     </h3>
